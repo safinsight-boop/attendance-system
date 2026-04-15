@@ -923,6 +923,14 @@ _VTYPE_AR = {
     'absent_1':   'غياب',
 }
 
+_OCC_WORDS = ['الأولى','الثانية','الثالثة','الرابعة','الخامسة',
+              'السادسة','السابعة','الثامنة','التاسعة','العاشرة']
+def _occ_ar(n):
+    """المرة الأولى / الثانية ... أو المرة 11+"""
+    if 1 <= n <= len(_OCC_WORDS):
+        return f'المرة {_OCC_WORDS[n-1]}'
+    return f'المرة {n}'
+
 _STATUS_AR = {
     'on_time':         ('في الوقت',       _XC['lgreen'],  _XC['green']),
     'late':            ('متأخر',          _XC['lorange'], _XC['orange']),
@@ -1010,14 +1018,23 @@ def export_payroll_excel(year, month):
             r += 1
 
             # ── صفوف الحضور ───────────────────────────────────
+            occ_count = {}   # {vtype: عدد تكرارات الشهر حتى الآن}
             for att in atts:
                 att   = dict(att)
                 s     = att['status']
                 label, row_bg, txt_color = _status_info(s)
                 day_vios  = [v for v in vios if v['vio_date'] == att['att_date']]
                 day_ded   = sum(v['deduction'] for v in day_vios)
-                vio_parts = [f"{_VTYPE_AR.get(v['vtype'], v['vtype'])} — {_ptype_ar(v['ptype'], v['pvalue'])}"
-                             for v in day_vios]
+
+                vio_parts = []
+                for v in day_vios:
+                    vt = v['vtype']
+                    occ_count[vt] = occ_count.get(vt, 0) + 1
+                    occ_label = _occ_ar(occ_count[vt])
+                    penalty   = _ptype_ar(v['ptype'], v['pvalue'])
+                    vio_parts.append(
+                        f"{_VTYPE_AR.get(vt, vt)}  ◂  {occ_label}  ◂  {penalty}"
+                    )
                 vio_text  = '\n'.join(vio_parts) if vio_parts else '—'
 
                 late_m  = att['late_min']  or 0
