@@ -256,6 +256,10 @@ def hr_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def _gosi(emp):
+    """احتساب تأمينات GOSI = 10.75% من الأجور الثابتة (راتب + سكن + نقل)"""
+    return round((emp['salary'] + emp['housing'] + emp['transport']) * 0.1075, 2)
+
 def _is_on_leave(conn, emp_id, target_date):
     """هل الموظف في إجازة معتمدة في هذا اليوم؟"""
     ds = str(target_date)
@@ -874,7 +878,8 @@ def export_payroll_excel(year, month):
 
             total_ded = sum(v['deduction'] for v in vios)
             gross     = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
-            net       = gross - total_ded - emp['other_ded']
+            gosi_ded  = _gosi(emp)
+            net       = gross - total_ded - gosi_ded
 
             # ── شيت الموظف ──
             ws = wb.create_sheet(emp['name_en'][:28])
@@ -972,6 +977,8 @@ def export_payroll_excel(year, month):
             payroll_summary.append({
                 **emp,
                 'total_ded': total_ded,
+                'gosi_ded':  gosi_ded,
+                'other_ded': gosi_ded,
                 'gross':     gross,
                 'net':       net,
                 'days':      len(atts),
@@ -996,7 +1003,7 @@ def export_payroll_excel(year, month):
               bold=True, size=17, bg=C_HDR, fg='FFFFFF')
 
         pay_hdrs = ['م', 'اسم الموظف', 'الراتب الأساسي', 'بدل سكن',
-                    'بدل مواصلات', 'عمولة', 'خصومات', 'استق. أخرى',
+                    'بدل مواصلات', 'عمولة', 'خصومات', 'تأمينات (10.75%)',
                     'صافي الراتب', 'ملاحظات']
         for i, h in enumerate(pay_hdrs, 1):
             _cell(ws2, 2, i, h, bold=True, bg=C_SUB, fg='FFFFFF')
@@ -1266,11 +1273,14 @@ def api_payroll():
                     SUM(CASE WHEN status='late'   THEN 1 ELSE 0 END) AS late
                 FROM attendance WHERE employee_id=? AND att_date LIKE ?""",
                 (emp['id'], prefix)).fetchone()
-            gross = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
-            net   = gross - (vd['d'] or 0) - emp['other_ded']
+            gross    = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+            gosi_ded = _gosi(emp)
+            net      = gross - (vd['d'] or 0) - gosi_ded
             result.append({
                 **emp,
                 'total_ded': round(vd['d'] or 0, 2),
+                'gosi_ded':  gosi_ded,
+                'other_ded': gosi_ded,
                 'gross':     round(gross, 2),
                 'net':       round(net, 2),
                 'days':      ad['total']  or 0,
@@ -1843,14 +1853,15 @@ def api_my_payroll():
             "SELECT * FROM attendance WHERE employee_id=? AND att_date LIKE ? ORDER BY att_date",
             (emp_id, prefix)).fetchall()
         total_ded = sum(v['deduction'] for v in vios)
-        gross = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
-        net   = gross - total_ded - emp['other_ded']
+        gross    = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+        gosi_ded = _gosi(emp)
+        net      = gross - total_ded - gosi_ded
         return jsonify({
             'employee': emp,
             'year': y, 'month': m,
             'gross': round(gross, 2),
             'deductions': round(total_ded, 2),
-            'other_ded': emp['other_ded'],
+            'other_ded': gosi_ded,
             'net': round(net, 2),
             'attendance_days': len([a for a in atts if a['status'] != 'absent']),
             'absent_days': len([a for a in atts if a['status'] == 'absent']),

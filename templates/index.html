@@ -625,7 +625,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
               <tr>
                 <th>#</th><th>الموظف</th>
                 <th>الأساسي</th><th>بدلات</th><th>عمولة</th>
-                <th>خصومات</th><th>استق. أخرى</th>
+                <th>خصومات</th><th>تأمينات (10.75%)</th>
                 <th>الصافي</th><th>حضور</th><th>تأخر</th>
               </tr>
             </thead>
@@ -959,8 +959,8 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
             <input type="number" id="emp-commission" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">استقطاعات أخرى (ر.س)</label>
-            <input type="number" id="emp-otherded" class="fc" value="0" min="0">
+            <label class="fl">تأمينات GOSI</label>
+            <input type="text" id="emp-otherded" class="fc" value="محسوبة تلقائياً (10.75%)" readonly style="background:#f1f5f9;color:#64748b;cursor:not-allowed">
           </div>
         </div>
 
@@ -1680,7 +1680,7 @@ async function saveEmployee() {
     housing:      +document.getElementById('emp-housing').value,
     transport:    +document.getElementById('emp-transport').value,
     commission:   +document.getElementById('emp-commission').value,
-    other_ded:    +document.getElementById('emp-otherded').value,
+    other_ded:    0,
   };
 
   if (!data.name_ar || !data.name_en) {
@@ -1954,7 +1954,7 @@ async function loadMyPayroll() {
             <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmt(e.transport)} ر.س</td></tr>
             <tr><td style="font-weight:600">العمولة</td><td>${fmt(e.commission)} ر.س</td></tr>
             <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmt(d.deductions)} ر.س</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">استقطاعات أخرى</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} ر.س</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} ر.س</td></tr>
             <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmt(d.net)} ر.س</td></tr>
           </tbody>
         </table>
