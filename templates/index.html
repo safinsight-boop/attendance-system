@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الحضور والغياب</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sidebar-w: 255px;
+  --dark:    #0f172a;
+  --dark2:   #1e293b;
+  --accent:  #3b82f6;
+  --accent2: #2563eb;
+  --muted:   #94a3b8;
+  --border:  #e2e8f0;
+  --bg:      #f1f5f9;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--dark2); }
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed; top: 0; right: 0;
+  width: var(--sidebar-w); height: 100vh;
+  background: var(--dark); display: flex;
+  flex-direction: column; z-index: 1000;
+  overflow-y: auto; overflow-x: hidden;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+.sidebar-logo {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; gap: 11px; flex-shrink: 0;
+}
+.logo-icon {
+  width: 42px; height: 42px; background: var(--accent);
+  border-radius: 11px; display: flex; align-items: center;
+  justify-content: center; color: #fff; font-size: 19px; flex-shrink: 0;
+}
+.logo-name { color: #f1f5f9; font-size: 15px; font-weight: 700; line-height: 1.25; }
+.logo-sub  { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+.nav-group { padding: 14px 10px 4px; }
+.nav-label {
+  color: #475569; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 0 8px; margin-bottom: 5px;
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border-radius: 9px;
+  color: var(--muted); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .18s; margin-bottom: 2px;
+  border: none; background: transparent; width: 100%; text-align: right;
+}
+.nav-btn:hover  { background: rgba(255,255,255,0.05); color: #cbd5e1; }
+.nav-btn.active { background: rgba(59,130,246,0.14); color: #60a5fa;
+                  border-right: 3px solid var(--accent); }
+.nav-btn .ni    { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 14px 18px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  color: #475569; font-size: 12px; text-align: center; flex-shrink: 0;
+}
+
+/* ── Main ── */
+.main { margin-right: var(--sidebar-w); min-height: 100vh; }
+
+.topbar {
+  background: #fff; padding: 14px 26px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.topbar-title { font-size: 19px; font-weight: 800; color: var(--dark); }
+.topbar-sub   { font-size: 12.5px; color: #64748b; margin-top: 1px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+.page-body { padding: 22px 26px; }
+.page { display: none; animation: fadeIn .22s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity:.4; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+/* ── Stat Cards ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card {
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  border-top: 4px solid transparent; transition: transform .2s, box-shadow .2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.stat-card.c-green  { border-color: #22c55e; }
+.stat-card.c-red    { border-color: #ef4444; }
+.stat-card.c-yellow { border-color: #f59e0b; }
+.stat-card.c-blue   { border-color: #3b82f6; }
+.stat-card.c-purple { border-color: #8b5cf6; }
+.stat-icon  { font-size: 26px; margin-bottom: 10px; }
+.stat-num   { font-size: 34px; font-weight: 900; color: var(--dark); line-height: 1; }
+.stat-label { font-size: 13px; color: #64748b; margin-top: 5px; }
+
+/* ── Mini stats row ── */
+.mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
+.mini-card {
+  background: #fff; border-radius: 12px; padding: 14px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.mini-label { font-size: 12px; color: #64748b; font-weight: 600; }
+.mini-num   { font-size: 26px; font-weight: 900; margin-top: 4px; }
+
+/* ── Card ── */
+.card-wrap {
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 18px;
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.card-head h5 { font-size: 15px; font-weight: 700; color: var(--dark); margin: 0; }
+
+/* ── Table ── */
+.tbl { font-size: 13.5px; width: 100%; border-collapse: collapse; }
+.tbl thead th {
+  background: #f8fafc; font-weight: 700; color: #475569;
+  font-size: 12px; letter-spacing: .4px; padding: 11px 12px;
+  white-space: nowrap; border-bottom: 2px solid var(--border);
+  text-align: center;
+}
+.tbl tbody td {
+  padding: 10px 12px; border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle; color: #334155; text-align: center;
+}
+.tbl tbody tr:hover td { background: #f8fafc; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+
+/* ── Badges ── */
+.badge-s {
+  display: inline-block; padding: 4px 12px;
+  border-radius: 20px; font-size: 12px; font-weight: 700;
+}
+.b-ontime  { background: #dcfce7; color: #15803d; }
+.b-late    { background: #fee2e2; color: #b91c1c; }
+.b-absent  { background: #f1f5f9; color: #475569; }
+.b-early   { background: #fef9c3; color: #854d0e; }
+.b-present { background: #dbeafe; color: #1d4ed8; }
+.b-fixed   { background: #ede9fe; color: #6d28d9; }
+.b-flex    { background: #fce7f3; color: #9d174d; }
+
+/* ── Buttons ── */
+.btn-main {
+  background: var(--accent); border: none; color: #fff;
+  border-radius: 9px; padding: 9px 18px;
+  font-family: 'Tajawal'; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .18s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-main:hover { background: var(--accent2); }
+.btn-green {
+  background: #22c55e; border: none; color: #fff;
+  border-radius: 9px; padding: 9px 18px;
+  font-family: 'Tajawal'; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: background .18s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-green:hover { background: #16a34a; }
+.btn-sm {
+  border: none; border-radius: 7px; padding: 5px 11px;
+  font-family: 'Tajawal'; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; transition: all .15s;
+}
+.btn-edit   { background: #dbeafe; color: #1d4ed8; }
+.btn-edit:hover { background: #bfdbfe; }
+.btn-del    { background: #fee2e2; color: #b91c1c; }
+.btn-del:hover  { background: #fecaca; }
+
+/* ── Filters ── */
+.filters {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  align-items: flex-end; margin-bottom: 18px;
+}
+.fg label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: #64748b; margin-bottom: 5px;
+}
+.fg select, .fg input[type="date"], .fg input[type="number"] {
+  border: 1.5px solid var(--border); border-radius: 9px;
+  padding: 8px 12px; font-family: 'Tajawal'; font-size: 14px;
+  color: var(--dark); background: #fff; outline: none;
+  min-width: 130px; transition: border .18s;
+}
+.fg select:focus, .fg input:focus { border-color: var(--accent); }
+
+/* ── Modal ── */
+.modal-content { border-radius: 14px; border: none; }
+.modal-header  { border-bottom: 1px solid #f1f5f9; padding: 18px 22px; }
+.modal-title   { font-size: 16px; font-weight: 800; }
+.modal-body    { padding: 20px 22px; }
+.modal-footer  { border-top: 1px solid #f1f5f9; padding: 14px 22px; }
+.fl { display: block; font-size: 12.5px; font-weight: 700; color: #374151; margin-bottom: 5px; }
+.fc {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 9px;
+  padding: 9px 12px; font-family: 'Tajawal'; font-size: 14px;
+  color: var(--dark); outline: none; transition: border .18s;
+}
+.fc:focus { border-color: var(--accent); }
+.form2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.divider { border: none; border-top: 1px solid #f1f5f9; margin: 16px 0; }
+.section-title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 12px; }
+
+/* ── Toast ── */
+#toast-wrap {
+  position: fixed; bottom: 22px; left: 22px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+}
+.toast-el {
+  background: var(--dark2); color: #fff; padding: 11px 18px;
+  border-radius: 10px; font-size: 13.5px; min-width: 220px;
+  display: flex; align-items: center; gap: 9px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  animation: tIn .28s ease;
+}
+.toast-el.ok  { border-right: 4px solid #22c55e; }
+.toast-el.err { border-right: 4px solid #ef4444; }
+.toast-el.inf { border-right: 4px solid #3b82f6; }
+@keyframes tIn { from { transform:translateY(14px); opacity:0; } to { opacity:1; } }
+
+/* ── Spinner ── */
+.spin {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff; border-radius: 50%;
+  animation: sp .7s linear infinite;
+}
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center; padding: 48px 24px; color: #94a3b8;
+}
+.empty-state i { font-size: 42px; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 15px; }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(100%); transition: transform .3s; }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-right: 0; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .mini-stats { grid-template-columns: 1fr 1fr; }
+  .form2, .form3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fas fa-fingerprint"></i></div>
+    <div>
+      <div class="logo-name">نظام الحضور</div>
+      <div class="logo-sub">TTLock Integration</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">الرئيسية</div>
+    <button class="nav-btn active" id="nb-dashboard" onclick="showPage('dashboard')">
+      <span class="ni"><i class="fas fa-chart-pie"></i></span> لوحة التحكم
+    </button>
+    <button class="nav-btn" id="nb-attendance" onclick="showPage('attendance')">
+      <span class="ni"><i class="fas fa-calendar-check"></i></span> سجل الحضور
+    </button>
+    <button class="nav-btn" id="nb-employees" onclick="showPage('employees')">
+      <span class="ni"><i class="fas fa-users"></i></span> الموظفون
+    </button>
+    <button class="nav-btn" id="nb-payroll" onclick="showPage('payroll')">
+      <span class="ni"><i class="fas fa-money-bill-wave"></i></span> مسيرة الرواتب
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <i class="fas fa-clock" style="margin-left:4px"></i>
+    آخر تحديث: <span id="last-update">—</span>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="page-title">لوحة التحكم</div>
+      <div class="topbar-sub" id="today-str"></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-main" onclick="openRunModal()">
+        <i class="fas fa-play"></i> تشغيل يدوي
+      </button>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ══════════════════════════════════════
+         PAGE: DASHBOARD
+    ══════════════════════════════════════ -->
+    <div id="page-dashboard" class="page active">
+
+      <!-- Stats today -->
+      <div class="stats-grid" id="stats-today-grid">
+        <div class="stat-card c-green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-num" id="s-ontime">—</div>
+          <div class="stat-label">في الوقت اليوم</div>
+        </div>
+        <div class="stat-card c-red">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-num" id="s-late">—</div>
+          <div class="stat-label">متأخر اليوم</div>
+        </div>
+        <div class="stat-card c-yellow">
+          <div class="stat-icon">🚪</div>
+          <div class="stat-num" id="s-earlyleave">—</div>
+          <div class="stat-label">مغادرة مبكرة</div>
+        </div>
+        <div class="stat-card c-blue">
+          <div class="stat-icon">🔴</div>
+          <div class="stat-num" id="s-absent">—</div>
+          <div class="stat-label">غياب اليوم</div>
+        </div>
+      </div>
+
+      <!-- Mini stats month -->
+      <div class="mini-stats">
+        <div class="mini-card">
+          <div class="mini-label">⚠️ مخالفات الشهر</div>
+          <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-label">💸 إجمالي الخصومات (ر.س)</div>
+          <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-label">📅 غياب الشهر</div>
+          <div class="mini-num" style="color:#64748b" id="s-mabsent">—</div>
+        </div>
+      </div>
+
+      <!-- Recent attendance -->
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-history" style="color:var(--accent);margin-left:8px"></i>آخر سجلات الحضور</h5>
+          <button class="btn-main" style="padding:6px 14px;font-size:13px" onclick="loadDashboard()">
+            <i class="fas fa-sync-alt"></i> تحديث
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>الموظف</th><th>التاريخ</th>
+                <th>الحضور</th><th>الانصراف</th>
+                <th>التأخر</th><th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="recent-tbody">
+              <tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!-- ══════════════════════════════════════
+         PAGE: ATTENDANCE LOG
+    ══════════════════════════════════════ -->
+    <div id="page-attendance" class="page">
+
+      <div class="filters">
+        <div class="fg">
+          <label>الشهر</label>
+          <select id="att-month" onchange="loadAttendance()"></select>
+        </div>
+        <div class="fg">
+          <label>السنة</label>
+          <select id="att-year" onchange="loadAttendance()"></select>
+        </div>
+        <div class="fg">
+          <label>الموظف</label>
+          <select id="att-emp" onchange="loadAttendance()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <button class="btn-green" onclick="exportAtt()">
+          <i class="fas fa-file-excel"></i> تحميل Excel
+        </button>
+      </div>
+
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-calendar-alt" style="color:var(--accent);margin-left:8px"></i>سجل الحضور والغياب</h5>
+          <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>#</th><th>الموظف</th><th>التاريخ</th>
+                <th>الحضور</th><th>الانصراف</th>
+                <th>تأخر(دق)</th><th>خروج مبكر(دق)</th><th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="att-tbody">
+              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-calendar"></i><p>اختر الشهر لعرض السجلات</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /attendance -->
+
+    <!-- ══════════════════════════════════════
+         PAGE: EMPLOYEES
+    ══════════════════════════════════════ -->
+    <div id="page-employees" class="page">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span id="emp-count-lbl" style="font-size:14px;color:#64748b;font-weight:600"></span>
+        <button class="btn-main" onclick="openEmpModal()">
+          <i class="fas fa-plus"></i> إضافة موظف
+        </button>
+      </div>
+
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الاسم بالعربي</th>
+                <th>الاسم بالإنجليزي</th>
+                <th>نوع الدوام</th>
+                <th>الراتب</th>
+                <th>الإيميل</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="emp-tbody">
+              <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /employees -->
+
+    <!-- ══════════════════════════════════════
+         PAGE: PAYROLL
+    ══════════════════════════════════════ -->
+    <div id="page-payroll" class="page">
+
+      <div class="filters">
+        <div class="fg">
+          <label>الشهر</label>
+          <select id="pay-month" onchange="loadPayroll()"></select>
+        </div>
+        <div class="fg">
+          <label>السنة</label>
+          <select id="pay-year" onchange="loadPayroll()"></select>
+        </div>
+        <button class="btn-green" onclick="exportPayroll()">
+          <i class="fas fa-file-excel"></i> تحميل مسيرة الرواتب
+        </button>
+      </div>
+
+      <!-- Summary -->
+      <div class="mini-stats" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mini-card">
+          <div class="mini-label">💰 إجمالي الرواتب</div>
+          <div class="mini-num" style="color:var(--dark)" id="pay-gross">—</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-label">📉 إجمالي الخصومات</div>
+          <div class="mini-num" style="color:#dc2626" id="pay-ded">—</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-label">✅ إجمالي الصافي</div>
+          <div class="mini-num" style="color:#16a34a" id="pay-net">—</div>
+        </div>
+      </div>
+
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-money-check-alt" style="color:var(--accent);margin-left:8px"></i>تفاصيل الرواتب</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>#</th><th>الموظف</th>
+                <th>الأساسي</th><th>بدلات</th><th>عمولة</th>
+                <th>خصومات</th><th>استق. أخرى</th>
+                <th>الصافي</th><th>حضور</th><th>تأخر</th>
+              </tr>
+            </thead>
+            <tbody id="pay-tbody">
+              <tr><td colspan="10"><div class="empty-state"><i class="fas fa-coins"></i><p>اختر الشهر لعرض الرواتب</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /payroll -->
+
+  </div><!-- .page-body -->
+</div><!-- .main -->
+
+<!-- ════════════════════════════════════════════
+     MODAL: MANUAL RUN
+════════════════════════════════════════════ -->
+<div class="modal fade" id="runModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-play-circle" style="color:var(--accent);margin-left:8px"></i>تشغيل يدوي</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="fg" style="margin-bottom:0">
+          <label>التاريخ (اتركه فارغاً للمعالجة اليوم)</label>
+          <input type="date" id="run-date" class="fc">
+        </div>
+        <div id="run-result" style="margin-top:14px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="runManual()" id="run-btn">
+          <i class="fas fa-play"></i> تشغيل
+        </button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     MODAL: ADD / EDIT EMPLOYEE
+════════════════════════════════════════════ -->
+<div class="modal fade" id="empModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="emp-modal-title">
+          <i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة موظف
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="emp-id">
+
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">الاسم بالعربي *</label>
+            <input type="text" id="emp-namear" class="fc" placeholder="محمد أحمد">
+          </div>
+          <div>
+            <label class="fl">الاسم بالإنجليزي * <small style="color:#94a3b8">(كما في TTLock)</small></label>
+            <input type="text" id="emp-nameen" class="fc" placeholder="Mohammed Ahmed">
+          </div>
+        </div>
+
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">البريد الإلكتروني</label>
+            <input type="email" id="emp-email" class="fc" placeholder="email@company.com">
+          </div>
+          <div>
+            <label class="fl">نوع الدوام</label>
+            <select id="emp-wtype" class="fc" onchange="toggleWorkType()">
+              <option value="fixed">ثابت (Fixed)</option>
+              <option value="flex">مرن (Flex)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fixed fields -->
+        <div id="fixed-block" class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">وقت الحضور</label>
+            <input type="time" id="emp-wstart" class="fc" value="08:00">
+          </div>
+          <div>
+            <label class="fl">وقت الانصراف</label>
+            <input type="time" id="emp-wend" class="fc" value="17:00">
+          </div>
+        </div>
+
+        <!-- Flex field -->
+        <div id="flex-block" style="margin-bottom:14px;display:none">
+          <label class="fl">الساعات الأسبوعية المطلوبة</label>
+          <input type="number" id="emp-whours" class="fc" value="40" min="1" max="80" style="max-width:200px">
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">💰 بيانات الراتب والبدلات</div>
+
+        <div class="form3" style="margin-bottom:14px">
+          <div>
+            <label class="fl">الراتب الأساسي (ر.س)</label>
+            <input type="number" id="emp-salary" class="fc" value="0" min="0">
+          </div>
+          <div>
+            <label class="fl">بدل السكن (ر.س)</label>
+            <input type="number" id="emp-housing" class="fc" value="0" min="0">
+          </div>
+          <div>
+            <label class="fl">بدل المواصلات (ر.س)</label>
+            <input type="number" id="emp-transport" class="fc" value="0" min="0">
+          </div>
+        </div>
+
+        <div class="form2" style="margin-bottom:4px">
+          <div>
+            <label class="fl">عمولة المبيعات (ر.س)</label>
+            <input type="number" id="emp-commission" class="fc" value="0" min="0">
+          </div>
+          <div>
+            <label class="fl">استقطاعات أخرى (ر.س)</label>
+            <input type="number" id="emp-otherded" class="fc" value="0" min="0">
+          </div>
+        </div>
+
+        <div id="emp-err" style="color:#dc2626;font-size:13px;margin-top:12px;display:none;padding:10px 14px;background:#fff1f2;border-radius:8px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="saveEmployee()" id="save-emp-btn">
+          <i class="fas fa-save"></i> حفظ البيانات
+        </button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════
+const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+const STATUS = {
+  on_time:    { label:'في الوقت',       cls:'b-ontime'  },
+  late:       { label:'متأخر',           cls:'b-late'    },
+  absent:     { label:'غائب',            cls:'b-absent'  },
+  early_leave:{ label:'مغادرة مبكرة',   cls:'b-early'   },
+  present:    { label:'حاضر',            cls:'b-present' },
+};
+
+const PAGE_TITLES = {
+  dashboard:  'لوحة التحكم',
+  attendance: 'سجل الحضور والغياب',
+  employees:  'إدارة الموظفين',
+  payroll:    'مسيرة الرواتب',
+};
+
+let allEmps = [];
+const now = new Date();
+
+// Modals
+let _runModal, _empModal;
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Date string
+  document.getElementById('today-str').textContent =
+    `${DAYS[now.getDay()]}، ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+
+  // Bootstrap modals
+  _runModal = new bootstrap.Modal(document.getElementById('runModal'));
+  _empModal = new bootstrap.Modal(document.getElementById('empModal'));
+
+  // Populate year/month selects
+  populateYM('att-month', 'att-year');
+  populateYM('pay-month', 'pay-year');
+
+  // Load initial data
+  loadDashboard();
+  loadEmployees();
+});
+
+function populateYM(mid, yid) {
+  const ms = document.getElementById(mid);
+  const ys = document.getElementById(yid);
+  ms.innerHTML = MONTHS.map((m, i) =>
+    `<option value="${i+1}" ${i === now.getMonth() ? 'selected':''}>${m}</option>`
+  ).join('');
+  const yr = now.getFullYear();
+  ys.innerHTML = [yr-1, yr].map(y =>
+    `<option value="${y}" ${y === yr ? 'selected':''}>${y}</option>`
+  ).join('');
+}
+
+// ════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.getElementById(`nb-${page}`).classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[page];
+
+  if (page === 'attendance') loadAttendance();
+  if (page === 'employees')  loadEmployees();
+  if (page === 'payroll')    loadPayroll();
+}
+
+// ════════════════════════════════════════════
+//  API HELPERS
+// ════════════════════════════════════════════
+async function GET(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function POST(url, data) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+async function PUT(url, data) {
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+async function DEL(url) {
+  const r = await fetch(url, { method: 'DELETE' });
+  return r.json();
+}
+
+// ════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════
+function toast(msg, type = 'ok') {
+  const icons = { ok:'check-circle', err:'times-circle', inf:'info-circle' };
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast-el ${type}`;
+  el.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i> ${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => el.style.opacity = '0', 3500);
+  setTimeout(() => el.remove(), 3900);
+}
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+function badge(s) {
+  const info = STATUS[s] || { label: s, cls: 'b-present' };
+  return `<span class="badge-s ${info.cls}">${info.label}</span>`;
+}
+
+function fmt(n) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+}
+
+function setLastUpdate() {
+  document.getElementById('last-update').textContent =
+    new Date().toLocaleTimeString('ar-SA', {hour:'2-digit', minute:'2-digit'});
+}
+
+// ════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════
+async function loadDashboard() {
+  try {
+    const [today, month, recent] = await Promise.all([
+      GET('/api/stats/today'),
+      GET('/api/stats/month'),
+      GET('/api/attendance/recent?limit=15'),
+    ]);
+
+    document.getElementById('s-ontime').textContent    = today.on_time;
+    document.getElementById('s-late').textContent      = today.late;
+    document.getElementById('s-earlyleave').textContent = today.early_leave;
+    document.getElementById('s-absent').textContent    = today.absent;
+
+    document.getElementById('s-mvio').textContent    = month.violations;
+    document.getElementById('s-mded').textContent    = fmt(month.total_deductions);
+    document.getElementById('s-mabsent').textContent = month.absent;
+
+    const tb = document.getElementById('recent-tbody');
+    if (!recent.length) {
+      tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+        <i class="fas fa-inbox"></i><p>لا توجد سجلات اليوم</p></div></td></tr>`;
+    } else {
+      tb.innerHTML = recent.map(r => `
+        <tr>
+          <td><b>${r.name_ar}</b></td>
+          <td>${r.att_date}</td>
+          <td>${r.check_in || '—'}</td>
+          <td>${r.check_out || '—'}</td>
+          <td>${r.late_min ? `<b style="color:#dc2626">${r.late_min} د</b>` : '—'}</td>
+          <td>${badge(r.status)}</td>
+        </tr>`).join('');
+    }
+    setLastUpdate();
+  } catch(e) {
+    console.error(e);
+    toast('خطأ في تحميل لوحة التحكم', 'err');
+  }
+}
+
+// ════════════════════════════════════════════
+//  MANUAL RUN
+// ════════════════════════════════════════════
+function openRunModal() {
+  document.getElementById('run-date').value = '';
+  document.getElementById('run-result').style.display = 'none';
+  document.getElementById('run-btn').innerHTML = '<i class="fas fa-play"></i> تشغيل';
+  document.getElementById('run-btn').disabled = false;
+  _runModal.show();
+}
+
+async function runManual() {
+  const btn = document.getElementById('run-btn');
+  const res = document.getElementById('run-result');
+  const d   = document.getElementById('run-date').value;
+
+  btn.innerHTML = '<span class="spin"></span> جاري التشغيل...';
+  btn.disabled  = true;
+  res.style.display = 'none';
+
+  try {
+    const r = await POST('/api/run', { date: d || null });
+    res.style.display = 'block';
+    if (r.ok) {
+      res.innerHTML = `<div style="background:#dcfce7;padding:11px 14px;border-radius:8px;color:#15803d;font-weight:600">
+        <i class="fas fa-check-circle" style="margin-left:6px"></i>${r.msg}</div>`;
+      loadDashboard();
+      toast('تمت المعالجة بنجاح');
+    } else {
+      res.innerHTML = `<div style="background:#fee2e2;padding:11px 14px;border-radius:8px;color:#b91c1c">
+        <i class="fas fa-times-circle" style="margin-left:6px"></i>${r.msg}</div>`;
+    }
+  } catch(e) {
+    res.style.display = 'block';
+    res.innerHTML = `<div style="background:#fee2e2;padding:11px 14px;border-radius:8px;color:#b91c1c">خطأ: ${e.message}</div>`;
+  }
+
+  btn.innerHTML = '<i class="fas fa-play"></i> تشغيل';
+  btn.disabled  = false;
+}
+
+// ════════════════════════════════════════════
+//  ATTENDANCE
+// ════════════════════════════════════════════
+async function loadAttendance() {
+  const y = document.getElementById('att-year').value;
+  const m = document.getElementById('att-month').value;
+  const e = document.getElementById('att-emp').value;
+  const tb = document.getElementById('att-tbody');
+
+  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+    <i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>`;
+
+  try {
+    const url = `/api/attendance?year=${y}&month=${m}${e ? `&emp_id=${e}` : ''}`;
+    const rows = await GET(url);
+
+    document.getElementById('att-count').textContent = `${rows.length} سجل`;
+
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+        <i class="fas fa-calendar-times"></i><p>لا توجد سجلات لهذه الفترة</p></div></td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.name_ar}</b></td>
+        <td>${r.att_date}</td>
+        <td>${r.check_in || '—'}</td>
+        <td>${r.check_out || '—'}</td>
+        <td>${r.late_min  ? `<b style="color:#dc2626">${r.late_min}</b>`  : '—'}</td>
+        <td>${r.early_min ? `<b style="color:#d97706">${r.early_min}</b>` : '—'}</td>
+        <td>${badge(r.status)}</td>
+      </tr>`).join('');
+  } catch(e) {
+    toast('خطأ في تحميل سجلات الحضور', 'err');
+  }
+}
+
+function exportAtt() {
+  const y = document.getElementById('att-year').value;
+  const m = document.getElementById('att-month').value;
+  const e = document.getElementById('att-emp').value;
+  window.location = `/api/attendance/export?year=${y}&month=${m}${e ? `&emp_id=${e}` : ''}`;
+}
+
+// ════════════════════════════════════════════
+//  EMPLOYEES
+// ════════════════════════════════════════════
+async function loadEmployees() {
+  try {
+    allEmps = await GET('/api/employees');
+    renderEmps();
+
+    // Sync attendance filter
+    const sel = document.getElementById('att-emp');
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">الكل</option>` +
+      allEmps.map(e => `<option value="${e.id}" ${e.id == cur ? 'selected':''}>${e.name_ar}</option>`).join('');
+  } catch(e) {
+    toast('خطأ في تحميل الموظفين', 'err');
+  }
+}
+
+function renderEmps() {
+  document.getElementById('emp-count-lbl').textContent = `${allEmps.length} موظف مسجل`;
+  const tb = document.getElementById('emp-tbody');
+
+  if (!allEmps.length) {
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <i class="fas fa-users"></i><p>لا يوجد موظفون — أضف موظفاً للبدء</p></div></td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = allEmps.map((e, i) => `
+    <tr>
+      <td style="color:#94a3b8">${i+1}</td>
+      <td><b>${e.name_ar}</b></td>
+      <td style="color:#64748b;font-size:13px">${e.name_en}</td>
+      <td><span class="badge-s ${e.work_type === 'fixed' ? 'b-fixed':'b-flex'}">
+        ${e.work_type === 'fixed' ? '⏰ ثابت':'🔄 مرن'}
+      </span></td>
+      <td><b>${fmt(e.salary)}</b> <span style="color:#94a3b8;font-size:12px">ر.س</span></td>
+      <td style="font-size:12.5px;color:#64748b">${e.email || '—'}</td>
+      <td>
+        <button class="btn-sm btn-edit" onclick="editEmp(${e.id})" style="margin-left:6px">
+          <i class="fas fa-edit"></i> تعديل
+        </button>
+        <button class="btn-sm btn-del" onclick="deleteEmp(${e.id},'${e.name_ar}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+function openEmpModal(emp = null) {
+  const isEdit = !!emp;
+  document.getElementById('emp-id').value = emp?.id || '';
+  document.getElementById('emp-modal-title').innerHTML =
+    isEdit
+      ? '<i class="fas fa-user-edit" style="color:var(--accent);margin-left:8px"></i>تعديل بيانات الموظف'
+      : '<i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة موظف جديد';
+
+  document.getElementById('emp-namear').value    = emp?.name_ar     || '';
+  document.getElementById('emp-nameen').value    = emp?.name_en     || '';
+  document.getElementById('emp-email').value     = emp?.email       || '';
+  document.getElementById('emp-wtype').value     = emp?.work_type   || 'fixed';
+  document.getElementById('emp-wstart').value    = emp?.work_start  || '08:00';
+  document.getElementById('emp-wend').value      = emp?.work_end    || '17:00';
+  document.getElementById('emp-whours').value    = emp?.weekly_hours|| 40;
+  document.getElementById('emp-salary').value    = emp?.salary      || 0;
+  document.getElementById('emp-housing').value   = emp?.housing     || 0;
+  document.getElementById('emp-transport').value = emp?.transport   || 0;
+  document.getElementById('emp-commission').value= emp?.commission  || 0;
+  document.getElementById('emp-otherded').value  = emp?.other_ded   || 0;
+
+  document.getElementById('emp-err').style.display = 'none';
+  document.getElementById('save-emp-btn').innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+  document.getElementById('save-emp-btn').disabled = false;
+
+  toggleWorkType();
+  _empModal.show();
+}
+
+function toggleWorkType() {
+  const t = document.getElementById('emp-wtype').value;
+  document.getElementById('fixed-block').style.display = t === 'fixed' ? 'grid' : 'none';
+  document.getElementById('flex-block').style.display  = t === 'flex'  ? 'block': 'none';
+}
+
+function editEmp(id) {
+  const emp = allEmps.find(e => e.id === id);
+  if (emp) openEmpModal(emp);
+}
+
+async function saveEmployee() {
+  const id  = document.getElementById('emp-id').value;
+  const err = document.getElementById('emp-err');
+  err.style.display = 'none';
+
+  const data = {
+    name_ar:      document.getElementById('emp-namear').value.trim(),
+    name_en:      document.getElementById('emp-nameen').value.trim(),
+    email:        document.getElementById('emp-email').value.trim(),
+    work_type:    document.getElementById('emp-wtype').value,
+    work_start:   document.getElementById('emp-wstart').value,
+    work_end:     document.getElementById('emp-wend').value,
+    weekly_hours: +document.getElementById('emp-whours').value,
+    salary:       +document.getElementById('emp-salary').value,
+    housing:      +document.getElementById('emp-housing').value,
+    transport:    +document.getElementById('emp-transport').value,
+    commission:   +document.getElementById('emp-commission').value,
+    other_ded:    +document.getElementById('emp-otherded').value,
+  };
+
+  if (!data.name_ar || !data.name_en) {
+    err.textContent = '⚠️ الاسم بالعربي والإنجليزي مطلوبان';
+    err.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('save-emp-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> جاري الحفظ...';
+
+  try {
+    const r = id
+      ? await PUT(`/api/employees/${id}`, data)
+      : await POST('/api/employees', data);
+
+    if (r.ok) {
+      _empModal.hide();
+      toast(r.msg || 'تم الحفظ بنجاح');
+      loadEmployees();
+    } else {
+      err.textContent = `⚠️ ${r.error || 'حدث خطأ غير متوقع'}`;
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+    }
+  } catch(e) {
+    err.textContent = '⚠️ خطأ في الاتصال بالخادم';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+  }
+}
+
+async function deleteEmp(id, name) {
+  if (!confirm(`هل تريد حذف "${name}" وجميع سجلاته؟\nلا يمكن التراجع عن هذه العملية.`)) return;
+  try {
+    const r = await DEL(`/api/employees/${id}`);
+    toast(r.msg || 'تم الحذف');
+    loadEmployees();
+  } catch(e) {
+    toast('خطأ في الحذف', 'err');
+  }
+}
+
+// ════════════════════════════════════════════
+//  PAYROLL
+// ════════════════════════════════════════════
+async function loadPayroll() {
+  const y = document.getElementById('pay-year').value;
+  const m = document.getElementById('pay-month').value;
+  const tb = document.getElementById('pay-tbody');
+
+  tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
+    <i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>`;
+
+  try {
+    const rows = await GET(`/api/payroll?year=${y}&month=${m}`);
+
+    let tgross = 0, tded = 0, tnet = 0;
+    rows.forEach(r => {
+      tgross += r.gross;
+      tded   += r.total_ded + r.other_ded;
+      tnet   += r.net;
+    });
+
+    document.getElementById('pay-gross').textContent = fmt(tgross) + ' ر.س';
+    document.getElementById('pay-ded').textContent   = fmt(tded)   + ' ر.س';
+    document.getElementById('pay-net').textContent   = fmt(tnet)   + ' ر.س';
+
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
+        <i class="fas fa-coins"></i><p>لا توجد بيانات لهذا الشهر</p></div></td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = rows.map((r, i) => {
+      const netColor = r.net < r.salary * 0.8 ? '#dc2626' : '#16a34a';
+      return `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td>
+          <b>${r.name_ar}</b><br>
+          <span class="badge-s ${r.work_type==='fixed'?'b-fixed':'b-flex'}" style="margin-top:3px;font-size:11px">
+            ${r.work_type==='fixed'?'ثابت':'مرن'}
+          </span>
+        </td>
+        <td>${fmt(r.salary)}</td>
+        <td>${fmt(r.housing + r.transport)}</td>
+        <td>${fmt(r.commission)}</td>
+        <td style="color:${r.total_ded>0?'#dc2626':'inherit'};font-weight:${r.total_ded>0?700:400}">
+          ${fmt(r.total_ded)}
+        </td>
+        <td>${fmt(r.other_ded)}</td>
+        <td style="font-weight:800;color:${netColor};font-size:15px">${fmt(r.net)}</td>
+        <td>${r.days}</td>
+        <td>${r.late ? `<span style="color:#dc2626;font-weight:700">${r.late}</span>` : '—'}</td>
+      </tr>`;
+    }).join('');
+
+  } catch(e) {
+    toast('خطأ في تحميل الرواتب', 'err');
+  }
+}
+
+function exportPayroll() {
+  const y = document.getElementById('pay-year').value;
+  const m = document.getElementById('pay-month').value;
+  window.location = `/api/payroll/export?year=${y}&month=${m}`;
+}
+</script>
+</body>
+</html>

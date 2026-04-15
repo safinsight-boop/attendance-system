@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ':*)",
+      "Bash(python -c ':*)",
+      "Bash(cmd.exe:*)",
+      "Bash(ls *.pdf)",
+      "Bash(read f:*)"
+    ]
+  }
+}
