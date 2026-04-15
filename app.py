@@ -3,11 +3,12 @@
 نظام إدارة الحضور والغياب — TTLock Integration
 Flask + SQLite + APScheduler + Gmail SMTP
 """
-import os, sqlite3, hashlib, requests, smtplib, logging, io
+import os, sqlite3, hashlib, requests, smtplib, logging, io, secrets
 from datetime import datetime, timedelta, date
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, session
+from functools import wraps
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 import openpyxl
@@ -15,6 +16,7 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-change-in-prod')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,11 @@ CID        = os.getenv('TTLOCK_CLIENT_ID', '')
 CSECRET    = os.getenv('TTLOCK_CLIENT_SECRET', '')
 TTUSR      = os.getenv('TTLOCK_USERNAME', '')
 TTPASS     = os.getenv('TTLOCK_PASSWORD', '')
-EMAIL_FROM = os.getenv('EMAIL_SENDER', '')
-EMAIL_PASS = os.getenv('EMAIL_PASSWORD', '')
+EMAIL_FROM       = os.getenv('EMAIL_SENDER', '')
+EMAIL_PASS       = os.getenv('EMAIL_PASSWORD', '')
+SITE_URL         = os.getenv('SITE_URL', 'https://attendance-system-pd27.onrender.com')
+GRACE_MIN        = 5    # دقائق السماح قبل احتساب التأخر
+AUTO_REJECT_DAYS = 3    # أيام الرفض التلقائي للعذر
 
 # جدول المخالفات: {bracket: [(ptype, pvalue), ...]}
 # ptype: 'warning' | 'percent' | 'day' | 'warning_day'
@@ -40,7 +45,8 @@ PENALTIES = {
     'late_60plus': [('warning_day', 1),('day', 2),      ('day', 3),      ('day', 3)],
     'early_u15':   [('warning', 0),   ('percent', 10), ('percent', 25), ('day', 1)],
     'early_o15':   [('percent', 10),  ('percent', 25), ('percent', 50), ('day', 1)],
-    'flex_hours':  [('hours', 0)],  # خاص بالموظفين المرنين
+    'flex_hours':  [('hours', 0)],   # خاص بالموظفين المرنين
+    'absent_1':    [('percent', 50), ('day', 1), ('day', 2), ('day', 3)],
 }
 
 MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
@@ -114,11 +120,122 @@ def init_db():
             cnt         INTEGER DEFAULT 0,
             PRIMARY KEY (employee_id, yr, mo, bracket)
         );
+
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            username      TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role          TEXT NOT NULL DEFAULT 'employee',
+            employee_id   INTEGER,
+            reset_token   TEXT,
+            reset_exp     TEXT,
+            created_at    TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS excuse_requests (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id  INTEGER NOT NULL,
+            att_date     TEXT NOT NULL,
+            vtype        TEXT NOT NULL,
+            reason       TEXT NOT NULL,
+            submitted_at TEXT DEFAULT (datetime('now')),
+            status       TEXT DEFAULT 'pending',
+            decided_by   INTEGER,
+            decided_at   TEXT,
+            manager_note TEXT,
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS leaves (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id  INTEGER NOT NULL,
+            leave_type   TEXT NOT NULL,
+            start_date   TEXT NOT NULL,
+            end_date     TEXT NOT NULL,
+            days         INTEGER NOT NULL,
+            status       TEXT DEFAULT 'pending',
+            approved_by  INTEGER,
+            sick_doc     TEXT,
+            notes        TEXT,
+            created_at   TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS public_holidays (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            h_date     TEXT UNIQUE NOT NULL,
+            name       TEXT NOT NULL,
+            created_by INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS overtime_requests (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id    INTEGER NOT NULL,
+            att_date       TEXT NOT NULL,
+            overtime_hours REAL NOT NULL,
+            check_out_time TEXT NOT NULL,
+            work_end       TEXT NOT NULL,
+            status         TEXT DEFAULT 'pending',
+            decided_by     INTEGER,
+            decided_at     TEXT,
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        );
         """)
         conn.commit()
+        _seed_default_user(conn)
         logger.info("Database initialized OK")
     finally:
         conn.close()
+
+def _seed_default_user(conn):
+    count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if count == 0:
+        pw = hashlib.sha256('admin123'.encode()).hexdigest()
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?,?,?)",
+            ('admin', pw, 'hr'))
+        conn.commit()
+        logger.info("Default HR user created — username: admin / password: admin123")
+
+# ═══════════════════════════════════════════════════════════
+#  AUTH HELPERS
+# ═══════════════════════════════════════════════════════════
+def _hash(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'غير مصرح', 'login_required': True}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+def hr_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'غير مصرح', 'login_required': True}), 401
+        if session.get('role') not in ('hr', 'manager'):
+            return jsonify({'error': 'صلاحيات غير كافية'}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+def _is_on_leave(conn, emp_id, target_date):
+    """هل الموظف في إجازة معتمدة في هذا اليوم؟"""
+    ds = str(target_date)
+    # إجازة رسمية
+    if conn.execute("SELECT 1 FROM public_holidays WHERE h_date=?", (ds,)).fetchone():
+        return 'official_holiday'
+    # إجازة شخصية معتمدة
+    row = conn.execute("""
+        SELECT leave_type FROM leaves
+        WHERE employee_id=? AND status='approved'
+        AND start_date<=? AND end_date>=?
+    """, (emp_id, ds, ds)).fetchone()
+    return row['leave_type'] if row else None
 
 # ═══════════════════════════════════════════════════════════
 #  TTLOCK API
@@ -335,7 +452,13 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
             <tr><td style="{_TD};background:#fff7ed">مدة التأخر</td><td style="{_TD};color:#dc2626"><b>{late_min} دقيقة</b></td></tr>
             <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
             {ded_row}
-          </table></div>"""
+          </table>
+          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
+            رفع العذر
+          </a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+        </div>"""
 
     elif status == 'early_leave':
         subj = f"⚠️ إشعار مغادرة مبكرة — {ds}"
@@ -349,19 +472,64 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
             <tr><td style="{_TD};background:#fff7ed">المغادرة المبكرة</td><td style="{_TD};color:#dc2626"><b>{early_min} دقيقة</b></td></tr>
             <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
             {ded_row}
-          </table></div>"""
+          </table>
+          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
+            رفع العذر
+          </a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+        </div>"""
 
     elif status == 'absent':
         subj = f"🔴 إشعار غياب — {ds}"
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ر.س</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
           <h2 style="color:#dc2626;margin-bottom:6px">🔴 إشعار غياب</h2>
           <p>عزيزي/عزيزتي <b>{name}</b>،</p>
           <p>لم يتم تسجيل حضورك بتاريخ <b>{ds}</b>.</p>
-          <p>يرجى مراجعة المسؤول المختص إذا كان هناك عذر مقبول.</p></div>"""
+          <table style="{_TABLE}">
+            <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
+            {ded_row}
+          </table>
+          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
+            رفع العذر
+          </a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+        </div>"""
+    elif status.startswith('leave_'):
+        return  # لا إشعار للإجازات المعتمدة
     else:
         return
 
     send_email(emp['email'], subj, body)
+
+def _notify_overtime(emp, att_date, ot_hours, checkout_time, conn):
+    """إشعار مدراء HR و القسم بوجود إضافي غير مؤكد"""
+    managers = conn.execute(
+        "SELECT u.*, e.email AS emp_email FROM users u "
+        "LEFT JOIN employees e ON e.id=u.employee_id "
+        "WHERE u.role IN ('hr','manager')"
+    ).fetchall()
+    name = emp.get('name_ar') or emp.get('name_en', '')
+    for mgr in managers:
+        to = mgr['emp_email'] or EMAIL_FROM
+        if not to:
+            continue
+        subj = f"🕐 إضافي غير مؤكد — {name} — {att_date}"
+        body = f"""<div style="{_STYLE}">
+          <h2 style="color:#d97706;margin-bottom:6px">🕐 إشعار إضافي</h2>
+          <p>الموظف <b>{name}</b> بقي <b>{ot_hours:.1f} ساعة</b> بعد انتهاء دوامه بتاريخ <b>{att_date}</b>.</p>
+          <p>وقت الانصراف: <b>{checkout_time}</b></p>
+          <p>هل يوجد <b>تكليف رسمي</b> لهذا الإضافي؟</p>
+          <p>
+            <a href="{SITE_URL}" style="background:#3b82f6;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700">
+              الرد من الموقع
+            </a>
+          </p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:14px">إذا لم يتم التأكيد خلال 24 ساعة لن يُحتسب الإضافي.</p>
+        </div>"""
+        send_email(to, subj, body)
 
 def notify_flex_weekly(emp, friday, actual_h, required_h, ded):
     if not emp.get('email'): return
@@ -412,7 +580,15 @@ def process_day(target_date=None):
             ded = 0.0
 
             if not times:
-                status = 'absent'
+                # فحص الإجازة قبل تسجيل غياب
+                leave_type = _is_on_leave(conn, emp['id'], target_date)
+                if leave_type:
+                    status = f'leave_{leave_type}'
+                else:
+                    status = 'absent'
+                    # مخالفة غياب يوم واحد
+                    ptype, pvalue, ded = apply_violation(
+                        conn, emp, target_date, 'absent', 'absent_1')
 
             elif emp['work_type'] == 'fixed':
                 try:
@@ -424,8 +600,9 @@ def process_day(target_date=None):
                     wstart = wend = None
 
                 if check_in and wstart:
-                    diff = (check_in - wstart).total_seconds() / 60
-                    late_min = max(0, int(diff))
+                    raw_late = (check_in - wstart).total_seconds() / 60
+                    # فترة السماح 5 دقائق
+                    late_min = max(0, int(raw_late) - GRACE_MIN)
 
                 if check_out and wend:
                     diff = (wend - check_out).total_seconds() / 60
@@ -435,13 +612,13 @@ def process_day(target_date=None):
                     total_hours = round(
                         (check_out - check_in).total_seconds() / 3600, 2)
 
-                # الحالة: متأخر له الأولوية على المغادرة المبكرة
+                # ── الأولوية: تأخر أولاً ثم مغادرة مبكرة ──
                 if late_min > 0:
                     status = 'late'
                     br = late_bracket(late_min)
                     ptype, pvalue, ded = apply_violation(
                         conn, emp, target_date, 'late', br)
-                    if early_min > 0:  # مخالفة مضاعفة
+                    if early_min > 0:
                         apply_violation(conn, emp, target_date,
                                         'early_leave', early_bracket(early_min))
                 elif early_min > 0:
@@ -451,6 +628,20 @@ def process_day(target_date=None):
                         conn, emp, target_date, 'early_leave', br)
                 else:
                     status = 'on_time'
+
+                # ── كشف الإضافي (بعد وقت الانصراف بأكثر من 30 دقيقة) ──
+                if check_out and wend:
+                    ot_min = (check_out - wend).total_seconds() / 60
+                    if ot_min > 30:
+                        ot_hours = round(ot_min / 60, 2)
+                        conn.execute("""
+                            INSERT OR IGNORE INTO overtime_requests
+                                (employee_id, att_date, overtime_hours, check_out_time, work_end)
+                            VALUES (?,?,?,?,?)
+                        """, (emp['id'], str(target_date), ot_hours,
+                              check_out.strftime('%H:%M'), emp['work_end']))
+                        _notify_overtime(emp, target_date, ot_hours,
+                                         check_out.strftime('%H:%M'), conn)
 
             else:  # flex
                 if check_in and check_out:
@@ -1087,6 +1278,482 @@ def api_violations():
     return jsonify([dict(r) for r in rows])
 
 # ═══════════════════════════════════════════════════════════
+#  AUTH ROUTES
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    d  = request.get_json(silent=True) or {}
+    un = (d.get('username') or '').strip()
+    pw = d.get('password', '')
+    if not un or not pw:
+        return jsonify({'error': 'اسم المستخدم وكلمة المرور مطلوبان'}), 400
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT * FROM users WHERE username=? AND password_hash=?",
+            (un, _hash(pw))).fetchone()
+        if not row:
+            return jsonify({'error': 'بيانات الدخول غير صحيحة'}), 401
+        session['user_id']   = row['id']
+        session['username']  = row['username']
+        session['role']      = row['role']
+        session['employee_id'] = row['employee_id']
+        return jsonify({'ok': True, 'role': row['role'], 'username': row['username'],
+                        'employee_id': row['employee_id']})
+    finally:
+        conn.close()
+
+@app.route('/api/auth/logout', methods=['POST'])
+def api_logout():
+    session.clear()
+    return jsonify({'ok': True})
+
+@app.route('/api/auth/me')
+def api_me():
+    if 'user_id' not in session:
+        return jsonify({'logged_in': False})
+    return jsonify({'logged_in': True, 'role': session.get('role'),
+                    'username': session.get('username'),
+                    'employee_id': session.get('employee_id')})
+
+@app.route('/api/users', methods=['GET'])
+@hr_required
+def api_users_get():
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT u.id, u.username, u.role, u.created_at,
+                   e.name_ar, e.name_en
+            FROM users u LEFT JOIN employees e ON e.id=u.employee_id
+            ORDER BY u.role, u.username
+        """).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/users', methods=['POST'])
+@hr_required
+def api_users_post():
+    d = request.get_json(silent=True) or {}
+    un = (d.get('username') or '').strip()
+    pw = d.get('password', '').strip()
+    role = d.get('role', 'employee')
+    emp_id = d.get('employee_id') or None
+    if not un or not pw:
+        return jsonify({'error': 'اسم المستخدم وكلمة المرور مطلوبان'}), 400
+    if role not in ('hr', 'manager', 'employee'):
+        return jsonify({'error': 'دور غير صحيح'}), 400
+    conn = get_db()
+    try:
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role, employee_id) VALUES (?,?,?,?)",
+            (un, _hash(pw), role, emp_id))
+        conn.commit()
+        return jsonify({'ok': True, 'msg': 'تم إنشاء المستخدم'})
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'اسم المستخدم مستخدم بالفعل'}), 400
+    finally:
+        conn.close()
+
+@app.route('/api/users/<int:uid>', methods=['DELETE'])
+@hr_required
+def api_user_delete(uid):
+    if uid == session.get('user_id'):
+        return jsonify({'error': 'لا يمكنك حذف حسابك الحالي'}), 400
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM users WHERE id=?", (uid,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/users/<int:uid>/password', methods=['PUT'])
+@hr_required
+def api_user_password(uid):
+    d = request.get_json(silent=True) or {}
+    pw = d.get('password', '').strip()
+    if not pw or len(pw) < 4:
+        return jsonify({'error': 'كلمة المرور يجب أن تكون 4 أحرف على الأقل'}), 400
+    conn = get_db()
+    try:
+        conn.execute("UPDATE users SET password_hash=? WHERE id=?", (_hash(pw), uid))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+# ═══════════════════════════════════════════════════════════
+#  EXCUSE ROUTES
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/excuses', methods=['GET'])
+@login_required
+def api_excuses_get():
+    conn = get_db()
+    try:
+        role = session.get('role')
+        emp_id = session.get('employee_id')
+        if role in ('hr', 'manager'):
+            rows = conn.execute("""
+                SELECT ex.*, e.name_ar, e.name_en
+                FROM excuse_requests ex
+                JOIN employees e ON e.id=ex.employee_id
+                ORDER BY ex.submitted_at DESC
+            """).fetchall()
+        else:
+            if not emp_id:
+                return jsonify([])
+            rows = conn.execute("""
+                SELECT ex.*, e.name_ar, e.name_en
+                FROM excuse_requests ex
+                JOIN employees e ON e.id=ex.employee_id
+                WHERE ex.employee_id=?
+                ORDER BY ex.submitted_at DESC
+            """, (emp_id,)).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/excuses', methods=['POST'])
+@login_required
+def api_excuses_post():
+    d       = request.get_json(silent=True) or {}
+    emp_id  = session.get('employee_id')
+    role    = session.get('role')
+    # HR يقدر يرسل لأي موظف
+    if role in ('hr', 'manager'):
+        emp_id = d.get('employee_id', emp_id)
+    if not emp_id:
+        return jsonify({'error': 'لم يتم ربط المستخدم بموظف'}), 400
+    att_date = d.get('att_date', '')
+    vtype    = d.get('vtype', 'late')
+    reason   = (d.get('reason') or '').strip()
+    if not att_date or not reason:
+        return jsonify({'error': 'التاريخ والسبب مطلوبان'}), 400
+    conn = get_db()
+    try:
+        # منع التكرار لنفس اليوم ونفس النوع
+        exists = conn.execute(
+            "SELECT 1 FROM excuse_requests WHERE employee_id=? AND att_date=? AND vtype=? AND status='pending'",
+            (emp_id, att_date, vtype)).fetchone()
+        if exists:
+            return jsonify({'error': 'يوجد طلب معلق بالفعل لهذا اليوم'}), 400
+        conn.execute(
+            "INSERT INTO excuse_requests (employee_id, att_date, vtype, reason) VALUES (?,?,?,?)",
+            (emp_id, att_date, vtype, reason))
+        conn.commit()
+        # إشعار المدراء
+        _notify_excuse_submitted(emp_id, att_date, vtype, reason, conn)
+        return jsonify({'ok': True, 'msg': 'تم إرسال العذر بنجاح'})
+    finally:
+        conn.close()
+
+@app.route('/api/excuses/<int:eid>', methods=['PUT'])
+@hr_required
+def api_excuse_decide(eid):
+    d      = request.get_json(silent=True) or {}
+    status = d.get('status')
+    note   = d.get('note', '')
+    if status not in ('approved', 'rejected'):
+        return jsonify({'error': 'الحالة يجب أن تكون approved أو rejected'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            UPDATE excuse_requests
+            SET status=?, decided_by=?, decided_at=datetime('now'), manager_note=?
+            WHERE id=?
+        """, (status, session['user_id'], note, eid))
+        # إذا وافق المدير: احذف المخالفة المرتبطة
+        if status == 'approved':
+            ex = conn.execute(
+                "SELECT * FROM excuse_requests WHERE id=?", (eid,)).fetchone()
+            if ex:
+                conn.execute("""
+                    DELETE FROM violations
+                    WHERE employee_id=? AND vio_date=? AND vtype=?
+                """, (ex['employee_id'], ex['att_date'], ex['vtype']))
+                # إذا كان غياب وتمت الموافقة → حدّث الحضور
+                if ex['vtype'] == 'absent':
+                    conn.execute("""
+                        UPDATE attendance SET status='excused'
+                        WHERE employee_id=? AND att_date=?
+                    """, (ex['employee_id'], ex['att_date']))
+        conn.commit()
+        _notify_excuse_decision(eid, status, note, conn)
+        return jsonify({'ok': True})
+    finally:
+        conn.close()
+
+def _notify_excuse_submitted(emp_id, att_date, vtype, reason, conn):
+    emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+    if not emp: return
+    name = emp['name_ar']
+    vtype_ar = {'late': 'تأخر', 'early_leave': 'مغادرة مبكرة', 'absent': 'غياب'}.get(vtype, vtype)
+    managers = conn.execute(
+        "SELECT u.*, e.email AS memail FROM users u LEFT JOIN employees e ON e.id=u.employee_id "
+        "WHERE u.role IN ('hr','manager')").fetchall()
+    for mgr in managers:
+        to = mgr['memail'] or EMAIL_FROM
+        if not to: continue
+        subj = f"📋 طلب عذر جديد — {name} — {att_date}"
+        body = f"""<div style="{_STYLE}">
+          <h2 style="color:#3b82f6;margin-bottom:6px">📋 طلب عذر جديد</h2>
+          <p>قدّم الموظف <b>{name}</b> عذراً عن <b>{vtype_ar}</b> بتاريخ <b>{att_date}</b>.</p>
+          <p><b>السبب:</b> {reason}</p>
+          <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:10px">
+            مراجعة الطلب
+          </a>
+        </div>"""
+        send_email(to, subj, body)
+
+def _notify_excuse_decision(excuse_id, status, note, conn):
+    ex  = conn.execute("SELECT * FROM excuse_requests WHERE id=?", (excuse_id,)).fetchone()
+    if not ex: return
+    emp = conn.execute("SELECT * FROM employees WHERE id=?", (ex['employee_id'],)).fetchone()
+    if not emp or not emp['email']: return
+    name = emp['name_ar']
+    status_ar = 'مقبول ✅' if status == 'approved' else 'مرفوض ❌'
+    color = '#16a34a' if status == 'approved' else '#dc2626'
+    vtype_ar = {'late': 'تأخر', 'early_leave': 'مغادرة مبكرة', 'absent': 'غياب'}.get(ex['vtype'], ex['vtype'])
+    note_row = f"<p><b>ملاحظة المدير:</b> {note}</p>" if note else ''
+    subj = f"{'✅' if status=='approved' else '❌'} قرار العذر — {ex['att_date']}"
+    body = f"""<div style="{_STYLE}">
+      <h2 style="color:{color};margin-bottom:6px">{status_ar} — عذر {vtype_ar}</h2>
+      <p>عزيزي/عزيزتي <b>{name}</b>،</p>
+      <p>تم <b style="color:{color}">{status_ar}</b> عذرك عن <b>{vtype_ar}</b> بتاريخ <b>{ex['att_date']}</b>.</p>
+      {note_row}
+    </div>"""
+    send_email(emp['email'], subj, body)
+
+# ═══════════════════════════════════════════════════════════
+#  LEAVES ROUTES
+# ═══════════════════════════════════════════════════════════
+LEAVE_NAMES = {
+    'annual':   'إجازة سنوية',
+    'sick':     'إجازة مرضية',
+    'emergency':'إجازة اضطرارية',
+    'official': 'إجازة رسمية',
+}
+
+@app.route('/api/leaves', methods=['GET'])
+@login_required
+def api_leaves_get():
+    conn = get_db()
+    try:
+        role   = session.get('role')
+        emp_id = session.get('employee_id')
+        if role in ('hr', 'manager'):
+            rows = conn.execute("""
+                SELECT l.*, e.name_ar FROM leaves l
+                JOIN employees e ON e.id=l.employee_id
+                ORDER BY l.created_at DESC
+            """).fetchall()
+        else:
+            if not emp_id: return jsonify([])
+            rows = conn.execute("""
+                SELECT l.*, e.name_ar FROM leaves l
+                JOIN employees e ON e.id=l.employee_id
+                WHERE l.employee_id=? ORDER BY l.created_at DESC
+            """, (emp_id,)).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/leaves', methods=['POST'])
+@login_required
+def api_leaves_post():
+    d        = request.get_json(silent=True) or {}
+    role     = session.get('role')
+    emp_id   = session.get('employee_id')
+    if role in ('hr', 'manager'):
+        emp_id = d.get('employee_id', emp_id)
+    if not emp_id:
+        return jsonify({'error': 'لم يتم ربط المستخدم بموظف'}), 400
+    leave_type = d.get('leave_type', '')
+    start_date = d.get('start_date', '')
+    end_date   = d.get('end_date', '')
+    notes      = d.get('notes', '')
+    if not leave_type or not start_date or not end_date:
+        return jsonify({'error': 'نوع الإجازة والتاريخ مطلوبان'}), 400
+    try:
+        s = date.fromisoformat(start_date)
+        e_d = date.fromisoformat(end_date)
+        days = (e_d - s).days + 1
+        if days <= 0:
+            return jsonify({'error': 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية'}), 400
+    except ValueError:
+        return jsonify({'error': 'تنسيق التاريخ غير صحيح'}), 400
+
+    # إجازة مرضية: تحتاج وثيقة — نقبل الطلب لكن نضع ملاحظة
+    sick_doc = d.get('sick_doc', '')
+    # HR يوافق مباشرة، الموظف ينتظر موافقة
+    init_status = 'approved' if role in ('hr', 'manager') else 'pending'
+    approved_by = session['user_id'] if init_status == 'approved' else None
+
+    conn = get_db()
+    try:
+        conn.execute("""
+            INSERT INTO leaves
+                (employee_id, leave_type, start_date, end_date, days,
+                 status, approved_by, sick_doc, notes)
+            VALUES (?,?,?,?,?,?,?,?,?)
+        """, (emp_id, leave_type, start_date, end_date, days,
+              init_status, approved_by, sick_doc, notes))
+        conn.commit()
+        return jsonify({'ok': True, 'msg': 'تم تسجيل الإجازة', 'days': days})
+    finally:
+        conn.close()
+
+@app.route('/api/leaves/<int:lid>', methods=['PUT'])
+@hr_required
+def api_leave_decide(lid):
+    d = request.get_json(silent=True) or {}
+    status = d.get('status')
+    if status not in ('approved', 'rejected'):
+        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            UPDATE leaves SET status=?, approved_by=?, notes=COALESCE(?,notes)
+            WHERE id=?
+        """, (status, session['user_id'], d.get('notes'), lid))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/leaves/<int:lid>', methods=['DELETE'])
+@hr_required
+def api_leave_delete(lid):
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM leaves WHERE id=?", (lid,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+# ═══════════════════════════════════════════════════════════
+#  PUBLIC HOLIDAYS ROUTES
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/holidays', methods=['GET'])
+@login_required
+def api_holidays_get():
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM public_holidays ORDER BY h_date").fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/holidays', methods=['POST'])
+@hr_required
+def api_holidays_post():
+    d    = request.get_json(silent=True) or {}
+    hd   = d.get('h_date', '').strip()
+    name = d.get('name', '').strip()
+    if not hd or not name:
+        return jsonify({'error': 'التاريخ والاسم مطلوبان'}), 400
+    conn = get_db()
+    try:
+        conn.execute(
+            "INSERT INTO public_holidays (h_date, name, created_by) VALUES (?,?,?)",
+            (hd, name, session['user_id']))
+        conn.commit()
+        return jsonify({'ok': True})
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'هذا التاريخ مضاف بالفعل'}), 400
+    finally:
+        conn.close()
+
+@app.route('/api/holidays/<int:hid>', methods=['DELETE'])
+@hr_required
+def api_holiday_delete(hid):
+    conn = get_db()
+    try:
+        conn.execute("DELETE FROM public_holidays WHERE id=?", (hid,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+# ═══════════════════════════════════════════════════════════
+#  OVERTIME ROUTES
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/overtime', methods=['GET'])
+@login_required
+def api_overtime_get():
+    conn = get_db()
+    try:
+        role   = session.get('role')
+        emp_id = session.get('employee_id')
+        if role in ('hr', 'manager'):
+            rows = conn.execute("""
+                SELECT ot.*, e.name_ar FROM overtime_requests ot
+                JOIN employees e ON e.id=ot.employee_id
+                ORDER BY ot.att_date DESC
+            """).fetchall()
+        else:
+            if not emp_id: return jsonify([])
+            rows = conn.execute("""
+                SELECT ot.*, e.name_ar FROM overtime_requests ot
+                JOIN employees e ON e.id=ot.employee_id
+                WHERE ot.employee_id=? ORDER BY ot.att_date DESC
+            """, (emp_id,)).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/overtime/<int:oid>', methods=['PUT'])
+@hr_required
+def api_overtime_decide(oid):
+    d = request.get_json(silent=True) or {}
+    status = d.get('status')
+    if status not in ('approved', 'rejected'):
+        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            UPDATE overtime_requests
+            SET status=?, decided_by=?, decided_at=datetime('now')
+            WHERE id=?
+        """, (status, session['user_id'], oid))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'ok': True})
+
+# ═══════════════════════════════════════════════════════════
+#  AUTO-REJECT EXCUSES JOB
+# ═══════════════════════════════════════════════════════════
+def auto_reject_excuses():
+    """رفض تلقائي للعذر بعد AUTO_REJECT_DAYS أيام"""
+    conn = get_db()
+    try:
+        cutoff = str(datetime.now() - timedelta(days=AUTO_REJECT_DAYS))
+        rows = conn.execute(
+            "SELECT * FROM excuse_requests WHERE status='pending' AND submitted_at<?",
+            (cutoff,)).fetchall()
+        for ex in rows:
+            conn.execute("""
+                UPDATE excuse_requests
+                SET status='rejected', decided_at=datetime('now'),
+                    manager_note='رفض تلقائي — لم يتم الرد خلال {} أيام'
+                WHERE id=?
+            """.format(AUTO_REJECT_DAYS), (ex['id'],))
+            _notify_excuse_decision(ex['id'], 'rejected',
+                                    f'رفض تلقائي — لم يتم الرد خلال {AUTO_REJECT_DAYS} أيام',
+                                    conn)
+        conn.commit()
+        if rows:
+            logger.info(f"Auto-rejected {len(rows)} excuse requests")
+    except Exception as e:
+        logger.error(f"auto_reject_excuses error: {e}")
+    finally:
+        conn.close()
+
+# ═══════════════════════════════════════════════════════════
 #  SCHEDULER
 # ═══════════════════════════════════════════════════════════
 def scheduled_job():
@@ -1100,7 +1767,8 @@ if __name__ == '__main__':
     init_db()
     scheduler = BackgroundScheduler(timezone='Asia/Riyadh')
     scheduler.add_job(scheduled_job, CronTrigger(hour=20, minute=0))
+    scheduler.add_job(auto_reject_excuses, CronTrigger(hour=8, minute=0))
     scheduler.start()
-    logger.info("Scheduler started — runs daily at 20:00 AST")
+    logger.info("Scheduler started — attendance 20:00, auto-reject 08:00 AST")
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

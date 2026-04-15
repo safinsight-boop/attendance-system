@@ -259,9 +259,64 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
   .mini-stats { grid-template-columns: 1fr 1fr; }
   .form2, .form3 { grid-template-columns: 1fr; }
 }
+
+/* ── Login ── */
+#login-overlay {
+  position: fixed; inset: 0; background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);
+  z-index: 9000; display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  background: #fff; border-radius: 18px; padding: 40px 36px;
+  width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo .ico { width:60px;height:60px;background:var(--accent);border-radius:16px;
+  display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:28px; }
+.login-logo h2 { font-size:20px;font-weight:800;margin-top:12px;color:var(--dark); }
+.login-logo p  { font-size:13px;color:#64748b;margin-top:2px; }
+.login-err { background:#fee2e2;color:#b91c1c;padding:10px 14px;
+  border-radius:8px;font-size:13px;margin-bottom:14px;display:none; }
+
+/* ── Status badges for excuse/leave ── */
+.b-pending  { background:#fef9c3; color:#854d0e; }
+.b-approved { background:#dcfce7; color:#15803d; }
+.b-rejected { background:#fee2e2; color:#b91c1c; }
+.b-leave    { background:#e0e7ff; color:#3730a3; }
+.btn-approve { background:#dcfce7; color:#15803d; }
+.btn-approve:hover { background:#bbf7d0; }
+.btn-reject  { background:#fee2e2; color:#b91c1c; }
+.btn-reject:hover  { background:#fecaca; }
 </style>
 </head>
 <body>
+
+<!-- ════════════════════════════════════════════
+     LOGIN OVERLAY
+════════════════════════════════════════════ -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="ico"><i class="fas fa-fingerprint"></i></div>
+      <h2>نظام الحضور والغياب</h2>
+      <p>سجّل دخولك للمتابعة</p>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <div style="margin-bottom:14px">
+      <label class="fl">اسم المستخدم</label>
+      <input type="text" id="login-user" class="fc" placeholder="admin"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div style="margin-bottom:22px">
+      <label class="fl">كلمة المرور</label>
+      <input type="password" id="login-pass" class="fc" placeholder="••••••"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-main" style="width:100%;justify-content:center;padding:12px"
+            id="login-btn" onclick="doLogin()">
+      <i class="fas fa-sign-in-alt"></i> دخول
+    </button>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════
      SIDEBAR
@@ -283,17 +338,55 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
     <button class="nav-btn" id="nb-attendance" onclick="showPage('attendance')">
       <span class="ni"><i class="fas fa-calendar-check"></i></span> سجل الحضور
     </button>
+  </div>
+
+  <div class="nav-group hr-only" style="display:none">
+    <div class="nav-label">الإدارة</div>
     <button class="nav-btn" id="nb-employees" onclick="showPage('employees')">
       <span class="ni"><i class="fas fa-users"></i></span> الموظفون
     </button>
     <button class="nav-btn" id="nb-payroll" onclick="showPage('payroll')">
       <span class="ni"><i class="fas fa-money-bill-wave"></i></span> مسيرة الرواتب
     </button>
+    <button class="nav-btn" id="nb-excuses" onclick="showPage('excuses')">
+      <span class="ni"><i class="fas fa-file-alt"></i></span> الأعذار
+      <span id="excuse-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
+    </button>
+    <button class="nav-btn" id="nb-overtime" onclick="showPage('overtime')">
+      <span class="ni"><i class="fas fa-clock"></i></span> الإضافي
+      <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
+    </button>
+    <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
+      <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
+    </button>
+    <button class="nav-btn" id="nb-holidays" onclick="showPage('holidays')">
+      <span class="ni"><i class="fas fa-star"></i></span> الإجازات الرسمية
+    </button>
+    <button class="nav-btn" id="nb-users" onclick="showPage('users')">
+      <span class="ni"><i class="fas fa-user-shield"></i></span> المستخدمون
+    </button>
+  </div>
+
+  <div class="nav-group emp-only" style="display:none">
+    <div class="nav-label">حسابي</div>
+    <button class="nav-btn" id="nb-excuses-emp" onclick="showPage('excuses')">
+      <span class="ni"><i class="fas fa-file-alt"></i></span> أعذاري
+    </button>
+    <button class="nav-btn" id="nb-leaves-emp" onclick="showPage('leaves')">
+      <span class="ni"><i class="fas fa-umbrella-beach"></i></span> إجازاتي
+    </button>
   </div>
 
   <div class="sidebar-footer">
-    <i class="fas fa-clock" style="margin-left:4px"></i>
-    آخر تحديث: <span id="last-update">—</span>
+    <div style="margin-bottom:8px;color:#cbd5e1;font-weight:600" id="sidebar-username"></div>
+    <button onclick="doLogout()" style="background:rgba(239,68,68,0.15);color:#fca5a5;border:none;
+      border-radius:7px;padding:6px 14px;font-family:Tajawal;font-size:12px;cursor:pointer;width:100%">
+      <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+    </button>
+    <div style="margin-top:8px;color:#475569;font-size:11px">
+      <i class="fas fa-clock" style="margin-left:4px"></i>
+      آخر تحديث: <span id="last-update">—</span>
+    </div>
   </div>
 </nav>
 
@@ -529,6 +622,122 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
 
     </div><!-- /payroll -->
 
+    <!-- ══════════════════════════════════════
+         PAGE: EXCUSES
+    ══════════════════════════════════════ -->
+    <div id="page-excuses" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:14px;color:#64748b;font-weight:600">طلبات الأعذار</span>
+        <button class="btn-main" onclick="openExcuseModal()">
+          <i class="fas fa-plus"></i> رفع عذر
+        </button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr>
+              <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
+              <th>السبب</th><th>الحالة</th><th>ملاحظة المدير</th><th class="hr-only" style="display:none">إجراء</th>
+            </tr></thead>
+            <tbody id="excuses-tbody">
+              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: OVERTIME
+    ══════════════════════════════════════ -->
+    <div id="page-overtime" class="page">
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-clock" style="color:var(--accent);margin-left:8px"></i>سجل الإضافي</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr>
+              <th>#</th><th>الموظف</th><th>التاريخ</th><th>ساعات الإضافي</th>
+              <th>وقت الانصراف</th><th>وقت نهاية الدوام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+            </tr></thead>
+            <tbody id="overtime-tbody">
+              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: LEAVES
+    ══════════════════════════════════════ -->
+    <div id="page-leaves" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:14px;color:#64748b;font-weight:600">سجل الإجازات</span>
+        <button class="btn-main" onclick="openLeaveModal()">
+          <i class="fas fa-plus"></i> طلب إجازة
+        </button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr>
+              <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
+              <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+            </tr></thead>
+            <tbody id="leaves-tbody">
+              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: HOLIDAYS
+    ══════════════════════════════════════ -->
+    <div id="page-holidays" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:14px;color:#64748b;font-weight:600">الإجازات الرسمية</span>
+        <button class="btn-main" onclick="openHolidayModal()">
+          <i class="fas fa-plus"></i> إضافة إجازة رسمية
+        </button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>الاسم</th><th>إجراء</th></tr></thead>
+            <tbody id="holidays-tbody">
+              <tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: USERS
+    ══════════════════════════════════════ -->
+    <div id="page-users" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:14px;color:#64748b;font-weight:600">إدارة المستخدمين</span>
+        <button class="btn-main" onclick="openUserModal()">
+          <i class="fas fa-plus"></i> إضافة مستخدم
+        </button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>اسم المستخدم</th><th>الدور</th><th>الموظف المرتبط</th><th>إجراء</th></tr></thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="5"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- .page-body -->
 </div><!-- .main -->
 
@@ -658,6 +867,168 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
   </div>
 </div>
 
+<!-- MODAL: EXCUSE -->
+<div class="modal fade" id="excuseModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-file-alt" style="color:var(--accent);margin-left:8px"></i>رفع عذر</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="excuse-hr-row" style="display:none;margin-bottom:14px">
+          <label class="fl">الموظف</label>
+          <select id="excuse-emp" class="fc"></select>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">التاريخ</label>
+            <input type="date" id="excuse-date" class="fc">
+          </div>
+          <div>
+            <label class="fl">نوع المخالفة</label>
+            <select id="excuse-vtype" class="fc">
+              <option value="late">تأخر</option>
+              <option value="early_leave">مغادرة مبكرة</option>
+              <option value="absent">غياب</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="fl">السبب *</label>
+          <textarea id="excuse-reason" class="fc" rows="3" placeholder="اكتب سبب التأخر أو الغياب..."></textarea>
+        </div>
+        <div id="excuse-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="submitExcuse()"><i class="fas fa-paper-plane"></i> إرسال العذر</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LEAVE -->
+<div class="modal fade" id="leaveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--accent);margin-left:8px"></i>طلب إجازة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="leave-hr-row" style="display:none;margin-bottom:14px">
+          <label class="fl">الموظف</label>
+          <select id="leave-emp" class="fc"></select>
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">نوع الإجازة</label>
+          <select id="leave-type" class="fc">
+            <option value="annual">إجازة سنوية (21 يوم)</option>
+            <option value="sick">إجازة مرضية</option>
+            <option value="emergency">إجازة اضطرارية (حتى 3 أيام)</option>
+          </select>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">تاريخ البداية</label>
+            <input type="date" id="leave-start" class="fc">
+          </div>
+          <div>
+            <label class="fl">تاريخ النهاية</label>
+            <input type="date" id="leave-end" class="fc">
+          </div>
+        </div>
+        <div id="sick-doc-row" style="display:none;margin-bottom:14px">
+          <label class="fl">رقم الوثيقة الطبية</label>
+          <input type="text" id="leave-sick-doc" class="fc" placeholder="رقم التقرير الطبي">
+        </div>
+        <div>
+          <label class="fl">ملاحظات</label>
+          <textarea id="leave-notes" class="fc" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+        </div>
+        <div id="leave-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="submitLeave()"><i class="fas fa-check"></i> تأكيد الطلب</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HOLIDAY -->
+<div class="modal fade" id="holidayModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-star" style="color:var(--accent);margin-left:8px"></i>إضافة إجازة رسمية</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form2">
+          <div>
+            <label class="fl">التاريخ</label>
+            <input type="date" id="holiday-date" class="fc">
+          </div>
+          <div>
+            <label class="fl">الاسم</label>
+            <input type="text" id="holiday-name" class="fc" placeholder="مثال: عيد الفطر">
+          </div>
+        </div>
+        <div id="holiday-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="submitHoliday()"><i class="fas fa-save"></i> حفظ</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: USER -->
+<div class="modal fade" id="userModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة مستخدم</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">اسم المستخدم</label>
+            <input type="text" id="user-username" class="fc" placeholder="username">
+          </div>
+          <div>
+            <label class="fl">كلمة المرور</label>
+            <input type="password" id="user-password" class="fc" placeholder="••••">
+          </div>
+        </div>
+        <div class="form2">
+          <div>
+            <label class="fl">الدور</label>
+            <select id="user-role" class="fc" onchange="toggleUserEmp()">
+              <option value="employee">موظف</option>
+              <option value="hr">مدير HR</option>
+              <option value="manager">مدير القسم</option>
+            </select>
+          </div>
+          <div id="user-emp-div">
+            <label class="fl">الموظف المرتبط</label>
+            <select id="user-emp" class="fc"><option value="">— اختر —</option></select>
+          </div>
+        </div>
+        <div id="user-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="submitUser()"><i class="fas fa-save"></i> إنشاء</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-wrap"></div>
 
@@ -683,34 +1054,115 @@ const PAGE_TITLES = {
   attendance: 'سجل الحضور والغياب',
   employees:  'إدارة الموظفين',
   payroll:    'مسيرة الرواتب',
+  excuses:    'الأعذار',
+  overtime:   'سجل الإضافي',
+  leaves:     'الإجازات',
+  holidays:   'الإجازات الرسمية',
+  users:      'إدارة المستخدمين',
 };
 
 let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal;
+let _currentUser = null;
 
 // ════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  // Date string
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('today-str').textContent =
     `${DAYS[now.getDay()]}، ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
 
-  // Bootstrap modals
-  _runModal = new bootstrap.Modal(document.getElementById('runModal'));
-  _empModal = new bootstrap.Modal(document.getElementById('empModal'));
+  _runModal     = new bootstrap.Modal(document.getElementById('runModal'));
+  _empModal     = new bootstrap.Modal(document.getElementById('empModal'));
+  _excuseModal  = new bootstrap.Modal(document.getElementById('excuseModal'));
+  _leaveModal   = new bootstrap.Modal(document.getElementById('leaveModal'));
+  _holidayModal = new bootstrap.Modal(document.getElementById('holidayModal'));
+  _userModal    = new bootstrap.Modal(document.getElementById('userModal'));
 
-  // Populate year/month selects
+  // Check login status
+  const me = await GET('/api/auth/me');
+  if (me.logged_in) {
+    _currentUser = me;
+    initApp();
+  }
+  // else: login overlay is already visible
+});
+
+function initApp() {
+  const role = _currentUser.role;
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('sidebar-username').textContent =
+    `👤 ${_currentUser.username} (${roleAr(role)})`;
+
+  // Show/hide nav sections
+  document.querySelectorAll('.hr-only').forEach(el =>
+    el.style.display = (role === 'hr' || role === 'manager') ? '' : 'none');
+  document.querySelectorAll('.emp-only').forEach(el =>
+    el.style.display = role === 'employee' ? '' : 'none');
+
   populateYM('att-month', 'att-year');
   populateYM('pay-month', 'pay-year');
 
-  // Load initial data
   loadDashboard();
-  loadEmployees();
-});
+  if (role !== 'employee') loadEmployees();
+  loadPendingBadges();
+}
+
+function roleAr(r) {
+  return {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'}[r] || r;
+}
+
+// ════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════
+async function doLogin() {
+  const btn  = document.getElementById('login-btn');
+  const err  = document.getElementById('login-err');
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  err.style.display = 'none';
+  if (!user || !pass) { err.textContent='أدخل اسم المستخدم وكلمة المرور'; err.style.display='block'; return; }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> جاري الدخول...';
+  try {
+    const r = await POST('/api/auth/login', {username: user, password: pass});
+    if (r.ok) {
+      _currentUser = r;
+      initApp();
+    } else {
+      err.textContent = r.error || 'بيانات غير صحيحة';
+      err.style.display = 'block';
+    }
+  } catch(e) {
+    err.textContent = 'خطأ في الاتصال';
+    err.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
+}
+
+async function doLogout() {
+  await POST('/api/auth/logout', {});
+  _currentUser = null;
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+async function loadPendingBadges() {
+  if (!_currentUser || _currentUser.role === 'employee') return;
+  try {
+    const [excuses, ot] = await Promise.all([GET('/api/excuses'), GET('/api/overtime')]);
+    const pendingEx = excuses.filter(e => e.status === 'pending').length;
+    const pendingOt = ot.filter(o => o.status === 'pending').length;
+    const eb = document.getElementById('excuse-badge');
+    const ob = document.getElementById('ot-badge');
+    if (eb) { eb.textContent = pendingEx; eb.style.display = pendingEx ? 'inline' : 'none'; }
+    if (ob) { ob.textContent = pendingOt; ob.style.display = pendingOt ? 'inline' : 'none'; }
+  } catch(e) {}
+}
 
 function populateYM(mid, yid) {
   const ms = document.getElementById(mid);
@@ -730,13 +1182,23 @@ function populateYM(mid, yid) {
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`page-${page}`).classList.add('active');
-  document.getElementById(`nb-${page}`).classList.add('active');
-  document.getElementById('page-title').textContent = PAGE_TITLES[page];
+  const pg = document.getElementById(`page-${page}`);
+  if (pg) pg.classList.add('active');
+  // Activate nav button — handles both hr and emp variants
+  [`nb-${page}`, `nb-${page}-emp`, `nb-${page}-hr`].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
 
   if (page === 'attendance') loadAttendance();
   if (page === 'employees')  loadEmployees();
   if (page === 'payroll')    loadPayroll();
+  if (page === 'excuses')    loadExcuses();
+  if (page === 'overtime')   loadOvertime();
+  if (page === 'leaves')     loadLeaves();
+  if (page === 'holidays')   loadHolidays();
+  if (page === 'users')      loadUsers();
 }
 
 // ════════════════════════════════════════════
@@ -1147,6 +1609,289 @@ function exportPayroll() {
   const y = document.getElementById('pay-year').value;
   const m = document.getElementById('pay-month').value;
   window.location = `/api/payroll/export?year=${y}&month=${m}`;
+}
+
+// ════════════════════════════════════════════
+//  EXCUSES
+// ════════════════════════════════════════════
+const VTYPE_AR = {late:'تأخر', early_leave:'مغادرة مبكرة', absent:'غياب'};
+const STATUS_LABELS = {pending:'قيد الانتظار', approved:'مقبول', rejected:'مرفوض'};
+const STATUS_CLS    = {pending:'b-pending',     approved:'b-approved', rejected:'b-rejected'};
+
+async function loadExcuses() {
+  const tb = document.getElementById('excuses-tbody');
+  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  try {
+    const rows = await GET('/api/excuses');
+    const isHR = _currentUser?.role !== 'employee';
+    document.querySelectorAll('#page-excuses .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-file-alt"></i><p>لا توجد أعذار</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.name_ar}</b></td>
+        <td>${r.att_date}</td>
+        <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
+        <td style="max-width:220px;text-align:right">${r.reason}</td>
+        <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+        <td style="color:#64748b;font-size:12px">${r.manager_note || '—'}</td>
+        ${isHR && r.status === 'pending' ? `
+        <td>
+          <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
+          <button class="btn-sm btn-reject"  onclick="decideExcuse(${r.id},'rejected')">رفض</button>
+        </td>` : `<td class="hr-only" style="display:none">—</td>`}
+      </tr>`).join('');
+  } catch(e) { toast('خطأ في تحميل الأعذار', 'err'); }
+}
+
+function openExcuseModal() {
+  const isHR = _currentUser?.role !== 'employee';
+  document.getElementById('excuse-hr-row').style.display = isHR ? 'block' : 'none';
+  if (isHR) {
+    const sel = document.getElementById('excuse-emp');
+    sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
+  }
+  document.getElementById('excuse-date').value = '';
+  document.getElementById('excuse-reason').value = '';
+  document.getElementById('excuse-err').style.display = 'none';
+  _excuseModal.show();
+}
+
+async function submitExcuse() {
+  const isHR   = _currentUser?.role !== 'employee';
+  const empId  = isHR ? document.getElementById('excuse-emp').value : null;
+  const date   = document.getElementById('excuse-date').value;
+  const vtype  = document.getElementById('excuse-vtype').value;
+  const reason = document.getElementById('excuse-reason').value.trim();
+  const err    = document.getElementById('excuse-err');
+  if (!date || !reason) { err.textContent='التاريخ والسبب مطلوبان'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  const body = {att_date: date, vtype, reason};
+  if (isHR && empId) body.employee_id = parseInt(empId);
+  const r = await POST('/api/excuses', body);
+  if (r.ok) { _excuseModal.hide(); toast(r.msg); loadExcuses(); loadPendingBadges(); }
+  else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
+}
+
+async function decideExcuse(id, status) {
+  const note = status === 'rejected' ? prompt('ملاحظة للموظف (اختياري):') || '' : '';
+  const r = await PUT(`/api/excuses/${id}`, {status, note});
+  if (r.ok) { toast(status==='approved'?'تم القبول':'تم الرفض'); loadExcuses(); loadPendingBadges(); }
+  else toast(r.error || 'خطأ', 'err');
+}
+
+// ════════════════════════════════════════════
+//  OVERTIME
+// ════════════════════════════════════════════
+async function loadOvertime() {
+  const tb = document.getElementById('overtime-tbody');
+  try {
+    const rows = await GET('/api/overtime');
+    const isHR = _currentUser?.role !== 'employee';
+    document.querySelectorAll('#page-overtime .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.name_ar}</b></td>
+        <td>${r.att_date}</td>
+        <td><b style="color:#d97706">${r.overtime_hours} ساعة</b></td>
+        <td>${r.check_out_time}</td>
+        <td>${r.work_end}</td>
+        <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+        ${isHR && r.status === 'pending' ? `
+        <td>
+          <button class="btn-sm btn-approve" onclick="decideOT(${r.id},'approved')" style="margin-left:4px">تكليف ✅</button>
+          <button class="btn-sm btn-reject"  onclick="decideOT(${r.id},'rejected')">لا ❌</button>
+        </td>` : `<td class="hr-only" style="display:none">—</td>`}
+      </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+async function decideOT(id, status) {
+  const r = await PUT(`/api/overtime/${id}`, {status});
+  if (r.ok) { toast(status==='approved'?'تم تأكيد التكليف':'لم يُسجَّل إضافي'); loadOvertime(); loadPendingBadges(); }
+  else toast(r.error || 'خطأ', 'err');
+}
+
+// ════════════════════════════════════════════
+//  LEAVES
+// ════════════════════════════════════════════
+const LEAVE_NAMES = {annual:'إجازة سنوية', sick:'إجازة مرضية', emergency:'إجازة اضطرارية',
+                     official:'إجازة رسمية', official_holiday:'إجازة رسمية'};
+
+async function loadLeaves() {
+  const tb = document.getElementById('leaves-tbody');
+  try {
+    const rows = await GET('/api/leaves');
+    const isHR = _currentUser?.role !== 'employee';
+    document.querySelectorAll('#page-leaves .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.name_ar}</b></td>
+        <td>${LEAVE_NAMES[r.leave_type] || r.leave_type}</td>
+        <td>${r.start_date}</td>
+        <td>${r.end_date}</td>
+        <td><b>${r.days}</b></td>
+        <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+        ${isHR && r.status === 'pending' ? `
+        <td>
+          <button class="btn-sm btn-approve" onclick="decideLeave(${r.id},'approved')" style="margin-left:4px">قبول</button>
+          <button class="btn-sm btn-reject"  onclick="decideLeave(${r.id},'rejected')">رفض</button>
+        </td>` : `<td class="hr-only" style="display:none">—</td>`}
+      </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+function openLeaveModal() {
+  const isHR = _currentUser?.role !== 'employee';
+  document.getElementById('leave-hr-row').style.display = isHR ? 'block' : 'none';
+  if (isHR) {
+    const sel = document.getElementById('leave-emp');
+    sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
+  }
+  document.getElementById('leave-err').style.display = 'none';
+  document.getElementById('sick-doc-row').style.display = 'none';
+  document.getElementById('leave-type').onchange = function() {
+    document.getElementById('sick-doc-row').style.display = this.value === 'sick' ? 'block' : 'none';
+  };
+  _leaveModal.show();
+}
+
+async function submitLeave() {
+  const isHR  = _currentUser?.role !== 'employee';
+  const start = document.getElementById('leave-start').value;
+  const end   = document.getElementById('leave-end').value;
+  const type  = document.getElementById('leave-type').value;
+  const notes = document.getElementById('leave-notes').value;
+  const sick  = document.getElementById('leave-sick-doc').value;
+  const err   = document.getElementById('leave-err');
+  if (!start || !end) { err.textContent='التاريخ مطلوب'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  const body = {leave_type: type, start_date: start, end_date: end, notes, sick_doc: sick};
+  if (isHR) body.employee_id = parseInt(document.getElementById('leave-emp').value);
+  const r = await POST('/api/leaves', body);
+  if (r.ok) { _leaveModal.hide(); toast(r.msg); loadLeaves(); }
+  else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
+}
+
+async function decideLeave(id, status) {
+  const r = await PUT(`/api/leaves/${id}`, {status});
+  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeaves(); }
+  else toast(r.error || 'خطأ', 'err');
+}
+
+// ════════════════════════════════════════════
+//  HOLIDAYS
+// ════════════════════════════════════════════
+async function loadHolidays() {
+  const tb = document.getElementById('holidays-tbody');
+  try {
+    const rows = await GET('/api/holidays');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td>${r.h_date}</td>
+        <td><b>${r.name}</b></td>
+        <td><button class="btn-sm btn-del" onclick="deleteHoliday(${r.id})"><i class="fas fa-trash"></i></button></td>
+      </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+function openHolidayModal() {
+  document.getElementById('holiday-date').value = '';
+  document.getElementById('holiday-name').value = '';
+  document.getElementById('holiday-err').style.display = 'none';
+  _holidayModal.show();
+}
+
+async function submitHoliday() {
+  const hdate = document.getElementById('holiday-date').value;
+  const hname = document.getElementById('holiday-name').value.trim();
+  const err   = document.getElementById('holiday-err');
+  if (!hdate || !hname) { err.textContent='التاريخ والاسم مطلوبان'; err.style.display='block'; return; }
+  const r = await POST('/api/holidays', {h_date: hdate, name: hname});
+  if (r.ok) { _holidayModal.hide(); toast('تمت الإضافة'); loadHolidays(); }
+  else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
+}
+
+async function deleteHoliday(id) {
+  if (!confirm('حذف هذه الإجازة الرسمية؟')) return;
+  const r = await DEL(`/api/holidays/${id}`);
+  if (r.ok) { toast('تم الحذف'); loadHolidays(); }
+}
+
+// ════════════════════════════════════════════
+//  USERS
+// ════════════════════════════════════════════
+async function loadUsers() {
+  const tb = document.getElementById('users-tbody');
+  try {
+    const rows = await GET('/api/users');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-slash"></i><p>لا توجد مستخدمون</p></div></td></tr>`;
+      return;
+    }
+    const roleAR = {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'};
+    tb.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.username}</b></td>
+        <td><span class="badge-s ${r.role==='employee'?'b-present':r.role==='hr'?'b-late':'b-ontime'}">${roleAR[r.role]||r.role}</span></td>
+        <td>${r.name_ar || '—'}</td>
+        <td><button class="btn-sm btn-del" onclick="deleteUser(${r.id})"><i class="fas fa-trash"></i></button></td>
+      </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+function openUserModal() {
+  document.getElementById('user-username').value = '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-role').value = 'employee';
+  document.getElementById('user-err').style.display = 'none';
+  const sel = document.getElementById('user-emp');
+  sel.innerHTML = '<option value="">— اختر موظفاً —</option>' +
+    allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
+  toggleUserEmp();
+  _userModal.show();
+}
+
+function toggleUserEmp() {
+  const r = document.getElementById('user-role').value;
+  document.getElementById('user-emp-div').style.display = r === 'employee' ? 'block' : 'none';
+}
+
+async function submitUser() {
+  const un   = document.getElementById('user-username').value.trim();
+  const pw   = document.getElementById('user-password').value;
+  const role = document.getElementById('user-role').value;
+  const emp  = document.getElementById('user-emp').value;
+  const err  = document.getElementById('user-err');
+  if (!un || !pw) { err.textContent='اسم المستخدم وكلمة المرور مطلوبان'; err.style.display='block'; return; }
+  const r = await POST('/api/users', {username:un, password:pw, role, employee_id: emp ? parseInt(emp) : null});
+  if (r.ok) { _userModal.hide(); toast('تم إنشاء المستخدم'); loadUsers(); }
+  else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
+}
+
+async function deleteUser(id) {
+  if (!confirm('حذف هذا المستخدم؟')) return;
+  const r = await DEL(`/api/users/${id}`);
+  if (r.ok) { toast('تم الحذف'); loadUsers(); }
 }
 </script>
 </body>
