@@ -182,12 +182,45 @@ def init_db():
             decided_at     TEXT,
             FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS attendance_requests (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id     INTEGER NOT NULL,
+            req_date        TEXT NOT NULL,
+            req_type        TEXT NOT NULL,
+            reason          TEXT NOT NULL,
+            requested_time  TEXT,
+            attachment      TEXT,
+            attachment_name TEXT,
+            submitted_at    TEXT DEFAULT (datetime('now')),
+            status          TEXT DEFAULT 'pending',
+            decided_by      INTEGER,
+            decided_at      TEXT,
+            manager_note    TEXT,
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        );
         """)
         conn.commit()
+        _migrate_db(conn)
         _seed_default_user(conn)
         logger.info("Database initialized OK")
     finally:
         conn.close()
+
+def _migrate_db(conn):
+    """إضافة أعمدة جديدة لجداول موجودة (آمن عند التكرار)"""
+    migrations = [
+        "ALTER TABLE excuse_requests ADD COLUMN attachment TEXT",
+        "ALTER TABLE excuse_requests ADD COLUMN attachment_name TEXT",
+        "ALTER TABLE leaves ADD COLUMN attachment TEXT",
+        "ALTER TABLE leaves ADD COLUMN attachment_name TEXT",
+    ]
+    for sql in migrations:
+        try:
+            conn.execute(sql)
+        except Exception:
+            pass
+    conn.commit()
 
 def _seed_default_user(conn):
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
@@ -1425,22 +1458,23 @@ def api_excuses_post():
         emp_id = d.get('employee_id', emp_id)
     if not emp_id:
         return jsonify({'error': 'لم يتم ربط المستخدم بموظف'}), 400
-    att_date = d.get('att_date', '')
-    vtype    = d.get('vtype', 'late')
-    reason   = (d.get('reason') or '').strip()
+    att_date   = d.get('att_date', '')
+    vtype      = d.get('vtype', 'late')
+    reason     = (d.get('reason') or '').strip()
+    attachment = d.get('attachment', '')
+    att_name   = d.get('attachment_name', '')
     if not att_date or not reason:
         return jsonify({'error': 'التاريخ والسبب مطلوبان'}), 400
     conn = get_db()
     try:
-        # منع التكرار لنفس اليوم ونفس النوع
         exists = conn.execute(
             "SELECT 1 FROM excuse_requests WHERE employee_id=? AND att_date=? AND vtype=? AND status='pending'",
             (emp_id, att_date, vtype)).fetchone()
         if exists:
             return jsonify({'error': 'يوجد طلب معلق بالفعل لهذا اليوم'}), 400
         conn.execute(
-            "INSERT INTO excuse_requests (employee_id, att_date, vtype, reason) VALUES (?,?,?,?)",
-            (emp_id, att_date, vtype, reason))
+            "INSERT INTO excuse_requests (employee_id, att_date, vtype, reason, attachment, attachment_name) VALUES (?,?,?,?,?,?)",
+            (emp_id, att_date, vtype, reason, attachment, att_name))
         conn.commit()
         # إشعار المدراء
         _notify_excuse_submitted(emp_id, att_date, vtype, reason, conn)
@@ -1725,29 +1759,292 @@ def api_overtime_decide(oid):
     return jsonify({'ok': True})
 
 # ═══════════════════════════════════════════════════════════
+#  EMPLOYEE SELF-SERVICE ROUTES
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/my/attendance')
+@login_required
+def api_my_attendance():
+    emp_id = session.get('employee_id')
+    if not emp_id:
+        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    prefix = f"{y}-{m:02d}-%"
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT a.*, e.name_ar
+            FROM attendance a JOIN employees e ON e.id=a.employee_id
+            WHERE a.employee_id=? AND a.att_date LIKE ?
+            ORDER BY a.att_date DESC
+        """, (emp_id, prefix)).fetchall()
+        # إضافة معلومة وجود عذر مقدم لكل سجل
+        result = []
+        for r in rows:
+            d = dict(r)
+            ex = conn.execute(
+                "SELECT status FROM excuse_requests WHERE employee_id=? AND att_date=?",
+                (emp_id, r['att_date'])).fetchone()
+            d['excuse_status'] = ex['status'] if ex else None
+            result.append(d)
+    finally:
+        conn.close()
+    return jsonify(result)
+
+@app.route('/api/my/violations')
+@login_required
+def api_my_violations():
+    emp_id = session.get('employee_id')
+    if not emp_id:
+        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    prefix = f"{y}-{m:02d}-%"
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT v.*, e.name_ar
+            FROM violations v JOIN employees e ON e.id=v.employee_id
+            WHERE v.employee_id=? AND v.vio_date LIKE ?
+            ORDER BY v.vio_date DESC
+        """, (emp_id, prefix)).fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            ex = conn.execute(
+                "SELECT id, status FROM excuse_requests WHERE employee_id=? AND att_date=? AND vtype=?",
+                (emp_id, r['vio_date'], r['vtype'])).fetchone()
+            d['excuse_id']     = ex['id']     if ex else None
+            d['excuse_status'] = ex['status'] if ex else None
+            result.append(d)
+    finally:
+        conn.close()
+    return jsonify(result)
+
+@app.route('/api/my/payroll')
+@login_required
+def api_my_payroll():
+    emp_id = session.get('employee_id')
+    if not emp_id:
+        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    prefix = f"{y}-{m:02d}-%"
+    conn = get_db()
+    try:
+        emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+        if not emp:
+            return jsonify({'error': 'الموظف غير موجود'}), 404
+        emp = dict(emp)
+        vios = conn.execute(
+            "SELECT * FROM violations WHERE employee_id=? AND vio_date LIKE ? ORDER BY vio_date",
+            (emp_id, prefix)).fetchall()
+        atts = conn.execute(
+            "SELECT * FROM attendance WHERE employee_id=? AND att_date LIKE ? ORDER BY att_date",
+            (emp_id, prefix)).fetchall()
+        total_ded = sum(v['deduction'] for v in vios)
+        gross = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+        net   = gross - total_ded - emp['other_ded']
+        return jsonify({
+            'employee': emp,
+            'year': y, 'month': m,
+            'gross': round(gross, 2),
+            'deductions': round(total_ded, 2),
+            'other_ded': emp['other_ded'],
+            'net': round(net, 2),
+            'attendance_days': len([a for a in atts if a['status'] != 'absent']),
+            'absent_days': len([a for a in atts if a['status'] == 'absent']),
+            'late_days': len([a for a in atts if a['status'] == 'late']),
+            'violations': [dict(v) for v in vios],
+            'attendance': [dict(a) for a in atts],
+        })
+    finally:
+        conn.close()
+
+# ═══════════════════════════════════════════════════════════
+#  ATTENDANCE REQUESTS (طلبات التأخر / الخروج المبكر)
+# ═══════════════════════════════════════════════════════════
+@app.route('/api/requests', methods=['GET'])
+@login_required
+def api_requests_get():
+    conn = get_db()
+    try:
+        role   = session.get('role')
+        emp_id = session.get('employee_id')
+        if role in ('hr', 'manager'):
+            rows = conn.execute("""
+                SELECT ar.*, e.name_ar FROM attendance_requests ar
+                JOIN employees e ON e.id=ar.employee_id
+                ORDER BY ar.submitted_at DESC
+            """).fetchall()
+        else:
+            if not emp_id: return jsonify([])
+            rows = conn.execute("""
+                SELECT ar.*, e.name_ar FROM attendance_requests ar
+                JOIN employees e ON e.id=ar.employee_id
+                WHERE ar.employee_id=? ORDER BY ar.submitted_at DESC
+            """, (emp_id,)).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/requests', methods=['POST'])
+@login_required
+def api_requests_post():
+    d       = request.get_json(silent=True) or {}
+    role    = session.get('role')
+    emp_id  = session.get('employee_id')
+    if role in ('hr', 'manager'):
+        emp_id = d.get('employee_id', emp_id)
+    if not emp_id:
+        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+    req_date       = d.get('req_date', '')
+    req_type       = d.get('req_type', '')
+    reason         = (d.get('reason') or '').strip()
+    requested_time = d.get('requested_time', '')
+    attachment     = d.get('attachment', '')
+    att_name       = d.get('attachment_name', '')
+    if not req_date or not req_type or not reason:
+        return jsonify({'error': 'التاريخ والنوع والسبب مطلوبة'}), 400
+    if req_type not in ('late_arrival', 'early_leave'):
+        return jsonify({'error': 'نوع الطلب غير صحيح'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            INSERT INTO attendance_requests
+                (employee_id, req_date, req_type, reason, requested_time,
+                 attachment, attachment_name)
+            VALUES (?,?,?,?,?,?,?)
+        """, (emp_id, req_date, req_type, reason, requested_time, attachment, att_name))
+        conn.commit()
+        _notify_request_submitted(emp_id, req_date, req_type, reason, conn)
+        return jsonify({'ok': True, 'msg': 'تم إرسال الطلب بنجاح'})
+    finally:
+        conn.close()
+
+@app.route('/api/requests/<int:rid>', methods=['PUT'])
+@hr_required
+def api_request_decide(rid):
+    d    = request.get_json(silent=True) or {}
+    status = d.get('status')
+    note   = d.get('note', '')
+    if status not in ('approved', 'rejected'):
+        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            UPDATE attendance_requests
+            SET status=?, decided_by=?, decided_at=datetime('now'), manager_note=?
+            WHERE id=?
+        """, (status, session['user_id'], note, rid))
+        conn.commit()
+        _notify_request_decision(rid, status, note, conn)
+        return jsonify({'ok': True})
+    finally:
+        conn.close()
+
+@app.route('/api/requests/<int:rid>/attachment')
+@login_required
+def api_request_attachment(rid):
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT attachment, attachment_name FROM attendance_requests WHERE id=?", (rid,)
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row or not row['attachment']:
+        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+    return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
+
+@app.route('/api/excuses/<int:eid>/attachment')
+@login_required
+def api_excuse_attachment(eid):
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT attachment, attachment_name FROM excuse_requests WHERE id=?", (eid,)
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row or not row['attachment']:
+        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+    return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
+
+def _notify_request_submitted(emp_id, req_date, req_type, reason, conn):
+    emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+    if not emp: return
+    name = emp['name_ar']
+    type_ar = 'تأخر في الحضور' if req_type == 'late_arrival' else 'خروج مبكر'
+    managers = conn.execute(
+        "SELECT u.*, e.email AS memail FROM users u LEFT JOIN employees e ON e.id=u.employee_id "
+        "WHERE u.role IN ('hr','manager')").fetchall()
+    for mgr in managers:
+        to = mgr['memail'] or EMAIL_FROM
+        if not to: continue
+        subj = f"📨 طلب {type_ar} — {name} — {req_date}"
+        body = f"""<div style="{_STYLE}">
+          <h2 style="color:#8b5cf6;margin-bottom:6px">📨 طلب {type_ar}</h2>
+          <p>قدّم الموظف <b>{name}</b> طلباً بتاريخ <b>{req_date}</b>.</p>
+          <p><b>السبب:</b> {reason}</p>
+          <a href="{SITE_URL}" style="display:inline-block;background:#8b5cf6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:10px">
+            مراجعة الطلب
+          </a>
+        </div>"""
+        send_email(to, subj, body)
+
+def _notify_request_decision(req_id, status, note, conn):
+    req = conn.execute("SELECT * FROM attendance_requests WHERE id=?", (req_id,)).fetchone()
+    if not req: return
+    emp = conn.execute("SELECT * FROM employees WHERE id=?", (req['employee_id'],)).fetchone()
+    if not emp or not emp['email']: return
+    type_ar  = 'تأخر في الحضور' if req['req_type'] == 'late_arrival' else 'خروج مبكر'
+    status_ar = 'مقبول ✅' if status == 'approved' else 'مرفوض ❌'
+    color = '#16a34a' if status == 'approved' else '#dc2626'
+    note_row = f"<p><b>ملاحظة:</b> {note}</p>" if note else ''
+    subj = f"{'✅' if status=='approved' else '❌'} قرار طلب {type_ar} — {req['req_date']}"
+    body = f"""<div style="{_STYLE}">
+      <h2 style="color:{color};margin-bottom:6px">{status_ar} — طلب {type_ar}</h2>
+      <p>عزيزي/عزيزتي <b>{emp['name_ar']}</b>،</p>
+      <p>تم <b style="color:{color}">{status_ar}</b> طلبك بتاريخ <b>{req['req_date']}</b>.</p>
+      {note_row}
+    </div>"""
+    send_email(emp['email'], subj, body)
+
+# ═══════════════════════════════════════════════════════════
 #  AUTO-REJECT EXCUSES JOB
 # ═══════════════════════════════════════════════════════════
 def auto_reject_excuses():
-    """رفض تلقائي للعذر بعد AUTO_REJECT_DAYS أيام"""
+    """رفض تلقائي للعذر والطلبات بعد AUTO_REJECT_DAYS أيام"""
     conn = get_db()
     try:
         cutoff = str(datetime.now() - timedelta(days=AUTO_REJECT_DAYS))
-        rows = conn.execute(
+        note   = f'رفض تلقائي — لم يتم الرد خلال {AUTO_REJECT_DAYS} أيام'
+
+        # أعذار
+        excuses = conn.execute(
             "SELECT * FROM excuse_requests WHERE status='pending' AND submitted_at<?",
             (cutoff,)).fetchall()
-        for ex in rows:
-            conn.execute("""
-                UPDATE excuse_requests
-                SET status='rejected', decided_at=datetime('now'),
-                    manager_note='رفض تلقائي — لم يتم الرد خلال {} أيام'
-                WHERE id=?
-            """.format(AUTO_REJECT_DAYS), (ex['id'],))
-            _notify_excuse_decision(ex['id'], 'rejected',
-                                    f'رفض تلقائي — لم يتم الرد خلال {AUTO_REJECT_DAYS} أيام',
-                                    conn)
+        for ex in excuses:
+            conn.execute(
+                "UPDATE excuse_requests SET status='rejected', decided_at=datetime('now'), manager_note=? WHERE id=?",
+                (note, ex['id']))
+            _notify_excuse_decision(ex['id'], 'rejected', note, conn)
+
+        # طلبات الحضور
+        reqs = conn.execute(
+            "SELECT * FROM attendance_requests WHERE status='pending' AND submitted_at<?",
+            (cutoff,)).fetchall()
+        for rq in reqs:
+            conn.execute(
+                "UPDATE attendance_requests SET status='rejected', decided_at=datetime('now'), manager_note=? WHERE id=?",
+                (note, rq['id']))
+            _notify_request_decision(rq['id'], 'rejected', note, conn)
+
         conn.commit()
-        if rows:
-            logger.info(f"Auto-rejected {len(rows)} excuse requests")
+        total = len(excuses) + len(reqs)
+        if total:
+            logger.info(f"Auto-rejected {total} pending requests")
     except Exception as e:
         logger.error(f"auto_reject_excuses error: {e}")
     finally:

@@ -356,6 +356,10 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
       <span class="ni"><i class="fas fa-clock"></i></span> الإضافي
       <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
+    <button class="nav-btn" id="nb-att-requests" onclick="showPage('att-requests')">
+      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلبات الحضور
+      <span id="req-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
+    </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
       <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
     </button>
@@ -369,6 +373,18 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
 
   <div class="nav-group emp-only" style="display:none">
     <div class="nav-label">حسابي</div>
+    <button class="nav-btn" id="nb-my-attendance" onclick="showPage('my-attendance')">
+      <span class="ni"><i class="fas fa-calendar-check"></i></span> حضوري وغيابي
+    </button>
+    <button class="nav-btn" id="nb-my-violations" onclick="showPage('my-violations')">
+      <span class="ni"><i class="fas fa-exclamation-triangle"></i></span> مخالفاتي
+    </button>
+    <button class="nav-btn" id="nb-my-payroll" onclick="showPage('my-payroll')">
+      <span class="ni"><i class="fas fa-wallet"></i></span> راتبي
+    </button>
+    <button class="nav-btn" id="nb-my-requests" onclick="showPage('my-requests')">
+      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلباتي
+    </button>
     <button class="nav-btn" id="nb-excuses-emp" onclick="showPage('excuses')">
       <span class="ni"><i class="fas fa-file-alt"></i></span> أعذاري
     </button>
@@ -623,6 +639,99 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
     </div><!-- /payroll -->
 
     <!-- ══════════════════════════════════════
+         PAGE: MY ATTENDANCE (employee)
+    ══════════════════════════════════════ -->
+    <div id="page-my-attendance" class="page">
+      <div class="filters">
+        <div class="fg"><label>الشهر</label><select id="myatt-month" onchange="loadMyAttendance()"></select></div>
+        <div class="fg"><label>السنة</label><select id="myatt-year"  onchange="loadMyAttendance()"></select></div>
+      </div>
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-calendar-check" style="color:var(--accent);margin-left:8px"></i>سجل حضوري وغيابي</h5>
+          <span id="myatt-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>الحضور</th><th>الانصراف</th><th>تأخر</th><th>خروج مبكر</th><th>الحالة</th><th>عذر</th></tr></thead>
+            <tbody id="myatt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: MY VIOLATIONS (employee)
+    ══════════════════════════════════════ -->
+    <div id="page-my-violations" class="page">
+      <div class="filters">
+        <div class="fg"><label>الشهر</label><select id="myvio-month" onchange="loadMyViolations()"></select></div>
+        <div class="fg"><label>السنة</label><select id="myvio-year"  onchange="loadMyViolations()"></select></div>
+      </div>
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>مخالفاتي</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (ر.س)</th><th>رفع عذر</th></tr></thead>
+            <tbody id="myvio-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: MY PAYROLL (employee)
+    ══════════════════════════════════════ -->
+    <div id="page-my-payroll" class="page">
+      <div class="filters">
+        <div class="fg"><label>الشهر</label><select id="mypay-month" onchange="loadMyPayroll()"></select></div>
+        <div class="fg"><label>السنة</label><select id="mypay-year"  onchange="loadMyPayroll()"></select></div>
+      </div>
+      <div id="mypay-content">
+        <div class="empty-state"><i class="fas fa-wallet"></i><p>اختر الشهر لعرض راتبك</p></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: MY REQUESTS (employee)
+    ══════════════════════════════════════ -->
+    <div id="page-my-requests" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:14px;color:#64748b;font-weight:600">طلبات التأخر والخروج المبكر</span>
+        <button class="btn-main" onclick="openRequestModal()">
+          <i class="fas fa-plus"></i> طلب جديد
+        </button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
+            <tbody id="myreq-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE: ATTENDANCE REQUESTS (HR)
+    ══════════════════════════════════════ -->
+    <div id="page-att-requests" class="page">
+      <div class="card-wrap">
+        <div class="card-head">
+          <h5><i class="fas fa-paper-plane" style="color:var(--accent);margin-left:8px"></i>طلبات الحضور</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody id="hrreq-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
          PAGE: EXCUSES
     ══════════════════════════════════════ -->
     <div id="page-excuses" class="page">
@@ -637,7 +746,7 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
           <table class="tbl">
             <thead><tr>
               <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
-              <th>السبب</th><th>الحالة</th><th>ملاحظة المدير</th><th class="hr-only" style="display:none">إجراء</th>
+              <th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th><th class="hr-only" style="display:none">إجراء</th>
             </tr></thead>
             <tbody id="excuses-tbody">
               <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
@@ -867,6 +976,56 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
   </div>
 </div>
 
+<!-- MODAL: ATTENDANCE REQUEST -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:500px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-paper-plane" style="color:var(--accent);margin-left:8px"></i>طلب تأخر / خروج مبكر</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="req-hr-row" style="display:none;margin-bottom:14px">
+          <label class="fl">الموظف</label>
+          <select id="req-emp" class="fc"></select>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">التاريخ</label>
+            <input type="date" id="req-date" class="fc">
+          </div>
+          <div>
+            <label class="fl">نوع الطلب</label>
+            <select id="req-type" class="fc">
+              <option value="late_arrival">تأخر في الحضور</option>
+              <option value="early_leave">خروج مبكر</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">الوقت المطلوب (الوصول أو المغادرة)</label>
+          <input type="time" id="req-time" class="fc">
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">السبب *</label>
+          <textarea id="req-reason" class="fc" rows="3" placeholder="اكتب سبب الطلب..."></textarea>
+        </div>
+        <div>
+          <label class="fl">مرفق (اختياري) — وثيقة طبية، إذن، إلخ</label>
+          <input type="file" id="req-file" class="fc" style="padding:6px"
+                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+          <div id="req-file-name" style="font-size:12px;color:#64748b;margin-top:4px"></div>
+        </div>
+        <div id="req-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" onclick="submitRequest()"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: EXCUSE -->
 <div class="modal fade" id="excuseModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
@@ -894,9 +1053,15 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
             </select>
           </div>
         </div>
-        <div>
+        <div style="margin-bottom:14px">
           <label class="fl">السبب *</label>
           <textarea id="excuse-reason" class="fc" rows="3" placeholder="اكتب سبب التأخر أو الغياب..."></textarea>
+        </div>
+        <div>
+          <label class="fl">مرفق (اختياري) — وثيقة طبية، إذن، إلخ</label>
+          <input type="file" id="excuse-file" class="fc" style="padding:6px"
+                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+          <div id="excuse-file-name" style="font-size:12px;color:#64748b;margin-top:4px"></div>
         </div>
         <div id="excuse-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
@@ -1054,18 +1219,23 @@ const PAGE_TITLES = {
   attendance: 'سجل الحضور والغياب',
   employees:  'إدارة الموظفين',
   payroll:    'مسيرة الرواتب',
-  excuses:    'الأعذار',
-  overtime:   'سجل الإضافي',
-  leaves:     'الإجازات',
-  holidays:   'الإجازات الرسمية',
-  users:      'إدارة المستخدمين',
+  excuses:        'الأعذار',
+  overtime:       'سجل الإضافي',
+  leaves:         'الإجازات',
+  holidays:       'الإجازات الرسمية',
+  users:          'إدارة المستخدمين',
+  'my-attendance':'حضوري وغيابي',
+  'my-violations':'مخالفاتي',
+  'my-payroll':   'راتبي الشهري',
+  'my-requests':  'طلباتي',
+  'att-requests': 'طلبات الحضور',
 };
 
 let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1081,6 +1251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _leaveModal   = new bootstrap.Modal(document.getElementById('leaveModal'));
   _holidayModal = new bootstrap.Modal(document.getElementById('holidayModal'));
   _userModal    = new bootstrap.Modal(document.getElementById('userModal'));
+  _requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -1103,8 +1274,11 @@ function initApp() {
   document.querySelectorAll('.emp-only').forEach(el =>
     el.style.display = role === 'employee' ? '' : 'none');
 
-  populateYM('att-month', 'att-year');
-  populateYM('pay-month', 'pay-year');
+  populateYM('att-month',   'att-year');
+  populateYM('pay-month',   'pay-year');
+  populateYM('myatt-month', 'myatt-year');
+  populateYM('myvio-month', 'myvio-year');
+  populateYM('mypay-month', 'mypay-year');
 
   loadDashboard();
   if (role !== 'employee') loadEmployees();
@@ -1154,13 +1328,16 @@ async function doLogout() {
 async function loadPendingBadges() {
   if (!_currentUser || _currentUser.role === 'employee') return;
   try {
-    const [excuses, ot] = await Promise.all([GET('/api/excuses'), GET('/api/overtime')]);
-    const pendingEx = excuses.filter(e => e.status === 'pending').length;
-    const pendingOt = ot.filter(o => o.status === 'pending').length;
-    const eb = document.getElementById('excuse-badge');
-    const ob = document.getElementById('ot-badge');
-    if (eb) { eb.textContent = pendingEx; eb.style.display = pendingEx ? 'inline' : 'none'; }
-    if (ob) { ob.textContent = pendingOt; ob.style.display = pendingOt ? 'inline' : 'none'; }
+    const [excuses, ot, reqs] = await Promise.all([
+      GET('/api/excuses'), GET('/api/overtime'), GET('/api/requests')
+    ]);
+    const pendingEx  = excuses.filter(e => e.status === 'pending').length;
+    const pendingOt  = ot.filter(o => o.status === 'pending').length;
+    const pendingReq = reqs.filter(r => r.status === 'pending').length;
+    const set = (id, n) => { const el = document.getElementById(id); if (el) { el.textContent = n; el.style.display = n ? 'inline' : 'none'; }};
+    set('excuse-badge', pendingEx);
+    set('ot-badge',     pendingOt);
+    set('req-badge',    pendingReq);
   } catch(e) {}
 }
 
@@ -1194,11 +1371,16 @@ function showPage(page) {
   if (page === 'attendance') loadAttendance();
   if (page === 'employees')  loadEmployees();
   if (page === 'payroll')    loadPayroll();
-  if (page === 'excuses')    loadExcuses();
-  if (page === 'overtime')   loadOvertime();
-  if (page === 'leaves')     loadLeaves();
-  if (page === 'holidays')   loadHolidays();
-  if (page === 'users')      loadUsers();
+  if (page === 'excuses')        loadExcuses();
+  if (page === 'overtime')       loadOvertime();
+  if (page === 'leaves')         loadLeaves();
+  if (page === 'holidays')       loadHolidays();
+  if (page === 'users')          loadUsers();
+  if (page === 'my-attendance')  loadMyAttendance();
+  if (page === 'my-violations')  loadMyViolations();
+  if (page === 'my-payroll')     loadMyPayroll();
+  if (page === 'my-requests')    loadMyRequests();
+  if (page === 'att-requests')   loadAttRequests();
 }
 
 // ════════════════════════════════════════════
@@ -1612,6 +1794,295 @@ function exportPayroll() {
 }
 
 // ════════════════════════════════════════════
+//  FILE HELPER
+// ════════════════════════════════════════════
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function downloadBase64(data, name) {
+  const a = document.createElement('a');
+  a.href = data; a.download = name; a.click();
+}
+
+async function downloadExcuseFile(id) {
+  try {
+    const r = await GET(`/api/excuses/${id}/attachment`);
+    downloadBase64(r.data, r.name);
+  } catch(e) { toast('لا يوجد ملف مرفق', 'err'); }
+}
+
+async function downloadReqFile(id) {
+  try {
+    const r = await GET(`/api/requests/${id}/attachment`);
+    downloadBase64(r.data, r.name);
+  } catch(e) { toast('لا يوجد ملف مرفق', 'err'); }
+}
+
+// ════════════════════════════════════════════
+//  MY ATTENDANCE (employee)
+// ════════════════════════════════════════════
+async function loadMyAttendance() {
+  const y  = document.getElementById('myatt-year').value;
+  const m  = document.getElementById('myatt-month').value;
+  const tb = document.getElementById('myatt-tbody');
+  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  try {
+    const rows = await GET(`/api/my/attendance?year=${y}&month=${m}`);
+    document.getElementById('myatt-count').textContent = `${rows.length} سجل`;
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-calendar"></i><p>لا توجد سجلات</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => {
+      let excuseBtn = '';
+      if ((r.status === 'late' || r.status === 'early_leave' || r.status === 'absent') && !r.excuse_status) {
+        excuseBtn = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="openExcuseFromRow('${r.att_date}','${r.status}')">رفع عذر</button>`;
+      } else if (r.excuse_status) {
+        excuseBtn = `<span class="badge-s ${STATUS_CLS[r.excuse_status] || 'b-pending'}">${STATUS_LABELS[r.excuse_status]}</span>`;
+      }
+      return `<tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td>${r.att_date}</td>
+        <td>${r.check_in || '—'}</td>
+        <td>${r.check_out || '—'}</td>
+        <td>${r.late_min  ? `<b style="color:#dc2626">${r.late_min} د</b>` : '—'}</td>
+        <td>${r.early_min ? `<b style="color:#d97706">${r.early_min} د</b>` : '—'}</td>
+        <td>${badge(r.status)}</td>
+        <td>${excuseBtn}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { toast('خطأ في تحميل الحضور', 'err'); }
+}
+
+// ════════════════════════════════════════════
+//  MY VIOLATIONS (employee)
+// ════════════════════════════════════════════
+const PTYPE_AR = {warning:'إنذار', percent:'خصم %', day:'خصم أيام', warning_day:'إنذار+خصم', hours:'ساعات'};
+const BRACKET_AR = {
+  late_1_15:'تأخر 1-15د', late_15_30:'تأخر 16-30د',
+  late_30_60:'تأخر 31-60د', late_60plus:'تأخر +60د',
+  early_u15:'خروج مبكر <15د', early_o15:'خروج مبكر >15د',
+  flex_hours:'ساعات مرنة', absent_1:'غياب',
+};
+
+async function loadMyViolations() {
+  const y  = document.getElementById('myvio-year').value;
+  const m  = document.getElementById('myvio-month').value;
+  const tb = document.getElementById('myvio-tbody');
+  tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  try {
+    const rows = await GET(`/api/my/violations?year=${y}&month=${m}`);
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle" style="color:#22c55e"></i><p>لا توجد مخالفات هذا الشهر ✅</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => {
+      const pen = r.ptype === 'warning' ? 'إنذار' :
+                  r.ptype === 'percent' ? `خصم ${r.pvalue}% من الأجر اليومي` :
+                  r.ptype === 'day'     ? `خصم ${r.pvalue} يوم` : r.ptype;
+      let excuseCell = '';
+      if (!r.excuse_id) {
+        excuseCell = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="openExcuseFromRow('${r.vio_date}','${r.vtype}')">رفع عذر</button>`;
+      } else {
+        excuseCell = `<span class="badge-s ${STATUS_CLS[r.excuse_status] || 'b-pending'}">${STATUS_LABELS[r.excuse_status] || '—'}</span>`;
+      }
+      return `<tr>
+        <td style="color:#94a3b8">${i+1}</td>
+        <td>${r.vio_date}</td>
+        <td>${BRACKET_AR[r.bracket] || r.bracket}</td>
+        <td>${pen}</td>
+        <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmt(r.deduction)+' ر.س' : '—'}</td>
+        <td>${excuseCell}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { toast('خطأ في تحميل المخالفات', 'err'); }
+}
+
+function openExcuseFromRow(date, vtype) {
+  const vt = (vtype === 'late' || vtype === 'early_leave' || vtype === 'absent') ? vtype : 'late';
+  document.getElementById('excuse-hr-row').style.display = 'none';
+  document.getElementById('excuse-date').value  = date;
+  document.getElementById('excuse-vtype').value = vt;
+  document.getElementById('excuse-reason').value = '';
+  document.getElementById('excuse-err').style.display = 'none';
+  if (document.getElementById('excuse-file'))
+    document.getElementById('excuse-file').value = '';
+  _excuseModal.show();
+}
+
+// ════════════════════════════════════════════
+//  MY PAYROLL (employee)
+// ════════════════════════════════════════════
+async function loadMyPayroll() {
+  const y   = document.getElementById('mypay-year').value;
+  const m   = document.getElementById('mypay-month').value;
+  const box = document.getElementById('mypay-content');
+  box.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>`;
+  try {
+    const d = await GET(`/api/my/payroll?year=${y}&month=${m}`);
+    const e = d.employee;
+    box.innerHTML = `
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
+        <div class="stat-card c-blue">
+          <div class="stat-icon">💰</div>
+          <div class="stat-num">${fmt(d.gross)}</div>
+          <div class="stat-label">الراتب الإجمالي (ر.س)</div>
+        </div>
+        <div class="stat-card c-red">
+          <div class="stat-icon">📉</div>
+          <div class="stat-num">${fmt(d.deductions + d.other_ded)}</div>
+          <div class="stat-label">إجمالي الخصومات (ر.س)</div>
+        </div>
+        <div class="stat-card c-green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-num">${fmt(d.net)}</div>
+          <div class="stat-label">الراتب الصافي (ر.س)</div>
+        </div>
+      </div>
+      <div class="card-wrap">
+        <div class="card-head"><h5>تفاصيل الراتب — ${MONTHS[m-1]} ${y}</h5></div>
+        <table class="tbl">
+          <tbody>
+            <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmt(e.salary)} ر.س</td></tr>
+            <tr><td style="font-weight:600">بدل السكن</td><td>${fmt(e.housing)} ر.س</td></tr>
+            <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmt(e.transport)} ر.س</td></tr>
+            <tr><td style="font-weight:600">العمولة</td><td>${fmt(e.commission)} ر.س</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmt(d.deductions)} ر.س</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">استقطاعات أخرى</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} ر.س</td></tr>
+            <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmt(d.net)} ر.س</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);margin-top:14px">
+        <div class="mini-card"><div class="mini-label">✅ أيام الحضور</div><div class="mini-num" style="color:#22c55e">${d.attendance_days}</div></div>
+        <div class="mini-card"><div class="mini-label">🔴 أيام الغياب</div><div class="mini-num" style="color:#ef4444">${d.absent_days}</div></div>
+        <div class="mini-card"><div class="mini-label">⏰ أيام التأخر</div><div class="mini-num" style="color:#f59e0b">${d.late_days}</div></div>
+      </div>
+      ${d.violations.length ? `
+      <div class="card-wrap" style="margin-top:18px">
+        <div class="card-head"><h5><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>تفاصيل المخالفات</h5></div>
+        <table class="tbl">
+          <thead><tr><th>التاريخ</th><th>المخالفة</th><th>العقوبة</th><th>الخصم</th></tr></thead>
+          <tbody>${d.violations.map(v => `<tr>
+            <td>${v.vio_date}</td>
+            <td>${BRACKET_AR[v.bracket]||v.bracket}</td>
+            <td>${v.ptype==='warning'?'إنذار':v.ptype==='percent'?`${v.pvalue}%`:`${v.pvalue} يوم`}</td>
+            <td style="color:#dc2626;font-weight:700">${v.deduction>0?fmt(v.deduction)+' ر.س':'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>` : ''}`;
+  } catch(e) { box.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>خطأ في تحميل الراتب</p></div>`; }
+}
+
+// ════════════════════════════════════════════
+//  MY REQUESTS (employee)
+// ════════════════════════════════════════════
+const REQ_TYPE_AR = {late_arrival:'تأخر في الحضور', early_leave:'خروج مبكر'};
+
+async function loadMyRequests() {
+  const tb = document.getElementById('myreq-tbody');
+  try {
+    const rows = await GET('/api/requests');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `<tr>
+      <td style="color:#94a3b8">${i+1}</td>
+      <td>${r.req_date}</td>
+      <td>${REQ_TYPE_AR[r.req_type]||r.req_type}</td>
+      <td>${r.requested_time||'—'}</td>
+      <td style="max-width:200px;text-align:right">${r.reason}</td>
+      <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
+      <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+      <td style="color:#64748b;font-size:12px">${r.manager_note||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+function openRequestModal() {
+  const isHR = _currentUser?.role !== 'employee';
+  document.getElementById('req-hr-row').style.display = isHR ? 'block' : 'none';
+  if (isHR) {
+    const sel = document.getElementById('req-emp');
+    sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
+  }
+  document.getElementById('req-date').value   = '';
+  document.getElementById('req-time').value   = '';
+  document.getElementById('req-reason').value = '';
+  document.getElementById('req-file').value   = '';
+  document.getElementById('req-file-name').textContent = '';
+  document.getElementById('req-err').style.display = 'none';
+  document.getElementById('req-file').onchange = function() {
+    document.getElementById('req-file-name').textContent = this.files[0]?.name || '';
+  };
+  _requestModal.show();
+}
+
+async function submitRequest() {
+  const isHR  = _currentUser?.role !== 'employee';
+  const date  = document.getElementById('req-date').value;
+  const type  = document.getElementById('req-type').value;
+  const time  = document.getElementById('req-time').value;
+  const reason= document.getElementById('req-reason').value.trim();
+  const fileEl= document.getElementById('req-file');
+  const err   = document.getElementById('req-err');
+  if (!date || !reason) { err.textContent='التاريخ والسبب مطلوبان'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  let attachment = '', att_name = '';
+  if (fileEl.files[0]) {
+    attachment = await readFileAsBase64(fileEl.files[0]);
+    att_name   = fileEl.files[0].name;
+  }
+  const body = {req_date:date, req_type:type, reason, requested_time:time, attachment, attachment_name:att_name};
+  if (isHR) body.employee_id = parseInt(document.getElementById('req-emp').value);
+  const r = await POST('/api/requests', body);
+  if (r.ok) { _requestModal.hide(); toast(r.msg); loadMyRequests(); }
+  else { err.textContent = r.error||'خطأ'; err.style.display='block'; }
+}
+
+// ════════════════════════════════════════════
+//  ATTENDANCE REQUESTS (HR)
+// ════════════════════════════════════════════
+async function loadAttRequests() {
+  const tb = document.getElementById('hrreq-tbody');
+  try {
+    const rows = await GET('/api/requests');
+    if (!rows.length) {
+      tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+      return;
+    }
+    tb.innerHTML = rows.map((r, i) => `<tr>
+      <td style="color:#94a3b8">${i+1}</td>
+      <td><b>${r.name_ar}</b></td>
+      <td>${r.req_date}</td>
+      <td>${REQ_TYPE_AR[r.req_type]||r.req_type}</td>
+      <td>${r.requested_time||'—'}</td>
+      <td style="max-width:160px;text-align:right">${r.reason}</td>
+      <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+      <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+      <td>${r.status==='pending' ? `
+        <button class="btn-sm btn-approve" onclick="decideRequest(${r.id},'approved')" style="margin-left:4px">قبول</button>
+        <button class="btn-sm btn-reject"  onclick="decideRequest(${r.id},'rejected')">رفض</button>` : '—'}
+      </td>
+    </tr>`).join('');
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+async function decideRequest(id, status) {
+  const note = status === 'rejected' ? prompt('ملاحظة للموظف (اختياري):') || '' : '';
+  const r = await PUT(`/api/requests/${id}`, {status, note});
+  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadAttRequests(); loadPendingBadges(); }
+  else toast(r.error||'خطأ', 'err');
+}
+
+// ════════════════════════════════════════════
 //  EXCUSES
 // ════════════════════════════════════════════
 const VTYPE_AR = {late:'تأخر', early_leave:'مغادرة مبكرة', absent:'غياب'};
@@ -1635,7 +2106,8 @@ async function loadExcuses() {
         <td><b>${r.name_ar}</b></td>
         <td>${r.att_date}</td>
         <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
-        <td style="max-width:220px;text-align:right">${r.reason}</td>
+        <td style="max-width:180px;text-align:right">${r.reason}</td>
+        <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
         <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
         <td style="color:#64748b;font-size:12px">${r.manager_note || '—'}</td>
         ${isHR && r.status === 'pending' ? `
@@ -1654,9 +2126,13 @@ function openExcuseModal() {
     const sel = document.getElementById('excuse-emp');
     sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
   }
-  document.getElementById('excuse-date').value = '';
+  document.getElementById('excuse-date').value   = '';
   document.getElementById('excuse-reason').value = '';
   document.getElementById('excuse-err').style.display = 'none';
+  const f = document.getElementById('excuse-file');
+  if (f) { f.value = ''; f.onchange = function() {
+    document.getElementById('excuse-file-name').textContent = this.files[0]?.name||'';
+  };}
   _excuseModal.show();
 }
 
@@ -1666,13 +2142,26 @@ async function submitExcuse() {
   const date   = document.getElementById('excuse-date').value;
   const vtype  = document.getElementById('excuse-vtype').value;
   const reason = document.getElementById('excuse-reason').value.trim();
+  const fileEl = document.getElementById('excuse-file');
   const err    = document.getElementById('excuse-err');
   if (!date || !reason) { err.textContent='التاريخ والسبب مطلوبان'; err.style.display='block'; return; }
   err.style.display = 'none';
-  const body = {att_date: date, vtype, reason};
+  let attachment = '', att_name = '';
+  if (fileEl && fileEl.files[0]) {
+    attachment = await readFileAsBase64(fileEl.files[0]);
+    att_name   = fileEl.files[0].name;
+  }
+  const body = {att_date:date, vtype, reason, attachment, attachment_name:att_name};
   if (isHR && empId) body.employee_id = parseInt(empId);
   const r = await POST('/api/excuses', body);
-  if (r.ok) { _excuseModal.hide(); toast(r.msg); loadExcuses(); loadPendingBadges(); }
+  if (r.ok) {
+    _excuseModal.hide();
+    toast(r.msg);
+    // تحديث الصفحة المناسبة
+    if (document.getElementById('page-my-violations')?.classList.contains('active')) loadMyViolations();
+    else if (document.getElementById('page-my-attendance')?.classList.contains('active')) loadMyAttendance();
+    else { loadExcuses(); loadPendingBadges(); }
+  }
   else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
 }
 
