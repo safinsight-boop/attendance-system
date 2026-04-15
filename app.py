@@ -847,19 +847,105 @@ def export_attendance_excel(year, month, emp_id=None):
     return out
 
 # ═══════════════════════════════════════════════════════════
-#  EXCEL — PAYROLL EXPORT
+#  EXCEL — PAYROLL EXPORT  (نسخة محسّنة)
 # ═══════════════════════════════════════════════════════════
+
+# ── الألوان ─────────────────────────────────────────────────
+_XC = {
+    'navy':    '1B2A4A',  # header داكن
+    'blue':    '1D6FAF',  # sub-header
+    'lblue':   'D6E8F7',  # خلفية معلومات
+    'green':   '197A3E',  # نص في الوقت
+    'lgreen':  'D1FAE5',  # خلفية في الوقت
+    'orange':  'B45309',  # نص تأخر
+    'lorange': 'FEF3C7',  # خلفية تأخر
+    'red':     'B91C1C',  # نص غياب / خصم
+    'lred':    'FEE2E2',  # خلفية غياب
+    'gray':    'F1F5F9',  # صف بديل
+    'dgray':   'CBD5E1',  # حدود
+    'gold':    'D97706',  # إجازة
+    'lgold':   'FFFBEB',  # خلفية إجازة
+    'white':   'FFFFFF',
+    'teal':    '0F766E',  # ملخص
+    'lteal':   'CCFBF1',  # خلفية ملخص
+}
+
+def _xfont(bold=False, size=10, color='000000', name='Arial'):
+    return Font(bold=bold, size=size, color=color, name=name)
+
+def _xfill(color):
+    return PatternFill('solid', fgColor=color)
+
+def _xalign(h='center', v='center', wrap=False):
+    return Alignment(horizontal=h, vertical=v, wrap_text=wrap, reading_order=2)
+
+def _thin_border(color='CBD5E1'):
+    s = Side(style='thin', color=color)
+    return Border(left=s, right=s, top=s, bottom=s)
+
+def _medium_border():
+    s = Side(style='medium', color='1B2A4A')
+    return Border(left=s, right=s, top=s, bottom=s)
+
+def _xrow(ws, r, h):
+    ws.row_dimensions[r].height = h
+
+def _xcol(ws, cols_widths):
+    for i, w in enumerate(cols_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+def _xc(ws, r, c, val, bold=False, size=10, fg='000000', bg=None,
+        h='center', v='center', wrap=False, num_fmt=None, border=True):
+    cell = ws.cell(row=r, column=c, value=val)
+    cell.font      = _xfont(bold=bold, size=size, color=fg)
+    cell.alignment = _xalign(h=h, v=v, wrap=wrap)
+    if bg:  cell.fill = _xfill(bg)
+    if border: cell.border = _thin_border()
+    if num_fmt: cell.number_format = num_fmt
+    return cell
+
+def _xmerge(ws, r, c1, c2, val, bold=False, size=10, fg='000000', bg=None,
+             h='center', v='center', wrap=False, num_fmt=None):
+    ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
+    c = _xc(ws, r, c1, val, bold=bold, size=size, fg=fg, bg=bg,
+             h=h, v=v, wrap=wrap, num_fmt=num_fmt, border=False)
+    # draw medium border around merged block
+    thin = Side(style='thin', color=_XC['dgray'])
+    med  = Side(style='medium', color=_XC['navy'])
+    c.border = Border(left=med, right=med, top=med, bottom=med)
+    return c
+
+# map مسببات المخالفة → نص عربي مختصر
+_VTYPE_AR = {
+    'late':       'تأخر دخول',
+    'early_leave':'خروج مبكر',
+    'flex_hours': 'نقص ساعات',
+    'absent_1':   'غياب',
+}
+
+_STATUS_AR = {
+    'on_time':         ('في الوقت',       _XC['lgreen'],  _XC['green']),
+    'late':            ('متأخر',          _XC['lorange'], _XC['orange']),
+    'absent':          ('غائب',           _XC['lred'],    _XC['red']),
+    'early_leave':     ('خروج مبكر',      _XC['lorange'], _XC['orange']),
+    'leave_sick':      ('إجازة مرضية',    _XC['lgold'],   _XC['gold']),
+    'leave_emergency': ('إجازة طارئة',    _XC['lgold'],   _XC['gold']),
+    'leave_annual':    ('إجازة سنوية',    _XC['lgold'],   _XC['gold']),
+    'leave_official':  ('إجازة رسمية',    _XC['lgold'],   _XC['gold']),
+}
+
+def _status_info(s):
+    return _STATUS_AR.get(s, (s, _XC['white'], '000000'))
+
+def _ptype_ar(ptype, pvalue):
+    if ptype == 'warning': return 'إنذار'
+    if ptype == 'percent': return f'{pvalue}% من اليومي'
+    if ptype in ('day', 'warning_day'): return f'خصم {pvalue} يوم'
+    return f'{ptype} {pvalue}'
+
 def export_payroll_excel(year, month):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-
-    C_HDR    = '1F4E79'
-    C_SUB    = '2E74B5'
-    C_GREEN  = 'C6EFCE'
-    C_RED    = 'FFC7CE'
-    C_YELLOW = 'FFEB9C'
-    C_GRAY   = 'D9D9D9'
-    C_ALT    = 'EBF3FB'
 
     conn = get_db()
     try:
@@ -867,6 +953,9 @@ def export_payroll_excel(year, month):
         prefix = f"{year}-{month:02d}-%"
         payroll_summary = []
 
+        # ══════════════════════════════════════════════════════
+        # شيت لكل موظف
+        # ══════════════════════════════════════════════════════
         for emp_row in emps:
             emp  = dict(emp_row)
             atts = conn.execute(
@@ -881,98 +970,143 @@ def export_payroll_excel(year, month):
             gosi_ded  = _gosi(emp)
             net       = gross - total_ded - gosi_ded
 
-            # ── شيت الموظف ──
+            is_fixed = (emp['work_type'] == 'fixed')
+            wtype_ar = 'دوام ثابت' if is_fixed else 'دوام مرن'
+
             ws = wb.create_sheet(emp['name_en'][:28])
-            ws.sheet_view.rightToLeft = True
-            ws.sheet_view.showGridLines = False
-            for col, w in zip('ABCDEF', [14, 10, 10, 12, 32, 14]):
-                ws.column_dimensions[col].width = w
-            ws.row_dimensions[1].height = 38
-            ws.row_dimensions[2].height = 24
-            ws.row_dimensions[3].height = 24
+            ws.sheet_view.rightToLeft    = True
+            ws.sheet_view.showGridLines  = False
+            ws.print_area = 'A1:I50'
 
-            # Title
-            ws.merge_cells('A1:F1')
-            _cell(ws, 1, 1,
-                  f"سجل حضور وغياب — {emp['name_ar']} — {MONTHS_AR[month-1]} {year}",
-                  bold=True, size=14, bg=C_HDR, fg='FFFFFF')
+            # أعمدة: التاريخ | الدخول | الخروج | تأخر(دق) | خروج مبكر(دق) | ساعات | الحالة | المخالفة | الخصم
+            _xcol(ws, [13, 9, 9, 9, 12, 8, 13, 30, 12])
 
-            # Info row
-            ws.merge_cells('A2:C2')
-            ws.merge_cells('D2:F2')
-            _cell(ws, 2, 1,
-                  f"الراتب الأساسي: {emp['salary']:,.0f} ر.س  |  "
-                  f"البدلات: {emp['housing']+emp['transport']:,.0f} ر.س",
-                  bg=C_ALT)
-            _cell(ws, 2, 4,
-                  f"نوع الدوام: {'ثابت' if emp['work_type']=='fixed' else 'مرن'}  |  "
-                  f"الدوام: {emp['work_start']} — {emp['work_end']}",
-                  bg=C_ALT)
+            r = 1
+            # ── شريط العنوان ──────────────────────────────────
+            _xrow(ws, r, 46)
+            _xmerge(ws, r, 1, 9,
+                    f"سجل الحضور والانصراف  ◂  {emp['name_ar']}  ◂  {MONTHS_AR[month-1]} {year}",
+                    bold=True, size=15, fg=_XC['white'], bg=_XC['navy'], h='center')
+            r += 1
 
-            # Column headers
-            for ci, h in enumerate(
-                ['التاريخ', 'الحضور', 'الانصراف', 'التأخر(دق)', 'المخالفة', 'الخصم(ر.س)'], 1
-            ):
-                _cell(ws, 3, ci, h, bold=True, bg=C_SUB, fg='FFFFFF')
+            # ── شريط معلومات الموظف ───────────────────────────
+            _xrow(ws, r, 22)
+            _xmerge(ws, r, 1, 5,
+                    f"نوع الدوام: {wtype_ar}   |   وقت الدوام: {emp['work_start']} — {emp['work_end']}",
+                    size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
+            _xmerge(ws, r, 6, 9,
+                    f"الأساسي: {emp['salary']:,.0f}   سكن: {emp['housing']:,.0f}   "
+                    f"نقل: {emp['transport']:,.0f}   عمولة: {emp['commission']:,.0f}   (ر.س)",
+                    size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
+            r += 1
 
-            r = 4
+            # ── رؤوس الأعمدة ──────────────────────────────────
+            _xrow(ws, r, 26)
+            hdrs = ['التاريخ', 'الدخول', 'الخروج', 'تأخر\n(دق)', 'خروج مبكر\n(دق)',
+                    'ساعات', 'الحالة', 'المخالفة', 'الخصم\n(ر.س)']
+            for ci, h in enumerate(hdrs, 1):
+                _xc(ws, r, ci, h, bold=True, size=10, fg=_XC['white'],
+                    bg=_XC['blue'], wrap=True)
+            r += 1
+
+            # ── صفوف الحضور ───────────────────────────────────
             for att in atts:
-                day_vios = [v for v in vios if v['vio_date'] == att['att_date']]
-                vio_text = '; '.join([
-                    f"{'تأخر' if v['vtype']=='late' else ('ساعات مرنة' if v['vtype']=='flex_hours' else 'مغادرة مبكرة')}"
-                    f" ({v['ptype']} {v['pvalue']}{'%' if v['ptype']=='percent' else ' يوم' if v['ptype'] in ('day','warning_day') else ' س'})"
-                    for v in day_vios
-                ]) or '—'
-                day_ded = sum(v['deduction'] for v in day_vios)
+                att   = dict(att)
+                s     = att['status']
+                label, row_bg, txt_color = _status_info(s)
+                day_vios  = [v for v in vios if v['vio_date'] == att['att_date']]
+                day_ded   = sum(v['deduction'] for v in day_vios)
+                vio_parts = [f"{_VTYPE_AR.get(v['vtype'], v['vtype'])} — {_ptype_ar(v['ptype'], v['pvalue'])}"
+                             for v in day_vios]
+                vio_text  = '\n'.join(vio_parts) if vio_parts else '—'
 
-                s  = att['status']
-                bg = ('C6EFCE' if s == 'on_time'
-                      else 'FFC7CE' if s in ('late', 'absent')
-                      else 'FFEB9C' if s == 'early_leave'
-                      else None)
+                late_m  = att['late_min']  or 0
+                early_m = att['early_min'] or 0
+                hours   = round(att['total_hours'] or 0, 2)
 
-                vals = [
+                _xrow(ws, r, 18 if not vio_parts else 20)
+                row_vals = [
                     att['att_date'],
                     att['check_in']  or '—',
                     att['check_out'] or '—',
-                    att['late_min']  or '—',
+                    late_m  if late_m  > 0 else '—',
+                    early_m if early_m > 0 else '—',
+                    hours   if hours   > 0 else '—',
+                    label,
                     vio_text,
-                    round(day_ded, 2) if day_ded else '—'
+                    round(day_ded, 2) if day_ded else '—',
                 ]
-                for ci, v in enumerate(vals, 1):
-                    c = _cell(ws, r, ci, v, bg=bg, wrap=(ci == 5))
-                    if ci == 6 and isinstance(v, float):
-                        c.number_format = '#,##0.00'
+                for ci, val in enumerate(row_vals, 1):
+                    is_vio = (ci == 8)
+                    is_ded = (ci == 9)
+                    cell_bg = row_bg
+                    cell_fg = txt_color if ci == 7 else ('000000' if not is_ded else (_XC['red'] if day_ded > 0 else '000000'))
+                    c = _xc(ws, r, ci, val, fg=cell_fg, bg=cell_bg,
+                             size=9 if is_vio else 10,
+                             wrap=is_vio, h='right' if is_vio else 'center',
+                             num_fmt='#,##0.00' if is_ded and isinstance(val, float) else None)
                 r += 1
 
-            # Totals block
+            # ── فاصل ─────────────────────────────────────────
             r += 1
-            ws.merge_cells(f'A{r}:D{r}')
-            _cell(ws, r, 1, 'إجمالي الخصومات:', bold=True, bg=C_GRAY)
-            ws.merge_cells(f'E{r}:F{r}')
-            _cell(ws, r, 5, total_ded, bold=True,
-                  bg=C_RED if total_ded > 0 else C_GREEN,
-                  num_fmt='#,##0.00 "ر.س"')
 
+            # ── ملخص الشهر (4 أعمدة × 2 صفوف + صافي) ─────────
+            _xrow(ws, r, 26)
+            _xmerge(ws, r, 1, 9, 'ملخص الشهر',
+                    bold=True, size=12, fg=_XC['white'], bg=_XC['teal'], h='center')
             r += 1
-            ws.merge_cells(f'A{r}:D{r}')
-            _cell(ws, r, 1, 'الراتب الإجمالي:', bold=True, bg=C_GRAY)
-            ws.merge_cells(f'E{r}:F{r}')
-            _cell(ws, r, 5, gross, bold=True, num_fmt='#,##0.00 "ر.س"')
 
+            present_cnt = sum(1 for a in atts if not a['status'].startswith('leave_') and a['status'] != 'absent')
+            absent_cnt  = sum(1 for a in atts if a['status'] == 'absent')
+            late_cnt    = sum(1 for a in atts if a['status'] == 'late')
+            early_cnt   = sum(1 for a in atts if a['status'] == 'early_leave')
+            total_late  = sum(a['late_min']  or 0 for a in atts)
+            total_early = sum(a['early_min'] or 0 for a in atts)
+
+            # صفان للإحصائيات
+            stat_rows = [
+                [('أيام الحضور',    present_cnt, _XC['lgreen']),
+                 ('أيام الغياب',    absent_cnt,  _XC['lred']),
+                 ('أيام التأخر',    late_cnt,    _XC['lorange']),
+                 ('خروج مبكر',      early_cnt,   _XC['lorange'])],
+                [('دقائق تأخر إجمالية', total_late,  _XC['lorange']),
+                 ('دقائق خروج مبكر',   total_early, _XC['lorange']),
+                 ('إجمالي الخصومات',   round(total_ded, 2), _XC['lred']),
+                 ('تأمينات GOSI',       round(gosi_ded, 2), _XC['gray'])],
+            ]
+            col_map = [(1,2), (3,4), (5,6), (7,9)]
+            for stat_row in stat_rows:
+                _xrow(ws, r, 22)
+                for (c1, c2), (lbl, val, bg) in zip(col_map, stat_row):
+                    txt = f"{lbl}\n{val:,}" if isinstance(val, int) else f"{lbl}\n{val:,.2f} ر.س"
+                    _xmerge(ws, r, c1, c2, txt, size=9, bg=bg, h='center', wrap=True)
+                r += 1
+
+            # صف الراتب الإجمالي
+            _xrow(ws, r, 22)
+            _xmerge(ws, r, 1, 4, f"الراتب الإجمالي:  {gross:,.2f} ر.س",
+                    bold=True, size=11, fg=_XC['navy'], bg=_XC['lblue'], h='right')
+            _xmerge(ws, r, 5, 9, f"— خصومات {total_ded:,.2f}  — تأمينات {gosi_ded:,.2f}",
+                    size=10, fg=_XC['red'], bg=_XC['lred'], h='center')
             r += 1
-            ws.merge_cells(f'A{r}:D{r}')
-            _cell(ws, r, 1, 'صافي الراتب:', bold=True, size=12, bg=C_GRAY)
-            ws.merge_cells(f'E{r}:F{r}')
-            _cell(ws, r, 5, net, bold=True, size=13,
-                  bg=C_GREEN if net >= gross * 0.9 else C_RED,
-                  num_fmt='#,##0.00 "ر.س"')
 
-            # Signature area
-            r += 3
-            for ci, lbl in [(1, 'توقيع الموظف:'), (3, 'توقيع المدير:'), (5, 'اعتماد الإدارة:')]:
-                ws.cell(row=r, column=ci, value=lbl).font = Font(bold=True)
-                ws.cell(row=r+2, column=ci, value='_' * 22)
+            # صف الصافي
+            _xrow(ws, r, 30)
+            net_bg = _XC['lgreen'] if net >= gross * 0.85 else (_XC['lorange'] if net >= gross * 0.7 else _XC['lred'])
+            net_fg = _XC['green']  if net >= gross * 0.85 else (_XC['orange']  if net >= gross * 0.7 else _XC['red'])
+            _xmerge(ws, r, 1, 9, f"صافي الراتب:   {net:,.2f} ر.س",
+                    bold=True, size=14, fg=net_fg, bg=net_bg, h='center')
+            r += 1
+
+            # منطقة التوقيعات
+            r += 2
+            _xrow(ws, r, 20)
+            for c1, c2, lbl in [(1, 3, 'توقيع الموظف'), (4, 6, 'توقيع المشرف'), (7, 9, 'اعتماد الإدارة')]:
+                _xmerge(ws, r, c1, c2, lbl, bold=True, size=10, fg=_XC['navy'], bg=_XC['gray'], h='center')
+            r += 2
+            _xrow(ws, r, 20)
+            for c1, c2 in [(1, 3), (4, 6), (7, 9)]:
+                _xmerge(ws, r, c1, c2, '─' * 28, size=9, fg=_XC['dgray'], h='center')
 
             payroll_summary.append({
                 **emp,
@@ -982,65 +1116,104 @@ def export_payroll_excel(year, month):
                 'gross':     gross,
                 'net':       net,
                 'days':      len(atts),
-                'present':   sum(1 for a in atts if a['status'] != 'absent'),
-                'late_days': sum(1 for a in atts if a['status'] == 'late'),
+                'present':   present_cnt,
+                'late_days': late_cnt,
+                'absent':    absent_cnt,
             })
 
-        # ── شيت مسيرة الرواتب (الشيت الأول) ──
-        ws2 = wb.create_sheet("مسيرة الرواتب", 0)
-        ws2.sheet_view.rightToLeft = True
+        # ══════════════════════════════════════════════════════
+        # شيت مسيرة الرواتب الرئيسي (الشيت الأول)
+        # ══════════════════════════════════════════════════════
+        ws2 = wb.create_sheet('مسيرة الرواتب', 0)
+        ws2.sheet_view.rightToLeft   = True
         ws2.sheet_view.showGridLines = False
 
-        col_ws = [5, 22, 14, 12, 14, 12, 14, 14, 16, 14]
-        for i, w in enumerate(col_ws, 1):
-            ws2.column_dimensions[get_column_letter(i)].width = w
-        ws2.row_dimensions[1].height = 44
-        ws2.row_dimensions[2].height = 26
+        # أعمدة: م | الموظف | نوع الدوام | أساسي | سكن | نقل | عمولة | إجمالي | خصومات | تأمينات | صافي | ملاحظات
+        _xcol(ws2, [5, 22, 11, 12, 11, 11, 10, 13, 11, 12, 14, 14])
+        N = 12  # عدد الأعمدة
 
-        ws2.merge_cells('A1:J1')
-        _cell(ws2, 1, 1,
-              f"مسيرة الرواتب — {MONTHS_AR[month-1]} {year}",
-              bold=True, size=17, bg=C_HDR, fg='FFFFFF')
+        # ── عنوان رئيسي ──
+        _xrow(ws2, 1, 52)
+        _xmerge(ws2, 1, 1, N,
+                f"مسيرة الرواتب  ◂  {MONTHS_AR[month-1]} {year}",
+                bold=True, size=20, fg=_XC['white'], bg=_XC['navy'], h='center')
 
-        pay_hdrs = ['م', 'اسم الموظف', 'الراتب الأساسي', 'بدل سكن',
-                    'بدل مواصلات', 'عمولة', 'خصومات', 'تأمينات (10.75%)',
-                    'صافي الراتب', 'ملاحظات']
-        for i, h in enumerate(pay_hdrs, 1):
-            _cell(ws2, 2, i, h, bold=True, bg=C_SUB, fg='FFFFFF')
+        # ── شريط المعلومات ──
+        _xrow(ws2, 2, 24)
+        _xmerge(ws2, 2, 1, 6,
+                f"تاريخ الإعداد: {date.today().strftime('%Y/%m/%d')}",
+                size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
+        _xmerge(ws2, 2, 7, N,
+                f"إجمالي الموظفين: {len(payroll_summary)}",
+                size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
 
-        tgross = tnet = tded = 0.0
+        # ── رؤوس الأعمدة ──
+        _xrow(ws2, 3, 30)
+        pay_hdrs = ['م', 'اسم الموظف', 'نوع الدوام',
+                    'الراتب الأساسي', 'بدل السكن', 'بدل المواصلات', 'العمولة',
+                    'الإجمالي', 'خصومات المخالفات', 'تأمينات (10.75%)', 'صافي الراتب', 'ملاحظات']
+        for ci, h in enumerate(pay_hdrs, 1):
+            _xc(ws2, 3, ci, h, bold=True, size=10, fg=_XC['white'], bg=_XC['blue'], wrap=True)
+
+        # ── صفوف الموظفين ──
+        tgross = tnet = tded = tgosi = 0.0
         for idx, pd in enumerate(payroll_summary, 1):
-            r   = idx + 2
-            bg  = C_ALT if idx % 2 == 0 else None
+            row_r  = idx + 3
+            alt_bg = _XC['gray'] if idx % 2 == 0 else _XC['white']
+            net_bg = _XC['lgreen'] if pd['net'] >= pd['gross'] * 0.85 else (
+                     _XC['lorange'] if pd['net'] >= pd['gross'] * 0.7 else _XC['lred'])
+
+            wtype_ar = 'ثابت' if pd['work_type'] == 'fixed' else 'مرن'
+            _xrow(ws2, row_r, 22)
+
             vals = [
-                idx, pd['name_ar'],
-                pd['salary'], pd['housing'], pd['transport'],
-                pd['commission'], pd['total_ded'], pd['other_ded'],
-                pd['net'], ''
+                (idx,               alt_bg, 'center'),
+                (pd['name_ar'],     alt_bg, 'right'),
+                (wtype_ar,          alt_bg, 'center'),
+                (pd['salary'],      alt_bg, 'center'),
+                (pd['housing'],     alt_bg, 'center'),
+                (pd['transport'],   alt_bg, 'center'),
+                (pd['commission'],  alt_bg, 'center'),
+                (pd['gross'],       alt_bg, 'center'),
+                (pd['total_ded'],   _XC['lred']   if pd['total_ded'] > 0 else alt_bg, 'center'),
+                (pd['gosi_ded'],    alt_bg, 'center'),
+                (pd['net'],         net_bg, 'center'),
+                ('',                alt_bg, 'center'),
             ]
-            for ci, v in enumerate(vals, 1):
-                c = _cell(ws2, r, ci, v, bg=bg)
-                if ci in (3, 4, 5, 6, 7, 8, 9):
-                    c.number_format = '#,##0.00'
+            for ci, (val, bg, align) in enumerate(vals, 1):
+                num_f = '#,##0.00' if ci in (4,5,6,7,8,9,10,11) else None
+                _xc(ws2, row_r, ci, val, bg=bg, h=align, size=10, num_fmt=num_f)
+
             tgross += pd['gross']
             tnet   += pd['net']
-            tded   += pd['total_ded'] + pd['other_ded']
+            tded   += pd['total_ded']
+            tgosi  += pd['gosi_ded']
 
-        # Totals row
-        tot = len(payroll_summary) + 3
-        ws2.merge_cells(f'A{tot}:B{tot}')
-        _cell(ws2, tot, 1, 'الإجمالي', bold=True, size=12, bg=C_GRAY)
-        for ci in range(3, 11):
-            _cell(ws2, tot, ci, '', bg=C_GRAY)
-        _cell(ws2, tot, 7, tded, bold=True, bg=C_GRAY, num_fmt='#,##0.00')
-        _cell(ws2, tot, 9, tnet, bold=True, size=13,
-              bg=C_GREEN if tnet > 0 else C_RED, num_fmt='#,##0.00')
+        # ── صف الإجمالي ──
+        tot = len(payroll_summary) + 4
+        _xrow(ws2, tot, 30)
+        _xmerge(ws2, tot, 1, 3, 'الإجمالي الكلي',
+                bold=True, size=12, fg=_XC['white'], bg=_XC['navy'], h='center')
+        for ci in range(4, N + 1):
+            _xc(ws2, tot, ci, '', bold=True, bg=_XC['navy'])
+        for ci, val in [(8, tgross), (9, tded), (10, tgosi), (11, tnet)]:
+            _xc(ws2, tot, ci, val, bold=True, size=11, fg=_XC['white'],
+                bg=_XC['navy'], num_fmt='#,##0.00')
 
-        # Signature
-        sig = tot + 3
-        for ci, lbl in [(1, 'إعداد:'), (4, 'مراجعة:'), (7, 'اعتماد:')]:
-            ws2.cell(sig, ci, lbl).font = Font(bold=True)
-            ws2.cell(sig + 2, ci, '_' * 26)
+        # ── صف التوفير (صافي vs إجمالي) ──
+        _xrow(ws2, tot + 1, 16)
+        pct = round((1 - tded / tgross) * 100, 1) if tgross else 100
+        _xmerge(ws2, tot + 1, 1, N,
+                f"نسبة الخصومات من الإجمالي:  {pct}%   |   صافي المسيرة:  {tnet:,.2f} ر.س",
+                size=10, fg=_XC['navy'], bg=_XC['lteal'], h='center')
+
+        # ── منطقة التوقيعات ──
+        sig = tot + 4
+        _xrow(ws2, sig, 22)
+        for c1, c2, lbl in [(1, 4, 'إعداد:   _________________________'),
+                             (5, 8, 'مراجعة:   _________________________'),
+                             (9, N, 'اعتماد:   _________________________')]:
+            _xmerge(ws2, sig, c1, c2, lbl, bold=True, size=11, fg=_XC['navy'], h='center')
 
     finally:
         conn.close()
