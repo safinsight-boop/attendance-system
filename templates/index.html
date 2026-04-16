@@ -279,6 +279,14 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 }
 @keyframes sp { to { transform: rotate(360deg); } }
 
+/* ── Saudi Riyal Symbol ── */
+.sar-sym {
+  display: inline-block; font-style: normal; font-weight: 700;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  font-size: 0.85em; letter-spacing: -0.5px;
+}
+.sar-sym::before { content: '\FDFC'; }
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center; padding: 48px 24px; color: var(--muted);
@@ -1570,9 +1578,14 @@ function badge(s) {
   return `<span class="badge-s ${info.cls}">${info.label}</span>`;
 }
 
+const _SAR = `<span class="sar-sym" title="ريال سعودي"></span>`;
 function fmt(n) {
   if (!n && n !== 0) return '—';
   return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+function fmtSAR(n) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ' + _SAR;
 }
 
 function setLastUpdate() {
@@ -1760,7 +1773,7 @@ function renderEmps() {
         ${e.work_type === 'fixed' ? '⏰ ثابت':'🔄 مرن'}
       </span></td>
       <td>
-        <b>${fmt(e.salary + e.housing + e.transport)}</b> <span style="color:#94a3b8;font-size:12px">SR</span><br>
+        <b>${fmtSAR(e.salary + e.housing + e.transport)}</b><br>
         <span style="font-size:10px;color:#94a3b8">${fmt(e.salary)}+${fmt(e.housing)}+${fmt(e.transport)}</span>
       </td>
       <td>${balHtml}</td>
@@ -1912,9 +1925,9 @@ async function loadPayroll() {
       tnet   += r.net;
     });
 
-    document.getElementById('pay-gross').textContent = fmt(tgross) + ' SR';
-    document.getElementById('pay-ded').textContent   = fmt(tded)   + ' SR';
-    document.getElementById('pay-net').textContent   = fmt(tnet)   + ' SR';
+    document.getElementById('pay-gross').innerHTML = fmtSAR(tgross);
+    document.getElementById('pay-ded').innerHTML   = fmtSAR(tded);
+    document.getElementById('pay-net').innerHTML   = fmtSAR(tnet);
 
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
@@ -1933,17 +1946,17 @@ async function loadPayroll() {
             ${r.work_type==='fixed'?'ثابت':'مرن'}
           </span>
         </td>
-        <td>${fmt(r.salary)}</td>
-        <td>${fmt(r.housing + r.transport)}</td>
-        <td>${fmt(r.commission)}</td>
+        <td>${fmtSAR(r.salary)}</td>
+        <td>${fmtSAR(r.housing + r.transport)}</td>
+        <td>${fmtSAR(r.commission)}</td>
         <td style="color:${r.total_ded>0?'#dc2626':'inherit'};font-weight:${r.total_ded>0?700:400}">
-          ${fmt(r.total_ded)}
+          ${fmtSAR(r.total_ded)}
         </td>
         <td>
-          <b style="color:#b45309">${fmt(r.gosi_ded ?? r.other_ded)}</b><br>
+          <b style="color:#b45309">${fmtSAR(r.gosi_ded ?? r.other_ded)}</b><br>
           <span style="font-size:10px;color:#94a3b8">${fmt(r.salary + r.housing + r.transport)} × 10.75%</span>
         </td>
-        <td style="font-weight:800;color:${netColor};font-size:15px">${fmt(r.net)}</td>
+        <td style="font-weight:800;color:${netColor};font-size:15px">${fmtSAR(r.net)}</td>
         <td>${r.days}</td>
         <td>${r.late ? `<span style="color:#dc2626;font-weight:700">${r.late}</span>` : '—'}</td>
       </tr>`;
@@ -2082,7 +2095,7 @@ async function loadMyViolations() {
         <td>${r.vio_date}</td>
         <td>${BRACKET_AR[r.bracket] || r.bracket}</td>
         <td>${pen}</td>
-        <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmt(r.deduction)+' SR' : '—'}</td>
+        <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmtSAR(r.deduction) : '—'}</td>
         <td>${excuseCell}</td>
       </tr>`;
     }).join('');
@@ -2116,17 +2129,17 @@ async function loadMyPayroll() {
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
         <div class="stat-card c-blue">
           <div class="stat-icon">💰</div>
-          <div class="stat-num">${fmt(d.gross)}</div>
+          <div class="stat-num">${fmtSAR(d.gross)}</div>
           <div class="stat-label">الراتب الإجمالي (SR)</div>
         </div>
         <div class="stat-card c-red">
           <div class="stat-icon">📉</div>
-          <div class="stat-num">${fmt(d.deductions + d.other_ded)}</div>
+          <div class="stat-num">${fmtSAR(d.deductions + d.other_ded)}</div>
           <div class="stat-label">إجمالي الخصومات (SR)</div>
         </div>
         <div class="stat-card c-green">
           <div class="stat-icon">✅</div>
-          <div class="stat-num">${fmt(d.net)}</div>
+          <div class="stat-num">${fmtSAR(d.net)}</div>
           <div class="stat-label">الراتب الصافي (SR)</div>
         </div>
       </div>
@@ -2134,13 +2147,13 @@ async function loadMyPayroll() {
         <div class="card-head"><h5>تفاصيل الراتب — ${MONTHS[m-1]} ${y}</h5></div>
         <table class="tbl">
           <tbody>
-            <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmt(e.salary)} SR</td></tr>
-            <tr><td style="font-weight:600">بدل السكن</td><td>${fmt(e.housing)} SR</td></tr>
-            <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmt(e.transport)} SR</td></tr>
-            <tr><td style="font-weight:600">العمولة</td><td>${fmt(e.commission)} SR</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmt(d.deductions)} SR</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} SR</td></tr>
-            <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmt(d.net)} SR</td></tr>
+            <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmtSAR(e.salary)}</td></tr>
+            <tr><td style="font-weight:600">بدل السكن</td><td>${fmtSAR(e.housing)}</td></tr>
+            <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmtSAR(e.transport)}</td></tr>
+            <tr><td style="font-weight:600">العمولة</td><td>${fmtSAR(e.commission)}</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmtSAR(d.deductions)}</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmtSAR(d.other_ded)}</td></tr>
+            <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmtSAR(d.net)}</td></tr>
           </tbody>
         </table>
       </div>
@@ -2158,7 +2171,7 @@ async function loadMyPayroll() {
             <td>${v.vio_date}</td>
             <td>${BRACKET_AR[v.bracket]||v.bracket}</td>
             <td>${v.ptype==='warning'?'إنذار':v.ptype==='percent'?`${v.pvalue}%`:`${v.pvalue} يوم`}</td>
-            <td style="color:#dc2626;font-weight:700">${v.deduction>0?fmt(v.deduction)+' SR':'—'}</td>
+            <td style="color:#dc2626;font-weight:700">${v.deduction>0?fmtSAR(v.deduction):'—'}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>` : ''}`;
