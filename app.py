@@ -39,13 +39,17 @@ AUTO_REJECT_DAYS = 3    # أيام الرفض التلقائي للعذر
 # ptype: 'warning' | 'percent' | 'day' | 'warning_day'
 # percent → % من الأجر اليومي | day → N × الأجر اليومي
 PENALTIES = {
-    'late_1_15':   [('warning', 0),   ('percent', 5),  ('percent', 10), ('percent', 20)],
-    'late_15_30':  [('percent', 10),  ('percent', 15), ('percent', 25), ('percent', 50)],
-    'late_30_60':  [('percent', 25),  ('percent', 50), ('percent', 75), ('day', 1)],
-    'late_60plus': [('warning_day', 1),('day', 2),      ('day', 3),      ('day', 3)],
-    'early_u15':   [('warning', 0),   ('percent', 10), ('percent', 25), ('day', 1)],
-    'early_o15':   [('percent', 10),  ('percent', 25), ('percent', 50), ('day', 1)],
-    'flex_hours':  [('hours', 0)],   # خاص بالموظفين المرنين
+    # تأخر الحضور — بدون تعطيل عمال آخرين (اللائحة التنفيذية لنظام العمل)
+    'late_1_15':   [('warning', 0),  ('percent', 5),  ('percent', 10), ('percent', 20)],  # ≤15 دق
+    'late_15_30':  [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # 15-30 دق
+    'late_30_60':  [('percent', 25), ('percent', 50), ('percent', 75), ('day', 1)],        # 30-60 دق
+    'late_60plus': [('warning', 0),  ('day', 1),      ('day', 2),      ('day', 3)],        # >60 دق
+    # الانصراف المبكر
+    'early_u15':   [('warning', 0),  ('percent', 10), ('percent', 25), ('day', 1)],        # ≤15 دق
+    'early_o15':   [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # >15 دق
+    # موظفون مرنون
+    'flex_hours':  [('hours', 0)],
+    # غياب بدون عذر
     'absent_1':    [('percent', 50), ('day', 1), ('day', 2), ('day', 3)],
 }
 
@@ -388,9 +392,9 @@ def late_bracket(mins):
     return 'late_60plus'
 
 def early_bracket(mins):
-    if mins <= 0:  return None
-    if mins < 15:  return 'early_u15'
-    return 'early_o15'
+    if mins <= 0:   return None
+    if mins <= 15:  return 'early_u15'   # ≤15 دقيقة (بما لا يتجاوز 15)
+    return 'early_o15'                   # >15 دقيقة
 
 def next_occurrence(conn, emp_id, yr, mo, bracket):
     """زيادة عداد المخالفة وإرجاع الرقم الجديد"""
