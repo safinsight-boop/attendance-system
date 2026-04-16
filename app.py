@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 نظام إدارة الحضور والغياب — TTLock Integration
 Flask + SQLite + APScheduler + Gmail SMTP
@@ -503,7 +503,7 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
 
     elif status == 'late':
         subj = f"⚠️ إشعار تأخر — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ر.س</b></td></tr>' if ded > 0 else ''
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ﷼</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
           <h2 style="color:#d97706;margin-bottom:6px">⚠️ إشعار مخالفة — تأخر</h2>
           <p>عزيزي/عزيزتي <b>{name}</b>،</p>
@@ -523,7 +523,7 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
 
     elif status == 'early_leave':
         subj = f"⚠️ إشعار مغادرة مبكرة — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ر.س</b></td></tr>' if ded > 0 else ''
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ﷼</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
           <h2 style="color:#d97706;margin-bottom:6px">⚠️ إشعار مخالفة — مغادرة مبكرة</h2>
           <p>عزيزي/عزيزتي <b>{name}</b>،</p>
@@ -543,7 +543,7 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
 
     elif status == 'absent':
         subj = f"🔴 إشعار غياب — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ر.س</b></td></tr>' if ded > 0 else ''
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ﷼</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
           <h2 style="color:#dc2626;margin-bottom:6px">🔴 إشعار غياب</h2>
           <p>عزيزي/عزيزتي <b>{name}</b>،</p>
@@ -599,7 +599,7 @@ def notify_flex_weekly(emp, friday, actual_h, required_h, ded):
     missing = max(0.0, required_h - actual_h)
     color = "#dc2626" if missing > 0 else "#16a34a"
     subj = f"📊 تقرير ساعاتك الأسبوعي — {monday} إلى {friday}"
-    ded_row = f'<tr><td style="{_TD};background:#fff1f2;color:#dc2626">الخصم المقدر</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ر.س</b></td></tr>' if ded > 0 else ''
+    ded_row = f'<tr><td style="{_TD};background:#fff1f2;color:#dc2626">الخصم المقدر</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} ﷼</b></td></tr>' if ded > 0 else ''
     body = f"""<div style="{_STYLE}">
       <h2 style="margin-bottom:6px">📊 تقرير الساعات الأسبوعي</h2>
       <p>عزيزي/عزيزتي <b>{name}</b>،</p>
@@ -1028,14 +1028,14 @@ def export_payroll_excel(year, month):
                     size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
             _xmerge(ws, r, 6, 9,
                     f"الأساسي: {emp['salary']:,.0f}   سكن: {emp['housing']:,.0f}   "
-                    f"نقل: {emp['transport']:,.0f}   عمولة: {emp['commission']:,.0f}   (ر.س)",
+                    f"نقل: {emp['transport']:,.0f}   عمولة: {emp['commission']:,.0f}   (﷼)",
                     size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
             r += 1
 
             # ── رؤوس الأعمدة ──────────────────────────────────
             _xrow(ws, r, 26)
             hdrs = ['التاريخ', 'الدخول', 'الخروج', 'تأخر\n(دق)', 'خروج مبكر\n(دق)',
-                    'ساعات', 'الحالة', 'المخالفة', 'الخصم\n(ر.س)']
+                    'ساعات', 'الحالة', 'المخالفة', 'الخصم\n(﷼)']
             for ci, h in enumerate(hdrs, 1):
                 _xc(ws, r, ci, h, bold=True, size=10, fg=_XC['white'],
                     bg=_XC['blue'], wrap=True)
@@ -1119,13 +1119,13 @@ def export_payroll_excel(year, month):
             for stat_row in stat_rows:
                 _xrow(ws, r, 22)
                 for (c1, c2), (lbl, val, bg) in zip(col_map, stat_row):
-                    txt = f"{lbl}\n{val:,}" if isinstance(val, int) else f"{lbl}\n{val:,.2f} ر.س"
+                    txt = f"{lbl}\n{val:,}" if isinstance(val, int) else f"{lbl}\n{val:,.2f} ﷼"
                     _xmerge(ws, r, c1, c2, txt, size=9, bg=bg, h='center', wrap=True)
                 r += 1
 
             # صف الراتب الإجمالي
             _xrow(ws, r, 22)
-            _xmerge(ws, r, 1, 4, f"الراتب الإجمالي:  {gross:,.2f} ر.س",
+            _xmerge(ws, r, 1, 4, f"الراتب الإجمالي:  {gross:,.2f} ﷼",
                     bold=True, size=11, fg=_XC['navy'], bg=_XC['lblue'], h='right')
             _xmerge(ws, r, 5, 9, f"— خصومات {total_ded:,.2f}  — تأمينات {gosi_ded:,.2f}",
                     size=10, fg=_XC['red'], bg=_XC['lred'], h='center')
@@ -1135,7 +1135,7 @@ def export_payroll_excel(year, month):
             _xrow(ws, r, 30)
             net_bg = _XC['lgreen'] if net >= gross * 0.85 else (_XC['lorange'] if net >= gross * 0.7 else _XC['lred'])
             net_fg = _XC['green']  if net >= gross * 0.85 else (_XC['orange']  if net >= gross * 0.7 else _XC['red'])
-            _xmerge(ws, r, 1, 9, f"صافي الراتب:   {net:,.2f} ر.س",
+            _xmerge(ws, r, 1, 9, f"صافي الراتب:   {net:,.2f} ﷼",
                     bold=True, size=14, fg=net_fg, bg=net_bg, h='center')
             r += 1
 
@@ -1245,7 +1245,7 @@ def export_payroll_excel(year, month):
         _xrow(ws2, tot + 1, 16)
         pct = round((1 - tded / tgross) * 100, 1) if tgross else 100
         _xmerge(ws2, tot + 1, 1, N,
-                f"نسبة الخصومات من الإجمالي:  {pct}%   |   صافي المسيرة:  {tnet:,.2f} ر.س",
+                f"نسبة الخصومات من الإجمالي:  {pct}%   |   صافي المسيرة:  {tnet:,.2f} ﷼",
                 size=10, fg=_XC['navy'], bg=_XC['lteal'], h='center')
 
         # ── منطقة التوقيعات ──
