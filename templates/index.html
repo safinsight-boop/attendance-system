@@ -20,6 +20,8 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--dark2); }
+* { font-variant-numeric: normal; unicode-bidi: plaintext; }
+input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 /* ── Sidebar ── */
 .sidebar {
@@ -1549,12 +1551,12 @@ function badge(s) {
 
 function fmt(n) {
   if (!n && n !== 0) return '—';
-  return Number(n).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 function setLastUpdate() {
   document.getElementById('last-update').textContent =
-    new Date().toLocaleTimeString('ar-SA', {hour:'2-digit', minute:'2-digit'});
+    new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: false});
 }
 
 // ════════════════════════════════════════════
