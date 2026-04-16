@@ -10,16 +10,22 @@
 <style>
 :root {
   --sidebar-w: 255px;
-  --dark:    #0f172a;
-  --dark2:   #1e293b;
-  --accent:  #3b82f6;
-  --accent2: #2563eb;
-  --muted:   #94a3b8;
-  --border:  #e2e8f0;
-  --bg:      #f1f5f9;
+  --primary:  #1A3C40;   /* أزرق بترولي داكن */
+  --primary2: #152f32;   /* أغمق للـ hover */
+  --gold:     #C6A664;   /* ذهبي مطفي */
+  --gold2:    #b8954f;   /* ذهبي أغمق */
+  --dark:     #1A3C40;
+  --dark2:    #2d4a4e;
+  --text:     #2e3f41;   /* رمادي فحمي للنصوص */
+  --muted:    #7a9a9d;   /* رمادي مائل للأخضر */
+  --accent:   #1A3C40;
+  --accent2:  #152f32;
+  --border:   #dce8e8;
+  --bg:       #F4F9F9;   /* خلفية خضراء مزرقة باهتة */
+  --card:     #ffffff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--dark2); }
+body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); }
 * { font-variant-numeric: normal; unicode-bidi: plaintext; }
 input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
@@ -27,48 +33,50 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .sidebar {
   position: fixed; top: 0; right: 0;
   width: var(--sidebar-w); height: 100vh;
-  background: var(--dark); display: flex;
+  background: var(--primary); display: flex;
   flex-direction: column; z-index: 1000;
   overflow-y: auto; overflow-x: hidden;
 }
 .sidebar::-webkit-scrollbar { width: 4px; }
-.sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(198,166,100,0.3); border-radius: 4px; }
 
 .sidebar-logo {
   padding: 22px 18px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid rgba(198,166,100,0.18);
   display: flex; align-items: center; gap: 11px; flex-shrink: 0;
 }
 .logo-icon {
-  width: 42px; height: 42px; background: var(--accent);
+  width: 42px; height: 42px; background: var(--gold);
   border-radius: 11px; display: flex; align-items: center;
-  justify-content: center; color: #fff; font-size: 19px; flex-shrink: 0;
+  justify-content: center; color: var(--primary); font-size: 19px; flex-shrink: 0;
 }
-.logo-name { color: #f1f5f9; font-size: 15px; font-weight: 700; line-height: 1.25; }
-.logo-sub  { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.logo-name { color: #ffffff; font-size: 15px; font-weight: 700; line-height: 1.25; }
+.logo-sub  { color: rgba(198,166,100,0.75); font-size: 11px; margin-top: 2px; }
 
 .nav-group { padding: 14px 10px 4px; }
 .nav-label {
-  color: #475569; font-size: 10.5px; font-weight: 700;
+  color: rgba(198,166,100,0.55); font-size: 10.5px; font-weight: 700;
   letter-spacing: 1px; text-transform: uppercase;
   padding: 0 8px; margin-bottom: 5px;
 }
 .nav-btn {
   display: flex; align-items: center; gap: 11px;
   padding: 10px 12px; border-radius: 9px;
-  color: var(--muted); font-size: 14px; font-weight: 500;
+  color: rgba(255,255,255,0.65); font-size: 14px; font-weight: 500;
   cursor: pointer; transition: all .18s; margin-bottom: 2px;
   border: none; background: transparent; width: 100%; text-align: right;
 }
-.nav-btn:hover  { background: rgba(255,255,255,0.05); color: #cbd5e1; }
-.nav-btn.active { background: rgba(59,130,246,0.14); color: #60a5fa;
-                  border-right: 3px solid var(--accent); }
-.nav-btn .ni    { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-btn:hover  { background: rgba(255,255,255,0.07); color: #ffffff; }
+.nav-btn:hover .ni { color: var(--gold); }
+.nav-btn.active { background: rgba(198,166,100,0.15); color: #ffffff;
+                  border-right: 3px solid var(--gold); }
+.nav-btn.active .ni { color: var(--gold); }
+.nav-btn .ni    { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; color: var(--gold); }
 
 .sidebar-footer {
   margin-top: auto; padding: 14px 18px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  color: #475569; font-size: 12px; text-align: center; flex-shrink: 0;
+  border-top: 1px solid rgba(198,166,100,0.15);
+  color: rgba(255,255,255,0.4); font-size: 12px; text-align: center; flex-shrink: 0;
 }
 
 /* ── Main ── */
@@ -76,13 +84,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 .topbar {
   background: #fff; padding: 14px 26px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 6px rgba(26,60,64,0.07);
 }
-.topbar-title { font-size: 19px; font-weight: 800; color: var(--dark); }
-.topbar-sub   { font-size: 12.5px; color: #64748b; margin-top: 1px; }
+.topbar-title { font-size: 19px; font-weight: 800; color: var(--primary); }
+.topbar-sub   { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
 .topbar-actions { display: flex; gap: 10px; align-items: center; }
 
 .page-body { padding: 22px 26px; }
@@ -94,53 +102,53 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
 .stat-card {
   background: #fff; border-radius: 14px; padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 6px rgba(26,60,64,0.07);
   border-top: 4px solid transparent; transition: transform .2s, box-shadow .2s;
 }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
-.stat-card.c-green  { border-color: #22c55e; }
-.stat-card.c-red    { border-color: #ef4444; }
-.stat-card.c-yellow { border-color: #f59e0b; }
-.stat-card.c-blue   { border-color: #3b82f6; }
-.stat-card.c-purple { border-color: #8b5cf6; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(26,60,64,0.12); }
+.stat-card.c-green  { border-color: #2a9d8f; }
+.stat-card.c-red    { border-color: #e76f51; }
+.stat-card.c-yellow { border-color: var(--gold); }
+.stat-card.c-blue   { border-color: var(--primary); }
+.stat-card.c-purple { border-color: #6d6875; }
 .stat-icon  { font-size: 26px; margin-bottom: 10px; }
-.stat-num   { font-size: 34px; font-weight: 900; color: var(--dark); line-height: 1; }
-.stat-label { font-size: 13px; color: #64748b; margin-top: 5px; }
+.stat-num   { font-size: 34px; font-weight: 900; color: var(--primary); line-height: 1; }
+.stat-label { font-size: 13px; color: var(--muted); margin-top: 5px; }
 
 /* ── Mini stats row ── */
 .mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
 .mini-card {
   background: #fff; border-radius: 12px; padding: 14px 18px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 6px rgba(26,60,64,0.07);
 }
-.mini-label { font-size: 12px; color: #64748b; font-weight: 600; }
+.mini-label { font-size: 12px; color: var(--muted); font-weight: 600; }
 .mini-num   { font-size: 26px; font-weight: 900; margin-top: 4px; }
 
 /* ── Card ── */
 .card-wrap {
   background: #fff; border-radius: 14px; padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 18px;
+  box-shadow: 0 1px 6px rgba(26,60,64,0.07); margin-bottom: 18px;
 }
 .card-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px; padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 2px solid var(--bg);
 }
-.card-head h5 { font-size: 15px; font-weight: 700; color: var(--dark); margin: 0; }
+.card-head h5 { font-size: 15px; font-weight: 700; color: var(--primary); margin: 0; }
 
 /* ── Table ── */
 .tbl { font-size: 13.5px; width: 100%; border-collapse: collapse; }
 .tbl thead th {
-  background: #f8fafc; font-weight: 700; color: #475569;
+  background: var(--bg); font-weight: 700; color: var(--primary);
   font-size: 12px; letter-spacing: .4px; padding: 11px 12px;
   white-space: nowrap; border-bottom: 2px solid var(--border);
   text-align: center;
 }
 .tbl tbody td {
-  padding: 10px 12px; border-bottom: 1px solid #f1f5f9;
-  vertical-align: middle; color: #334155; text-align: center;
+  padding: 10px 12px; border-bottom: 1px solid var(--bg);
+  vertical-align: middle; color: var(--text); text-align: center;
 }
-.tbl tbody tr:hover td { background: #f8fafc; }
+.tbl tbody tr:hover td { background: #f0f6f6; }
 .tbl tbody tr:last-child td { border-bottom: none; }
 
 /* ── Badges ── */
@@ -158,43 +166,56 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 /* ── Leave Tabs ── */
 .leave-tab {
-  background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569;
+  background: #fff; border: 1.5px solid var(--border); color: var(--text);
   border-radius: 8px; padding: 7px 14px; font-family: Tajawal; font-size: 13px;
   font-weight: 600; cursor: pointer; transition: all .18s; display: flex;
   align-items: center; gap: 6px;
 }
-.leave-tab:hover { background: #e2e8f0; color: #1e293b; }
+.leave-tab:hover { background: var(--bg); color: var(--primary); border-color: var(--primary); }
 .leave-tab.active {
-  background: var(--accent); border-color: var(--accent);
-  color: #fff; box-shadow: 0 2px 8px rgba(29,111,175,.25);
+  background: var(--primary); border-color: var(--primary);
+  color: #fff; box-shadow: 0 2px 8px rgba(26,60,64,.25);
 }
+.leave-tab.active i { color: var(--gold); }
 
 /* ── Buttons ── */
 .btn-main {
-  background: var(--accent); border: none; color: #fff;
+  background: var(--primary); border: none; color: #fff;
   border-radius: 9px; padding: 9px 18px;
   font-family: 'Tajawal'; font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: background .18s;
+  cursor: pointer; transition: all .18s;
   display: inline-flex; align-items: center; gap: 7px;
 }
-.btn-main:hover { background: var(--accent2); }
+.btn-main:hover { background: var(--primary2); box-shadow: 0 3px 10px rgba(26,60,64,.25); }
+.btn-gold {
+  background: var(--gold); border: none; color: var(--primary);
+  border-radius: 9px; padding: 9px 18px;
+  font-family: 'Tajawal'; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-gold:hover { background: var(--gold2); }
 .btn-green {
-  background: #22c55e; border: none; color: #fff;
+  background: #2a9d8f; border: none; color: #fff;
   border-radius: 9px; padding: 9px 18px;
   font-family: 'Tajawal'; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: background .18s;
   display: inline-flex; align-items: center; gap: 7px;
 }
-.btn-green:hover { background: #16a34a; }
+.btn-green:hover { background: #21867a; }
 .btn-sm {
   border: none; border-radius: 7px; padding: 5px 11px;
   font-family: 'Tajawal'; font-size: 12.5px; font-weight: 600;
   cursor: pointer; transition: all .15s;
 }
-.btn-edit   { background: #dbeafe; color: #1d4ed8; }
-.btn-edit:hover { background: #bfdbfe; }
-.btn-del    { background: #fee2e2; color: #b91c1c; }
-.btn-del:hover  { background: #fecaca; }
+.btn-edit        { background: #e8f4f4; color: var(--primary); }
+.btn-edit:hover  { background: #d0eaea; }
+.btn-del         { background: #fde8e8; color: #c0392b; }
+.btn-del:hover   { background: #facece; }
+.btn-approve     { background: #e8f5f0; color: #1e7e5a; }
+.btn-approve:hover { background: #d0ecdf; }
+.btn-reject      { background: #fde8e8; color: #c0392b; }
+.btn-reject:hover  { background: #facece; }
 
 /* ── Filters ── */
 .filters {
@@ -203,33 +224,34 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 }
 .fg label {
   display: block; font-size: 12px; font-weight: 700;
-  color: #64748b; margin-bottom: 5px;
+  color: var(--primary); margin-bottom: 5px;
 }
 .fg select, .fg input[type="date"], .fg input[type="number"] {
   border: 1.5px solid var(--border); border-radius: 9px;
   padding: 8px 12px; font-family: 'Tajawal'; font-size: 14px;
-  color: var(--dark); background: #fff; outline: none;
+  color: var(--text); background: #fff; outline: none;
   min-width: 130px; transition: border .18s;
 }
-.fg select:focus, .fg input:focus { border-color: var(--accent); }
+.fg select:focus, .fg input:focus { border-color: var(--primary); }
 
 /* ── Modal ── */
-.modal-content { border-radius: 14px; border: none; }
-.modal-header  { border-bottom: 1px solid #f1f5f9; padding: 18px 22px; }
-.modal-title   { font-size: 16px; font-weight: 800; }
+.modal-content { border-radius: 14px; border: none; box-shadow: 0 8px 32px rgba(26,60,64,0.15); }
+.modal-header  { border-bottom: 2px solid var(--bg); padding: 18px 22px; background: var(--primary); border-radius: 14px 14px 0 0; }
+.modal-title   { font-size: 16px; font-weight: 800; color: #fff; }
+.modal-header .btn-close { filter: brightness(0) invert(1); opacity: 0.7; }
 .modal-body    { padding: 20px 22px; }
-.modal-footer  { border-top: 1px solid #f1f5f9; padding: 14px 22px; }
-.fl { display: block; font-size: 12.5px; font-weight: 700; color: #374151; margin-bottom: 5px; }
+.modal-footer  { border-top: 2px solid var(--bg); padding: 14px 22px; }
+.fl { display: block; font-size: 12.5px; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
 .fc {
   width: 100%; border: 1.5px solid var(--border); border-radius: 9px;
   padding: 9px 12px; font-family: 'Tajawal'; font-size: 14px;
-  color: var(--dark); outline: none; transition: border .18s;
+  color: var(--text); outline: none; transition: border .18s; background: #fff;
 }
-.fc:focus { border-color: var(--accent); }
+.fc:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,60,64,0.08); }
 .form2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-.divider { border: none; border-top: 1px solid #f1f5f9; margin: 16px 0; }
-.section-title { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 12px; }
+.divider { border: none; border-top: 2px solid var(--bg); margin: 16px 0; }
+.section-title { font-size: 13px; font-weight: 700; color: var(--gold2); margin-bottom: 12px; letter-spacing: .3px; }
 
 /* ── Toast ── */
 #toast-wrap {
@@ -237,15 +259,15 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   z-index: 9999; display: flex; flex-direction: column; gap: 8px;
 }
 .toast-el {
-  background: var(--dark2); color: #fff; padding: 11px 18px;
+  background: var(--primary); color: #fff; padding: 11px 18px;
   border-radius: 10px; font-size: 13.5px; min-width: 220px;
   display: flex; align-items: center; gap: 9px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 16px rgba(26,60,64,0.25);
   animation: tIn .28s ease;
 }
-.toast-el.ok  { border-right: 4px solid #22c55e; }
-.toast-el.err { border-right: 4px solid #ef4444; }
-.toast-el.inf { border-right: 4px solid #3b82f6; }
+.toast-el.ok  { border-right: 4px solid #2a9d8f; }
+.toast-el.err { border-right: 4px solid #e76f51; }
+.toast-el.inf { border-right: 4px solid var(--gold); }
 @keyframes tIn { from { transform:translateY(14px); opacity:0; } to { opacity:1; } }
 
 /* ── Spinner ── */
@@ -259,9 +281,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 /* ── Empty state ── */
 .empty-state {
-  text-align: center; padding: 48px 24px; color: #94a3b8;
+  text-align: center; padding: 48px 24px; color: var(--muted);
 }
-.empty-state i { font-size: 42px; margin-bottom: 12px; display: block; }
+.empty-state i { font-size: 42px; margin-bottom: 12px; display: block; color: var(--gold); opacity: .6; }
 .empty-state p { font-size: 15px; }
 
 /* ── Responsive ── */
@@ -277,30 +299,28 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 /* ── Login ── */
 #login-overlay {
-  position: fixed; inset: 0; background: linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);
+  position: fixed; inset: 0;
+  background: linear-gradient(145deg, #0e2224 0%, #1A3C40 50%, #1e4d52 100%);
   z-index: 9000; display: flex; align-items: center; justify-content: center;
 }
 .login-box {
   background: #fff; border-radius: 18px; padding: 40px 36px;
-  width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  border-top: 4px solid var(--gold);
 }
 .login-logo { text-align: center; margin-bottom: 28px; }
-.login-logo .ico { width:60px;height:60px;background:var(--accent);border-radius:16px;
-  display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:28px; }
-.login-logo h2 { font-size:20px;font-weight:800;margin-top:12px;color:var(--dark); }
-.login-logo p  { font-size:13px;color:#64748b;margin-top:2px; }
-.login-err { background:#fee2e2;color:#b91c1c;padding:10px 14px;
+.login-logo .ico { width:60px;height:60px;background:var(--primary);border-radius:16px;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--gold);font-size:28px; }
+.login-logo h2 { font-size:20px;font-weight:800;margin-top:12px;color:var(--primary); }
+.login-logo p  { font-size:13px;color:var(--muted);margin-top:2px; }
+.login-err { background:#fde8e8;color:#c0392b;padding:10px 14px;
   border-radius:8px;font-size:13px;margin-bottom:14px;display:none; }
 
 /* ── Status badges for excuse/leave ── */
-.b-pending  { background:#fef9c3; color:#854d0e; }
-.b-approved { background:#dcfce7; color:#15803d; }
-.b-rejected { background:#fee2e2; color:#b91c1c; }
-.b-leave    { background:#e0e7ff; color:#3730a3; }
-.btn-approve { background:#dcfce7; color:#15803d; }
-.btn-approve:hover { background:#bbf7d0; }
-.btn-reject  { background:#fee2e2; color:#b91c1c; }
-.btn-reject:hover  { background:#fecaca; }
+.b-pending  { background:#fef8e7; color:#a07820; }
+.b-approved { background:#e8f5f0; color:#1e7e5a; }
+.b-rejected { background:#fde8e8; color:#c0392b; }
+.b-leave    { background:#e8f0fa; color:#1a3c7a; }
 </style>
 </head>
 <body>
@@ -402,12 +422,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   </div>
 
   <div class="sidebar-footer">
-    <div style="margin-bottom:8px;color:#cbd5e1;font-weight:600" id="sidebar-username"></div>
-    <button onclick="doLogout()" style="background:rgba(239,68,68,0.15);color:#fca5a5;border:none;
-      border-radius:7px;padding:6px 14px;font-family:Tajawal;font-size:12px;cursor:pointer;width:100%">
+    <div style="margin-bottom:8px;color:#ffffff;font-weight:700;font-size:13px" id="sidebar-username"></div>
+    <button onclick="doLogout()" style="background:rgba(198,166,100,0.15);color:var(--gold);border:1px solid rgba(198,166,100,0.3);
+      border-radius:7px;padding:6px 14px;font-family:Tajawal;font-size:12px;cursor:pointer;width:100%;transition:all .18s"
+      onmouseover="this.style.background='rgba(198,166,100,0.25)'" onmouseout="this.style.background='rgba(198,166,100,0.15)'">
       <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
     </button>
-    <div style="margin-top:8px;color:#475569;font-size:11px">
+    <div style="margin-top:8px;color:rgba(198,166,100,0.5);font-size:11px">
       <i class="fas fa-clock" style="margin-left:4px"></i>
       آخر تحديث: <span id="last-update">—</span>
     </div>
@@ -482,7 +503,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- Recent attendance -->
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-history" style="color:var(--accent);margin-left:8px"></i>آخر سجلات الحضور</h5>
+          <h5><i class="fas fa-history" style="color:var(--gold);margin-left:8px"></i>آخر سجلات الحضور</h5>
           <button class="btn-main" style="padding:6px 14px;font-size:13px" onclick="loadDashboard()">
             <i class="fas fa-sync-alt"></i> تحديث
           </button>
@@ -532,7 +553,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-calendar-alt" style="color:var(--accent);margin-left:8px"></i>سجل الحضور والغياب</h5>
+          <h5><i class="fas fa-calendar-alt" style="color:var(--gold);margin-left:8px"></i>سجل الحضور والغياب</h5>
           <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
         </div>
         <div class="table-responsive">
@@ -626,7 +647,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-money-check-alt" style="color:var(--accent);margin-left:8px"></i>تفاصيل الرواتب</h5>
+          <h5><i class="fas fa-money-check-alt" style="color:var(--gold);margin-left:8px"></i>تفاصيل الرواتب</h5>
         </div>
         <div class="table-responsive">
           <table class="tbl">
@@ -654,13 +675,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- بطاقة رصيد الإجازة السنوية -->
       <div id="leave-balance-card" class="card-wrap" style="margin-bottom:16px;display:none">
         <div class="card-head">
-          <h5><i class="fas fa-umbrella-beach" style="color:#0d9488;margin-left:8px"></i>رصيد الإجازة السنوية</h5>
+          <h5><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>رصيد الإجازة السنوية</h5>
           <span id="leave-bal-year" style="font-size:13px;color:#64748b;font-weight:600"></span>
         </div>
         <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);padding:14px 18px">
           <div class="mini-card">
             <div class="mini-label">الحق السنوي</div>
-            <div class="mini-num" id="lb-entitlement" style="color:#1d6faf">—</div>
+            <div class="mini-num" id="lb-entitlement" style="color:var(--primary)">—</div>
             <div style="font-size:11px;color:#94a3b8">يوم</div>
           </div>
           <div class="mini-card">
@@ -691,7 +712,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-calendar-check" style="color:var(--accent);margin-left:8px"></i>سجل حضوري وغيابي</h5>
+          <h5><i class="fas fa-calendar-check" style="color:var(--gold);margin-left:8px"></i>سجل حضوري وغيابي</h5>
           <span id="myatt-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
         </div>
         <div class="table-responsive">
@@ -763,7 +784,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-att-requests" class="page">
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-paper-plane" style="color:var(--accent);margin-left:8px"></i>طلبات الحضور</h5>
+          <h5><i class="fas fa-paper-plane" style="color:var(--gold);margin-left:8px"></i>طلبات الحضور</h5>
         </div>
         <div class="table-responsive">
           <table class="tbl">
@@ -805,7 +826,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-overtime" class="page">
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-clock" style="color:var(--accent);margin-left:8px"></i>سجل الإضافي</h5>
+          <h5><i class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>سجل الإضافي</h5>
         </div>
         <div class="table-responsive">
           <table class="tbl">
@@ -964,7 +985,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-play-circle" style="color:var(--accent);margin-left:8px"></i>تشغيل يدوي</h5>
+        <h5 class="modal-title"><i class="fas fa-play-circle" style="color:var(--gold);margin-left:8px"></i>تشغيل يدوي</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -992,7 +1013,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="emp-modal-title">
-          <i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة موظف
+          <i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة موظف
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -1102,7 +1123,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:500px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-paper-plane" style="color:var(--accent);margin-left:8px"></i>طلب تأخر / خروج مبكر</h5>
+        <h5 class="modal-title"><i class="fas fa-paper-plane" style="color:var(--gold);margin-left:8px"></i>طلب تأخر / خروج مبكر</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1152,7 +1173,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-file-alt" style="color:var(--accent);margin-left:8px"></i>رفع عذر</h5>
+        <h5 class="modal-title"><i class="fas fa-file-alt" style="color:var(--gold);margin-left:8px"></i>رفع عذر</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1199,7 +1220,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--accent);margin-left:8px"></i>طلب إجازة</h5>
+        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>طلب إجازة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1248,7 +1269,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-star" style="color:var(--accent);margin-left:8px"></i>إضافة إجازة رسمية</h5>
+        <h5 class="modal-title"><i class="fas fa-star" style="color:var(--gold);margin-left:8px"></i>إضافة إجازة رسمية</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1277,7 +1298,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة مستخدم</h5>
+        <h5 class="modal-title"><i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة مستخدم</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1761,8 +1782,8 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-id').value = emp?.id || '';
   document.getElementById('emp-modal-title').innerHTML =
     isEdit
-      ? '<i class="fas fa-user-edit" style="color:var(--accent);margin-left:8px"></i>تعديل بيانات الموظف'
-      : '<i class="fas fa-user-plus" style="color:var(--accent);margin-left:8px"></i>إضافة موظف جديد';
+      ? '<i class="fas fa-user-edit" style="color:var(--gold);margin-left:8px"></i>تعديل بيانات الموظف'
+      : '<i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة موظف جديد';
 
   document.getElementById('emp-namear').value    = emp?.name_ar     || '';
   document.getElementById('emp-nameen').value    = emp?.name_en     || '';
