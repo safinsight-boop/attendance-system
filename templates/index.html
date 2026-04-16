@@ -1672,7 +1672,10 @@ function renderEmps() {
       <td><span class="badge-s ${e.work_type === 'fixed' ? 'b-fixed':'b-flex'}">
         ${e.work_type === 'fixed' ? '⏰ ثابت':'🔄 مرن'}
       </span></td>
-      <td><b>${fmt(e.salary)}</b> <span style="color:#94a3b8;font-size:12px">ر.س</span></td>
+      <td>
+        <b>${fmt(e.salary + e.housing + e.transport)}</b> <span style="color:#94a3b8;font-size:12px">ر.س</span><br>
+        <span style="font-size:10px;color:#94a3b8">${fmt(e.salary)}+${fmt(e.housing)}+${fmt(e.transport)}</span>
+      </td>
       <td>${balHtml}</td>
       <td style="font-size:12.5px;color:#64748b">${e.email || '—'}</td>
       <td>
