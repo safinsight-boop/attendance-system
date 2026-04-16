@@ -1849,7 +1849,10 @@ async function loadPayroll() {
         <td style="color:${r.total_ded>0?'#dc2626':'inherit'};font-weight:${r.total_ded>0?700:400}">
           ${fmt(r.total_ded)}
         </td>
-        <td>${fmt(r.other_ded)}</td>
+        <td>
+          <b style="color:#b45309">${fmt(r.gosi_ded ?? r.other_ded)}</b><br>
+          <span style="font-size:10px;color:#94a3b8">${fmt(r.salary + r.housing + r.transport)} × 10.75%</span>
+        </td>
         <td style="font-weight:800;color:${netColor};font-size:15px">${fmt(r.net)}</td>
         <td>${r.days}</td>
         <td>${r.late ? `<span style="color:#dc2626;font-weight:700">${r.late}</span>` : '—'}</td>
