@@ -499,7 +499,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
         </div>
         <div class="mini-card">
-          <div class="mini-label">💸 إجمالي الخصومات (SR)</div>
+          <div class="mini-label">💸 إجمالي الخصومات (<span class="sar-sym"></span>)</div>
           <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
         </div>
         <div class="mini-card">
@@ -746,7 +746,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
         <div class="table-responsive">
           <table class="tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (SR)</th><th>رفع عذر</th></tr></thead>
+            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (<span class="sar-sym"></span>)</th><th>رفع عذر</th></tr></thead>
             <tbody id="myvio-tbody"></tbody>
           </table>
         </div>
@@ -1090,22 +1090,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
         <div class="form3" style="margin-bottom:14px">
           <div>
-            <label class="fl">الراتب الأساسي (SR)</label>
+            <label class="fl">الراتب الأساسي (<span class="sar-sym"></span>)</label>
             <input type="number" id="emp-salary" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل السكن (SR)</label>
+            <label class="fl">بدل السكن (<span class="sar-sym"></span>)</label>
             <input type="number" id="emp-housing" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل المواصلات (SR)</label>
+            <label class="fl">بدل المواصلات (<span class="sar-sym"></span>)</label>
             <input type="number" id="emp-transport" class="fc" value="0" min="0">
           </div>
         </div>
 
         <div class="form2" style="margin-bottom:4px">
           <div>
-            <label class="fl">عمولة المبيعات (SR)</label>
+            <label class="fl">عمولة المبيعات (<span class="sar-sym"></span>)</label>
             <input type="number" id="emp-commission" class="fc" value="0" min="0">
           </div>
           <div>
@@ -2130,17 +2130,17 @@ async function loadMyPayroll() {
         <div class="stat-card c-blue">
           <div class="stat-icon">💰</div>
           <div class="stat-num">${fmtSAR(d.gross)}</div>
-          <div class="stat-label">الراتب الإجمالي (SR)</div>
+          <div class="stat-label">الراتب الإجمالي (<span class="sar-sym"></span>)</div>
         </div>
         <div class="stat-card c-red">
           <div class="stat-icon">📉</div>
           <div class="stat-num">${fmtSAR(d.deductions + d.other_ded)}</div>
-          <div class="stat-label">إجمالي الخصومات (SR)</div>
+          <div class="stat-label">إجمالي الخصومات (<span class="sar-sym"></span>)</div>
         </div>
         <div class="stat-card c-green">
           <div class="stat-icon">✅</div>
           <div class="stat-num">${fmtSAR(d.net)}</div>
-          <div class="stat-label">الراتب الصافي (SR)</div>
+          <div class="stat-label">الراتب الصافي (<span class="sar-sym"></span>)</div>
         </div>
       </div>
       <div class="card-wrap">
