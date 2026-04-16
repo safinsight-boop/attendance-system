@@ -154,6 +154,19 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
 .b-fixed   { background: #ede9fe; color: #6d28d9; }
 .b-flex    { background: #fce7f3; color: #9d174d; }
 
+/* ── Leave Tabs ── */
+.leave-tab {
+  background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569;
+  border-radius: 8px; padding: 7px 14px; font-family: Tajawal; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all .18s; display: flex;
+  align-items: center; gap: 6px;
+}
+.leave-tab:hover { background: #e2e8f0; color: #1e293b; }
+.leave-tab.active {
+  background: var(--accent); border-color: var(--accent);
+  color: #fff; box-shadow: 0 2px 8px rgba(29,111,175,.25);
+}
+
 /* ── Buttons ── */
 .btn-main {
   background: var(--accent); border: none; color: #fff;
@@ -362,9 +375,6 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
     </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
       <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
-    </button>
-    <button class="nav-btn" id="nb-holidays" onclick="showPage('holidays')">
-      <span class="ni"><i class="fas fa-star"></i></span> الإجازات الرسمية
     </button>
     <button class="nav-btn" id="nb-users" onclick="showPage('users')">
       <span class="ni"><i class="fas fa-user-shield"></i></span> المستخدمون
@@ -817,45 +827,109 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
          PAGE: LEAVES
     ══════════════════════════════════════ -->
     <div id="page-leaves" class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <span style="font-size:14px;color:#64748b;font-weight:600">سجل الإجازات</span>
-        <button class="btn-main" onclick="openLeaveModal()">
-          <i class="fas fa-plus"></i> طلب إجازة
+      <!-- تبويبات أنواع الإجازات -->
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+        <button class="leave-tab active" id="ltab-emp" onclick="switchLeaveTab('emp')">
+          <i class="fas fa-umbrella-beach"></i> إجازات الموظفين
         </button>
-      </div>
-      <div class="card-wrap">
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead><tr>
-              <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
-              <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
-            </tr></thead>
-            <tbody id="leaves-tbody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
-            </tbody>
-          </table>
+        <button class="leave-tab" id="ltab-annual" onclick="switchLeaveTab('annual')">
+          <i class="fas fa-calendar-alt"></i> الإجازة السنوية
+        </button>
+        <button class="leave-tab" id="ltab-sick" onclick="switchLeaveTab('sick')">
+          <i class="fas fa-medkit"></i> الإجازة المرضية
+        </button>
+        <button class="leave-tab" id="ltab-emergency" onclick="switchLeaveTab('emergency')">
+          <i class="fas fa-bolt"></i> إجازة طارئة
+        </button>
+        <button class="leave-tab hr-only" id="ltab-holidays" onclick="switchLeaveTab('holidays')" style="display:none">
+          <i class="fas fa-star"></i> الإجازات الرسمية
+        </button>
+        <div style="margin-right:auto">
+          <button class="btn-main" id="leave-add-btn" onclick="openLeaveModal()">
+            <i class="fas fa-plus"></i> <span id="leave-add-label">طلب إجازة</span>
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- ══════════════════════════════════════
-         PAGE: HOLIDAYS
-    ══════════════════════════════════════ -->
-    <div id="page-holidays" class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <span style="font-size:14px;color:#64748b;font-weight:600">الإجازات الرسمية</span>
-        <button class="btn-main" onclick="openHolidayModal()">
-          <i class="fas fa-plus"></i> إضافة إجازة رسمية
-        </button>
+      <!-- محتوى: إجازات الموظفين (كل الأنواع أو مفلترة) -->
+      <div id="lpanel-emp" class="leave-panel">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
+                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+              </tr></thead>
+              <tbody id="leaves-tbody">
+                <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div class="card-wrap">
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>الاسم</th><th>إجراء</th></tr></thead>
-            <tbody id="holidays-tbody">
-              <tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>
-            </tbody>
-          </table>
+
+      <!-- محتوى: الإجازة السنوية -->
+      <div id="lpanel-annual" class="leave-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
+                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+              </tr></thead>
+              <tbody id="leaves-annual-tbody">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- محتوى: الإجازة المرضية -->
+      <div id="lpanel-sick" class="leave-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
+                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+              </tr></thead>
+              <tbody id="leaves-sick-tbody">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- محتوى: إجازة طارئة -->
+      <div id="lpanel-emergency" class="leave-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
+                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+              </tr></thead>
+              <tbody id="leaves-emergency-tbody">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- محتوى: الإجازات الرسمية -->
+      <div id="lpanel-holidays" class="leave-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>الاسم</th><th>إجراء</th></tr></thead>
+              <tbody id="holidays-tbody">
+                <tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1271,7 +1345,6 @@ const PAGE_TITLES = {
   excuses:        'الأعذار',
   overtime:       'سجل الإضافي',
   leaves:         'الإجازات',
-  holidays:       'الإجازات الرسمية',
   users:          'إدارة المستخدمين',
   'my-attendance':'حضوري وغيابي',
   'my-violations':'مخالفاتي',
@@ -1423,7 +1496,6 @@ function showPage(page) {
   if (page === 'excuses')        loadExcuses();
   if (page === 'overtime')       loadOvertime();
   if (page === 'leaves')         loadLeaves();
-  if (page === 'holidays')       loadHolidays();
   if (page === 'users')          loadUsers();
   if (page === 'my-attendance')  loadMyAttendance();
   if (page === 'my-violations')  loadMyViolations();
@@ -2313,21 +2385,60 @@ async function decideOT(id, status) {
 const LEAVE_NAMES = {annual:'إجازة سنوية', sick:'إجازة مرضية', emergency:'إجازة اضطرارية',
                      official:'إجازة رسمية', official_holiday:'إجازة رسمية'};
 
+let _currentLeaveTab = 'emp';
+
+function switchLeaveTab(tab) {
+  _currentLeaveTab = tab;
+  // تفعيل التبويب
+  document.querySelectorAll('.leave-tab').forEach(b => b.classList.remove('active'));
+  const tabEl = document.getElementById(`ltab-${tab}`);
+  if (tabEl) tabEl.classList.add('active');
+  // إخفاء كل اللوحات
+  document.querySelectorAll('.leave-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById(`lpanel-${tab}`);
+  if (panel) panel.style.display = '';
+  // زر الإضافة
+  const addBtn = document.getElementById('leave-add-btn');
+  const addLbl = document.getElementById('leave-add-label');
+  if (tab === 'holidays') {
+    addLbl.textContent = 'إضافة إجازة رسمية';
+    addBtn.onclick = openHolidayModal;
+    loadHolidays();
+  } else {
+    addLbl.textContent = 'طلب إجازة';
+    addBtn.onclick = () => openLeaveModal(tab === 'emp' ? null : tab);
+    loadLeavesByType(tab);
+  }
+}
+
 async function loadLeaves() {
-  const tb = document.getElementById('leaves-tbody');
+  const isHR = _currentUser?.role !== 'employee';
+  document.querySelectorAll('#page-leaves .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
+  // عرض تبويب الإجازات الرسمية للـ HR فقط
+  const htab = document.getElementById('ltab-holidays');
+  if (htab) htab.style.display = isHR ? '' : 'none';
+  switchLeaveTab(_currentLeaveTab);
+}
+
+async function loadLeavesByType(tab) {
+  // تحديد الـ tbody المناسب
+  const tbId = tab === 'emp' ? 'leaves-tbody' : `leaves-${tab}-tbody`;
+  const tb   = document.getElementById(tbId);
+  if (!tb) return;
+  const isHR  = _currentUser?.role !== 'employee';
+  const param = tab === 'emp' ? '' : `?leave_type=${tab}`;
   try {
-    const rows = await GET('/api/leaves');
-    const isHR = _currentUser?.role !== 'employee';
-    document.querySelectorAll('#page-leaves .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
+    const rows = await GET(`/api/leaves${param}`);
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
+      const cols = isHR ? 8 : 7;
+      tb.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
       return;
     }
     tb.innerHTML = rows.map((r, i) => `
       <tr>
         <td style="color:#94a3b8">${i+1}</td>
         <td><b>${r.name_ar}</b></td>
-        <td>${LEAVE_NAMES[r.leave_type] || r.leave_type}</td>
+        ${tab === 'emp' ? `<td>${LEAVE_NAMES[r.leave_type] || r.leave_type}</td>` : ''}
         <td>${r.start_date}</td>
         <td>${r.end_date}</td>
         <td><b>${r.days}</b></td>
@@ -2341,7 +2452,7 @@ async function loadLeaves() {
   } catch(e) { toast('خطأ', 'err'); }
 }
 
-function openLeaveModal() {
+function openLeaveModal(defaultType = null) {
   const isHR = _currentUser?.role !== 'employee';
   document.getElementById('leave-hr-row').style.display = isHR ? 'block' : 'none';
   if (isHR) {
@@ -2350,7 +2461,9 @@ function openLeaveModal() {
   }
   document.getElementById('leave-err').style.display = 'none';
   document.getElementById('sick-doc-row').style.display = 'none';
-  document.getElementById('leave-type').onchange = function() {
+  const typeEl = document.getElementById('leave-type');
+  if (defaultType && defaultType !== 'emp') typeEl.value = defaultType;
+  typeEl.onchange = function() {
     document.getElementById('sick-doc-row').style.display = this.value === 'sick' ? 'block' : 'none';
   };
   _leaveModal.show();
@@ -2369,13 +2482,13 @@ async function submitLeave() {
   const body = {leave_type: type, start_date: start, end_date: end, notes, sick_doc: sick};
   if (isHR) body.employee_id = parseInt(document.getElementById('leave-emp').value);
   const r = await POST('/api/leaves', body);
-  if (r.ok) { _leaveModal.hide(); toast(r.msg); loadLeaves(); }
+  if (r.ok) { _leaveModal.hide(); toast(r.msg); loadLeavesByType(_currentLeaveTab); }
   else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
 }
 
 async function decideLeave(id, status) {
   const r = await PUT(`/api/leaves/${id}`, {status});
-  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeaves(); }
+  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeavesByType(_currentLeaveTab); }
   else toast(r.error || 'خطأ', 'err');
 }
 

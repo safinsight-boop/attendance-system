@@ -1813,23 +1813,39 @@ LEAVE_NAMES = {
 @app.route('/api/leaves', methods=['GET'])
 @login_required
 def api_leaves_get():
+    leave_type = request.args.get('leave_type')   # optional filter
     conn = get_db()
     try:
         role   = session.get('role')
         emp_id = session.get('employee_id')
         if role in ('hr', 'manager'):
-            rows = conn.execute("""
-                SELECT l.*, e.name_ar FROM leaves l
-                JOIN employees e ON e.id=l.employee_id
-                ORDER BY l.created_at DESC
-            """).fetchall()
+            if leave_type:
+                rows = conn.execute("""
+                    SELECT l.*, e.name_ar FROM leaves l
+                    JOIN employees e ON e.id=l.employee_id
+                    WHERE l.leave_type=? ORDER BY l.created_at DESC
+                """, (leave_type,)).fetchall()
+            else:
+                rows = conn.execute("""
+                    SELECT l.*, e.name_ar FROM leaves l
+                    JOIN employees e ON e.id=l.employee_id
+                    ORDER BY l.created_at DESC
+                """).fetchall()
         else:
             if not emp_id: return jsonify([])
-            rows = conn.execute("""
-                SELECT l.*, e.name_ar FROM leaves l
-                JOIN employees e ON e.id=l.employee_id
-                WHERE l.employee_id=? ORDER BY l.created_at DESC
-            """, (emp_id,)).fetchall()
+            if leave_type:
+                rows = conn.execute("""
+                    SELECT l.*, e.name_ar FROM leaves l
+                    JOIN employees e ON e.id=l.employee_id
+                    WHERE l.employee_id=? AND l.leave_type=?
+                    ORDER BY l.created_at DESC
+                """, (emp_id, leave_type)).fetchall()
+            else:
+                rows = conn.execute("""
+                    SELECT l.*, e.name_ar FROM leaves l
+                    JOIN employees e ON e.id=l.employee_id
+                    WHERE l.employee_id=? ORDER BY l.created_at DESC
+                """, (emp_id,)).fetchall()
     finally:
         conn.close()
     return jsonify([dict(r) for r in rows])
