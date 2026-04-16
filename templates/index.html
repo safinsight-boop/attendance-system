@@ -491,7 +491,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
         </div>
         <div class="mini-card">
-          <div class="mini-label">💸 إجمالي الخصومات (﷼)</div>
+          <div class="mini-label">💸 إجمالي الخصومات (SR)</div>
           <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
         </div>
         <div class="mini-card">
@@ -738,7 +738,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
         <div class="table-responsive">
           <table class="tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (﷼)</th><th>رفع عذر</th></tr></thead>
+            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (SR)</th><th>رفع عذر</th></tr></thead>
             <tbody id="myvio-tbody"></tbody>
           </table>
         </div>
@@ -1082,22 +1082,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
         <div class="form3" style="margin-bottom:14px">
           <div>
-            <label class="fl">الراتب الأساسي (﷼)</label>
+            <label class="fl">الراتب الأساسي (SR)</label>
             <input type="number" id="emp-salary" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل السكن (﷼)</label>
+            <label class="fl">بدل السكن (SR)</label>
             <input type="number" id="emp-housing" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل المواصلات (﷼)</label>
+            <label class="fl">بدل المواصلات (SR)</label>
             <input type="number" id="emp-transport" class="fc" value="0" min="0">
           </div>
         </div>
 
         <div class="form2" style="margin-bottom:4px">
           <div>
-            <label class="fl">عمولة المبيعات (﷼)</label>
+            <label class="fl">عمولة المبيعات (SR)</label>
             <input type="number" id="emp-commission" class="fc" value="0" min="0">
           </div>
           <div>
@@ -1760,7 +1760,7 @@ function renderEmps() {
         ${e.work_type === 'fixed' ? '⏰ ثابت':'🔄 مرن'}
       </span></td>
       <td>
-        <b>${fmt(e.salary + e.housing + e.transport)}</b> <span style="color:#94a3b8;font-size:12px">﷼</span><br>
+        <b>${fmt(e.salary + e.housing + e.transport)}</b> <span style="color:#94a3b8;font-size:12px">SR</span><br>
         <span style="font-size:10px;color:#94a3b8">${fmt(e.salary)}+${fmt(e.housing)}+${fmt(e.transport)}</span>
       </td>
       <td>${balHtml}</td>
@@ -1912,9 +1912,9 @@ async function loadPayroll() {
       tnet   += r.net;
     });
 
-    document.getElementById('pay-gross').textContent = fmt(tgross) + ' ﷼';
-    document.getElementById('pay-ded').textContent   = fmt(tded)   + ' ﷼';
-    document.getElementById('pay-net').textContent   = fmt(tnet)   + ' ﷼';
+    document.getElementById('pay-gross').textContent = fmt(tgross) + ' SR';
+    document.getElementById('pay-ded').textContent   = fmt(tded)   + ' SR';
+    document.getElementById('pay-net').textContent   = fmt(tnet)   + ' SR';
 
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
@@ -2082,7 +2082,7 @@ async function loadMyViolations() {
         <td>${r.vio_date}</td>
         <td>${BRACKET_AR[r.bracket] || r.bracket}</td>
         <td>${pen}</td>
-        <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmt(r.deduction)+' ﷼' : '—'}</td>
+        <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmt(r.deduction)+' SR' : '—'}</td>
         <td>${excuseCell}</td>
       </tr>`;
     }).join('');
@@ -2117,30 +2117,30 @@ async function loadMyPayroll() {
         <div class="stat-card c-blue">
           <div class="stat-icon">💰</div>
           <div class="stat-num">${fmt(d.gross)}</div>
-          <div class="stat-label">الراتب الإجمالي (﷼)</div>
+          <div class="stat-label">الراتب الإجمالي (SR)</div>
         </div>
         <div class="stat-card c-red">
           <div class="stat-icon">📉</div>
           <div class="stat-num">${fmt(d.deductions + d.other_ded)}</div>
-          <div class="stat-label">إجمالي الخصومات (﷼)</div>
+          <div class="stat-label">إجمالي الخصومات (SR)</div>
         </div>
         <div class="stat-card c-green">
           <div class="stat-icon">✅</div>
           <div class="stat-num">${fmt(d.net)}</div>
-          <div class="stat-label">الراتب الصافي (﷼)</div>
+          <div class="stat-label">الراتب الصافي (SR)</div>
         </div>
       </div>
       <div class="card-wrap">
         <div class="card-head"><h5>تفاصيل الراتب — ${MONTHS[m-1]} ${y}</h5></div>
         <table class="tbl">
           <tbody>
-            <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmt(e.salary)} ﷼</td></tr>
-            <tr><td style="font-weight:600">بدل السكن</td><td>${fmt(e.housing)} ﷼</td></tr>
-            <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmt(e.transport)} ﷼</td></tr>
-            <tr><td style="font-weight:600">العمولة</td><td>${fmt(e.commission)} ﷼</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmt(d.deductions)} ﷼</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} ﷼</td></tr>
-            <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmt(d.net)} ﷼</td></tr>
+            <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmt(e.salary)} SR</td></tr>
+            <tr><td style="font-weight:600">بدل السكن</td><td>${fmt(e.housing)} SR</td></tr>
+            <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmt(e.transport)} SR</td></tr>
+            <tr><td style="font-weight:600">العمولة</td><td>${fmt(e.commission)} SR</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmt(d.deductions)} SR</td></tr>
+            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmt(d.other_ded)} SR</td></tr>
+            <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmt(d.net)} SR</td></tr>
           </tbody>
         </table>
       </div>
@@ -2158,7 +2158,7 @@ async function loadMyPayroll() {
             <td>${v.vio_date}</td>
             <td>${BRACKET_AR[v.bracket]||v.bracket}</td>
             <td>${v.ptype==='warning'?'إنذار':v.ptype==='percent'?`${v.pvalue}%`:`${v.pvalue} يوم`}</td>
-            <td style="color:#dc2626;font-weight:700">${v.deduction>0?fmt(v.deduction)+' ﷼':'—'}</td>
+            <td style="color:#dc2626;font-weight:700">${v.deduction>0?fmt(v.deduction)+' SR':'—'}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>` : ''}`;
