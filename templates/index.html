@@ -628,6 +628,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <thead>
               <tr>
                 <th>#</th>
+                <th>الرقم الوظيفي</th>
                 <th>الاسم بالعربي</th>
                 <th>الاسم بالإنجليزي</th>
                 <th>نوع الدوام</th>
@@ -1072,6 +1073,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <label class="fl">البريد الإلكتروني</label>
             <input type="email" id="emp-email" class="fc" placeholder="email@company.com">
           </div>
+          <div>
+            <label class="fl">الرقم الوظيفي <small style="color:#94a3b8">(مثل: EM26-001)</small></label>
+            <input type="text" id="emp-code" class="fc" placeholder="EM26-001">
+          </div>
+        </div>
+
+        <div class="form2" style="margin-bottom:14px">
           <div>
             <label class="fl">نوع الدوام</label>
             <select id="emp-wtype" class="fc" onchange="toggleWorkType()">
@@ -1809,6 +1817,9 @@ function renderEmps() {
     return `
     <tr>
       <td style="color:#94a3b8">${i+1}</td>
+      <td>
+        ${e.emp_code ? `<span style="background:rgba(26,60,64,0.08);color:var(--primary);font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;font-family:monospace">${e.emp_code}</span>` : '<span style="color:#94a3b8;font-size:12px">—</span>'}
+      </td>
       <td><b>${e.name_ar}</b></td>
       <td style="color:#64748b;font-size:13px">${e.name_en}</td>
       <td><span class="badge-s ${e.work_type === 'fixed' ? 'b-fixed':'b-flex'}">
@@ -1843,6 +1854,7 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-namear').value    = emp?.name_ar     || '';
   document.getElementById('emp-nameen').value    = emp?.name_en     || '';
   document.getElementById('emp-email').value     = emp?.email       || '';
+  document.getElementById('emp-code').value      = emp?.emp_code    || '';
   document.getElementById('emp-wtype').value     = emp?.work_type   || 'fixed';
   document.getElementById('emp-wstart').value    = emp?.work_start  || '08:00';
   document.getElementById('emp-wend').value      = emp?.work_end    || '17:00';
@@ -1890,6 +1902,7 @@ async function saveEmployee() {
     name_ar:      document.getElementById('emp-namear').value.trim(),
     name_en:      document.getElementById('emp-nameen').value.trim(),
     email:        document.getElementById('emp-email').value.trim(),
+    emp_code:     document.getElementById('emp-code').value.trim() || null,
     work_type:    document.getElementById('emp-wtype').value,
     work_start:   document.getElementById('emp-wstart').value,
     work_end:     document.getElementById('emp-wend').value,

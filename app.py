@@ -87,6 +87,7 @@ def init_db():
             work_end     TEXT DEFAULT '17:00',
             weekly_hours      REAL DEFAULT 40,
             annual_leave_days INTEGER DEFAULT 21,
+            emp_code          TEXT,
             created_at        TEXT DEFAULT (datetime('now'))
         );
 
@@ -220,6 +221,7 @@ def _migrate_db(conn):
         "ALTER TABLE leaves ADD COLUMN attachment TEXT",
         "ALTER TABLE leaves ADD COLUMN attachment_name TEXT",
         "ALTER TABLE employees ADD COLUMN annual_leave_days INTEGER DEFAULT 21",
+        "ALTER TABLE employees ADD COLUMN emp_code TEXT",
     ]
     for sql in migrations:
         try:
@@ -1458,7 +1460,7 @@ def api_emp_put(eid):
     d = request.get_json(silent=True) or {}
     allowed = ['name_ar','name_en','email','salary','housing','transport',
                'commission','other_ded','work_type','work_start','work_end',
-               'weekly_hours','annual_leave_days']
+               'weekly_hours','annual_leave_days','emp_code']
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
         return jsonify({'error': 'لا توجد حقول للتحديث'}), 400
