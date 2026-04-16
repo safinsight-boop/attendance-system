@@ -369,10 +369,6 @@ body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--d
       <span class="ni"><i class="fas fa-clock"></i></span> الإضافي
       <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
-    <button class="nav-btn" id="nb-att-requests" onclick="showPage('att-requests')">
-      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلبات الحضور
-      <span id="req-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
-    </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
       <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
     </button>
@@ -1350,7 +1346,6 @@ const PAGE_TITLES = {
   'my-violations':'مخالفاتي',
   'my-payroll':   'راتبي الشهري',
   'my-requests':  'طلباتي',
-  'att-requests': 'طلبات الحضور',
 };
 
 let allEmps = [];
@@ -1450,16 +1445,14 @@ async function doLogout() {
 async function loadPendingBadges() {
   if (!_currentUser || _currentUser.role === 'employee') return;
   try {
-    const [excuses, ot, reqs] = await Promise.all([
-      GET('/api/excuses'), GET('/api/overtime'), GET('/api/requests')
+    const [excuses, ot] = await Promise.all([
+      GET('/api/excuses'), GET('/api/overtime')
     ]);
-    const pendingEx  = excuses.filter(e => e.status === 'pending').length;
-    const pendingOt  = ot.filter(o => o.status === 'pending').length;
-    const pendingReq = reqs.filter(r => r.status === 'pending').length;
+    const pendingEx = excuses.filter(e => e.status === 'pending').length;
+    const pendingOt = ot.filter(o => o.status === 'pending').length;
     const set = (id, n) => { const el = document.getElementById(id); if (el) { el.textContent = n; el.style.display = n ? 'inline' : 'none'; }};
     set('excuse-badge', pendingEx);
     set('ot-badge',     pendingOt);
-    set('req-badge',    pendingReq);
   } catch(e) {}
 }
 
@@ -1501,7 +1494,6 @@ function showPage(page) {
   if (page === 'my-violations')  loadMyViolations();
   if (page === 'my-payroll')     loadMyPayroll();
   if (page === 'my-requests')    loadMyRequests();
-  if (page === 'att-requests')   loadAttRequests();
 }
 
 // ════════════════════════════════════════════
