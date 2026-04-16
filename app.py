@@ -85,8 +85,9 @@ def init_db():
             work_type    TEXT DEFAULT 'fixed',
             work_start   TEXT DEFAULT '08:00',
             work_end     TEXT DEFAULT '17:00',
-            weekly_hours REAL DEFAULT 40,
-            created_at   TEXT DEFAULT (datetime('now'))
+            weekly_hours      REAL DEFAULT 40,
+            annual_leave_days INTEGER DEFAULT 21,
+            created_at        TEXT DEFAULT (datetime('now'))
         );
 
         CREATE TABLE IF NOT EXISTS attendance (
@@ -218,6 +219,7 @@ def _migrate_db(conn):
         "ALTER TABLE excuse_requests ADD COLUMN attachment_name TEXT",
         "ALTER TABLE leaves ADD COLUMN attachment TEXT",
         "ALTER TABLE leaves ADD COLUMN attachment_name TEXT",
+        "ALTER TABLE employees ADD COLUMN annual_leave_days INTEGER DEFAULT 21",
     ]
     for sql in migrations:
         try:
@@ -263,6 +265,24 @@ def hr_required(f):
 def _gosi(emp):
     """احتساب تأمينات GOSI = 10.75% من الأجور الثابتة (راتب + سكن + نقل)"""
     return round((emp['salary'] + emp['housing'] + emp['transport']) * 0.1075, 2)
+
+def _leave_balance(conn, emp_id, year=None):
+    """رصيد الإجازة السنوية: الحق - المستخدم = المتبقي"""
+    if year is None:
+        year = date.today().year
+    emp = conn.execute("SELECT annual_leave_days FROM employees WHERE id=?", (emp_id,)).fetchone()
+    entitlement = (emp['annual_leave_days'] if emp and emp['annual_leave_days'] else 21)
+    used = conn.execute("""
+        SELECT COALESCE(SUM(days), 0) AS d FROM leaves
+        WHERE employee_id=? AND leave_type='annual' AND status='approved'
+          AND strftime('%Y', start_date) = ?
+    """, (emp_id, str(year))).fetchone()['d'] or 0
+    return {
+        'entitlement': entitlement,
+        'used':        int(used),
+        'remaining':   max(0, entitlement - int(used)),
+        'year':        year,
+    }
 
 def _is_on_leave(conn, emp_id, target_date):
     """هل الموظف في إجازة معتمدة في هذا اليوم؟"""
@@ -1374,11 +1394,27 @@ def api_attendance_export():
 def api_emps_get():
     conn = get_db()
     try:
-        rows = conn.execute(
-            "SELECT * FROM employees ORDER BY name_ar").fetchall()
+        rows = conn.execute("SELECT * FROM employees ORDER BY name_ar").fetchall()
+        year = date.today().year
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['leave_balance'] = _leave_balance(conn, r['id'], year)
+            result.append(d)
     finally:
         conn.close()
-    return jsonify([dict(r) for r in rows])
+    return jsonify(result)
+
+@app.route('/api/employees/<int:eid>/leave-balance')
+@login_required
+def api_leave_balance(eid):
+    year = request.args.get('year', date.today().year, type=int)
+    conn = get_db()
+    try:
+        bal = _leave_balance(conn, eid, year)
+    finally:
+        conn.close()
+    return jsonify(bal)
 
 @app.route('/api/employees', methods=['POST'])
 def api_emps_post():
@@ -1390,13 +1426,14 @@ def api_emps_post():
         conn.execute("""
             INSERT INTO employees
                 (name_ar,name_en,email,salary,housing,transport,commission,
-                 other_ded,work_type,work_start,work_end,weekly_hours)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
              d.get('salary',0), d.get('housing',0), d.get('transport',0),
              d.get('commission',0), d.get('other_ded',0),
              d.get('work_type','fixed'), d.get('work_start','08:00'),
-             d.get('work_end','17:00'), d.get('weekly_hours',40)))
+             d.get('work_end','17:00'), d.get('weekly_hours',40),
+             d.get('annual_leave_days', 21)))
         conn.commit()
         return jsonify({'ok': True, 'msg': 'تم إضافة الموظف بنجاح'})
     except sqlite3.IntegrityError:
@@ -1421,7 +1458,7 @@ def api_emp_put(eid):
     d = request.get_json(silent=True) or {}
     allowed = ['name_ar','name_en','email','salary','housing','transport',
                'commission','other_ded','work_type','work_start','work_end',
-               'weekly_hours']
+               'weekly_hours','annual_leave_days']
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
         return jsonify({'error': 'لا توجد حقول للتحديث'}), 400
@@ -1991,9 +2028,10 @@ def api_my_attendance():
                 (emp_id, r['att_date'])).fetchone()
             d['excuse_status'] = ex['status'] if ex else None
             result.append(d)
+        leave_bal = _leave_balance(conn, emp_id, y)
     finally:
         conn.close()
-    return jsonify(result)
+    return jsonify({'records': result, 'leave_balance': leave_bal})
 
 @app.route('/api/my/violations')
 @login_required
