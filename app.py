@@ -1430,7 +1430,7 @@ def api_emps_post():
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
              d.get('salary',0), d.get('housing',0), d.get('transport',0),
-             d.get('commission',0), d.get('other_ded',0),
+             (None if d.get('commission') is None else d.get('commission')), d.get('other_ded',0),
              d.get('work_type','fixed'), d.get('work_start','08:00'),
              d.get('work_end','17:00'), d.get('weekly_hours',40),
              d.get('annual_leave_days', 21)))
@@ -1586,9 +1586,20 @@ def api_logout():
 def api_me():
     if 'user_id' not in session:
         return jsonify({'logged_in': False})
+    emp_id = session.get('employee_id')
+    emp_data = None
+    if emp_id:
+        conn = get_db()
+        try:
+            row = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
+            if row:
+                emp_data = dict(row)
+        finally:
+            conn.close()
     return jsonify({'logged_in': True, 'role': session.get('role'),
                     'username': session.get('username'),
-                    'employee_id': session.get('employee_id')})
+                    'employee_id': emp_id,
+                    'employee': emp_data})
 
 @app.route('/api/users', methods=['GET'])
 @hr_required
