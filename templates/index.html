@@ -281,15 +281,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
 /* ── Saudi Riyal Symbol ── */
 .sar-sym {
-  font-family: 'Amiri', 'Times New Roman', serif;
-  font-size: 0.82em;
-  font-weight: bold;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.8em;
+  font-weight: 700;
   display: inline-block;
   vertical-align: middle;
   margin: 0 2px;
-  letter-spacing: 0;
-  direction: rtl;
-  unicode-bidi: embed;
+  letter-spacing: 0.5px;
 }
 .sar-icon {
   width: 1.1em; height: 1.25em;
@@ -538,7 +536,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
         </div>
         <div class="mini-card">
-          <div class="mini-label">💸 إجمالي الخصومات (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</div>
+          <div class="mini-label">💸 إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
           <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
         </div>
         <div class="mini-card">
@@ -786,7 +784,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
         <div class="table-responsive">
           <table class="tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</th><th>رفع عذر</th></tr></thead>
+            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>العقوبة</th><th>الخصم (<span class="sar-sym">S.R</span>)</th><th>رفع عذر</th></tr></thead>
             <tbody id="myvio-tbody"></tbody>
           </table>
         </div>
@@ -1137,22 +1135,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
         <div class="form3" style="margin-bottom:14px">
           <div>
-            <label class="fl">الراتب الأساسي (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</label>
+            <label class="fl">الراتب الأساسي (<span class="sar-sym">S.R</span>)</label>
             <input type="number" id="emp-salary" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل السكن (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</label>
+            <label class="fl">بدل السكن (<span class="sar-sym">S.R</span>)</label>
             <input type="number" id="emp-housing" class="fc" value="0" min="0">
           </div>
           <div>
-            <label class="fl">بدل المواصلات (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</label>
+            <label class="fl">بدل المواصلات (<span class="sar-sym">S.R</span>)</label>
             <input type="number" id="emp-transport" class="fc" value="0" min="0">
           </div>
         </div>
 
         <div class="form2" style="margin-bottom:4px">
           <div>
-            <label class="fl">عمولة المبيعات (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</label>
+            <label class="fl">عمولة المبيعات (<span class="sar-sym">S.R</span>)</label>
             <input type="number" id="emp-commission" class="fc" value="0" min="0">
           </div>
           <div>
@@ -1639,7 +1637,7 @@ function badge(s) {
   return `<span class="badge-s ${info.cls}">${info.label}</span>`;
 }
 
-const _SAR = `<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor" title="ريال سعودي"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>`;
+const _SAR = `<span class="sar-sym" title="Saudi Riyal">S.R</span>`;
 function fmt(n) {
   if (!n && n !== 0) return '—';
   return Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -2196,17 +2194,17 @@ async function loadMyPayroll() {
         <div class="stat-card c-blue">
           <div class="stat-icon">💰</div>
           <div class="stat-num">${fmtSAR(d.gross)}</div>
-          <div class="stat-label">الراتب الإجمالي (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</div>
+          <div class="stat-label">الراتب الإجمالي (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-red">
           <div class="stat-icon">📉</div>
           <div class="stat-num">${fmtSAR(d.deductions + d.other_ded)}</div>
-          <div class="stat-label">إجمالي الخصومات (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</div>
+          <div class="stat-label">إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-green">
           <div class="stat-icon">✅</div>
           <div class="stat-num">${fmtSAR(d.net)}</div>
-          <div class="stat-label">الراتب الصافي (<svg class="sar-icon" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M85,5 L85,65 C85,95 65,112 45,112 L15,112 L15,100 L45,100 C58,100 72,88 72,65 L72,5 Z"/><rect x="3" y="18" width="88" height="11" rx="2"/><rect x="3" y="36" width="88" height="11" rx="2"/></svg>)</div>
+          <div class="stat-label">الراتب الصافي (<span class="sar-sym">S.R</span>)</div>
         </div>
       </div>
       <div class="card-wrap">
