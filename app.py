@@ -1356,6 +1356,20 @@ def api_attendance_recent():
         conn.close()
     return jsonify([dict(r) for r in rows])
 
+@app.route('/api/clear-fake-data', methods=['POST'])
+@hr_required
+def api_clear_fake_data():
+    """مسح جميع سجلات الحضور والمخالفات الناتجة عن عدم ربط TTLock"""
+    conn = get_db()
+    try:
+        a = conn.execute("DELETE FROM attendance").rowcount
+        v = conn.execute("DELETE FROM violations").rowcount
+        conn.execute("DELETE FROM vio_counts")
+        conn.commit()
+        return jsonify({'ok': True, 'msg': f'تم مسح {a} سجل حضور و {v} مخالفة'})
+    finally:
+        conn.close()
+
 @app.route('/api/run', methods=['POST'])
 def api_run():
     data = request.get_json(silent=True) or {}
