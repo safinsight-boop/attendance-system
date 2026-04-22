@@ -9,6 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>.flatpickr-calendar{direction:ltr;font-family:Arial,sans-serif;}</style>
+<style id="print-style">
+@media print {
+  .sidebar, .topbar, .filters, .btn-main, .btn-green, .card-head button,
+  #nb-payroll, .nav-btn, button { display: none !important; }
+  .main { margin: 0 !important; }
+  .page { display: block !important; }
+  .page:not(#page-payroll) { display: none !important; }
+  body { background: #fff !important; }
+}
+</style>
 <style>
 :root {
   --sidebar-w: 255px;
@@ -463,6 +473,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <button class="nav-btn hr-only" id="nb-audit" onclick="showPage('audit')">
       <span class="ni"><i class="fas fa-shield-alt"></i></span> سجل الأحداث
     </button>
+    <button class="nav-btn hr-only" id="nb-settings" onclick="showPage('settings')">
+      <span class="ni"><i class="fas fa-cog"></i></span> إعدادات النظام
+    </button>
   </div>
 
   <!-- بطاقة بيانات الموظف -->
@@ -544,7 +557,17 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div class="topbar-title" id="page-title">لوحة التحكم</div>
       <div class="topbar-sub" id="today-str"></div>
     </div>
-    <div class="topbar-actions">
+    <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
+      <div class="hr-only" style="position:relative;display:none">
+        <button id="notif-btn" onclick="toggleNotifDropdown()" style="background:transparent;border:none;cursor:pointer;position:relative;padding:6px 10px;border-radius:8px;color:#1e293b;font-size:18px">
+          <i class="fas fa-bell"></i>
+          <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px"></span>
+        </button>
+        <div id="notif-dropdown" style="display:none;position:absolute;left:0;top:44px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);min-width:240px;z-index:999;padding:12px 0">
+          <div style="padding:8px 16px;font-size:11px;font-weight:700;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin-bottom:6px">الطلبات المعلقة</div>
+          <div id="notif-list"></div>
+        </div>
+      </div>
       <button class="btn-main" onclick="openRunModal()">
         <i class="fas fa-play"></i> تشغيل يدوي
       </button>
@@ -595,6 +618,18 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('absent','غياب الشهر')">
           <div class="mini-label">📅 غياب الشهر</div>
           <div class="mini-num" style="color:#64748b" id="s-mabsent">—</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div id="charts-section" class="hr-only" style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:16px">
+        <div class="card-wrap" style="padding:16px">
+          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">حضور اليوم</div>
+          <canvas id="chart-today" height="200"></canvas>
+        </div>
+        <div class="card-wrap" style="padding:16px">
+          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">مخطط الحضور (30 يوم)</div>
+          <canvas id="chart-trend" height="200"></canvas>
         </div>
       </div>
 
@@ -671,6 +706,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="card-head">
             <h5><i class="fas fa-calendar-alt" style="color:var(--gold);margin-left:8px"></i>سجل الحضور والغياب</h5>
             <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
+            <input type="search" id="att-search" class="fc" placeholder="🔍 بحث..." style="max-width:180px;margin:0;padding:5px 10px;font-size:13px" oninput="filterAttRows(this.value)">
           </div>
           <div class="table-responsive">
             <table class="tbl">
@@ -696,8 +732,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     ══════════════════════════════════════ -->
     <div id="page-employees" class="page">
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <span id="emp-count-lbl" style="font-size:14px;color:#64748b;font-weight:600"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px">
+        <span id="emp-count-lbl" style="font-size:14px;color:#64748b;font-weight:600;white-space:nowrap"></span>
+        <input type="search" id="emp-search" class="fc" placeholder="🔍 بحث باسم الموظف أو رقمه..." style="max-width:280px;margin:0" oninput="filterEmps(this.value)">
         <button class="btn-main" onclick="openEmpModal()">
           <i class="fas fa-plus"></i> إضافة موظف
         </button>
@@ -747,6 +784,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </button>
         <button class="btn-main" onclick="exportGosi()" style="background:#7c3aed">
           <i class="fas fa-file-excel"></i> تقرير GOSI
+        </button>
+        <button class="btn-main" onclick="window.print()" style="background:#0f766e">
+          <i class="fas fa-print"></i> طباعة PDF
         </button>
       </div>
 
@@ -1306,6 +1346,38 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════
+         صفحة: إعدادات النظام
+    ══════════════════════════════════════ -->
+    <div id="page-settings" class="page">
+      <div style="max-width:600px;margin:0 auto">
+        <div class="card-wrap">
+          <h5 style="font-weight:800;margin-bottom:20px"><i class="fas fa-cog" style="color:var(--gold);margin-left:8px"></i>إعدادات النظام</h5>
+          <div class="fg">
+            <label>اسم الشركة (عربي)</label>
+            <input type="text" id="set-company-ar" class="fc" placeholder="اسم شركتك">
+          </div>
+          <div class="fg">
+            <label>اسم الشركة (إنجليزي)</label>
+            <input type="text" id="set-company-en" class="fc" placeholder="Company Name">
+          </div>
+          <div class="fg">
+            <label>أيام نهاية الأسبوع (عطلة)</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-0" value="0"> الأحد</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-1" value="1"> الاثنين</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-2" value="2"> الثلاثاء</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-3" value="3"> الأربعاء</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-4" value="4"> الخميس</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-5" value="5"> الجمعة</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-6" value="6"> السبت</label>
+            </div>
+          </div>
+          <button class="btn-main" style="margin-top:10px" onclick="saveSettings()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- .page-body -->
 </div><!-- .main -->
 
@@ -1793,6 +1865,7 @@ const PAGE_TITLES = {
   users:          'إدارة المستخدمين',
   calendar:       'تقويم الإجازات والحضور',
   audit:          'سجل الأحداث',
+  settings:       'إعدادات النظام',
   profile:        'ملفي الشخصي',
   'my-attendance':'حضوري وغيابي',
   'my-violations':'مخالفاتي',
@@ -1870,7 +1943,11 @@ function initApp() {
   populateYM('mypay-month', 'mypay-year');
 
   loadDashboard();
-  if (role !== 'employee') loadEmployees();
+  if (role !== 'employee') {
+    loadEmployees();
+    loadNotifications();
+    setInterval(loadNotifications, 60000);
+  }
   loadPendingBadges();
 
   // نص تبويب الأعذار يختلف حسب الدور
@@ -1974,6 +2051,7 @@ function showPage(page) {
   if (page === 'calendar')       loadCalendar();
   if (page === 'audit')          loadAudit();
   if (page === 'profile')        loadProfile();
+  if (page === 'settings')       loadSettings();
 }
 
 // ════════════════════════════════════════════
@@ -2057,6 +2135,7 @@ async function loadDashboard() {
     document.getElementById('s-late').textContent      = today.late;
     document.getElementById('s-earlyleave').textContent = today.early_leave;
     document.getElementById('s-absent').textContent    = today.absent;
+    loadCharts(today);
 
     document.getElementById('s-mvio').textContent    = month.violations;
     document.getElementById('s-mded').textContent    = fmt(month.total_deductions);
@@ -3604,6 +3683,154 @@ async function loadAudit() {
     }).join('');
   } catch(e) { toast('خطأ في تحميل سجل الأحداث', 'err'); }
 }
+// ════════════════════════════════════════════
+//  QUICK SEARCH
+// ════════════════════════════════════════════
+function filterEmps(q) {
+  q = q.trim().toLowerCase();
+  const tb = document.getElementById('emp-tbody');
+  const filtered = q ? allEmps.filter(e =>
+    (e.name_ar||'').includes(q) || (e.name_en||'').toLowerCase().includes(q) ||
+    (e.emp_code||'').toLowerCase().includes(q)) : allEmps;
+  document.getElementById('emp-count-lbl').textContent = `${filtered.length} موظف`;
+  if (!filtered.length) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-search"></i><p>لا توجد نتائج</p></div></td></tr>`;
+    return;
+  }
+  const saved = allEmps;
+  allEmps = filtered;
+  renderEmps();
+  allEmps = saved;
+  document.getElementById('emp-count-lbl').textContent = `${filtered.length} موظف`;
+}
+
+function filterAttRows(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll('#att-tbody tr').forEach(tr => {
+    tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+// ════════════════════════════════════════════
+//  NOTIFICATIONS
+// ════════════════════════════════════════════
+let _notifOpen = false;
+async function loadNotifications() {
+  if (window._role === 'employee') return;
+  try {
+    const d = await GET('/api/notifications');
+    const badge = document.getElementById('notif-badge');
+    if (d.total > 0) {
+      badge.textContent = d.total;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+    const pages = [
+      {key:'excuses', label:'عذر معلق', page:'excuses', icon:'fa-file-alt'},
+      {key:'leaves', label:'إجازة معلقة', page:'leaves', icon:'fa-umbrella-beach'},
+      {key:'overtime', label:'إضافي معلق', page:'overtime', icon:'fa-clock'},
+      {key:'att_requests', label:'طلب حضور معلق', page:'att-requests', icon:'fa-paper-plane'},
+    ];
+    const list = document.getElementById('notif-list');
+    const items = pages.filter(p => d[p.key] > 0);
+    if (!items.length) {
+      list.innerHTML = '<div style="padding:10px 16px;font-size:13px;color:#94a3b8">لا توجد طلبات معلقة</div>';
+    } else {
+      list.innerHTML = items.map(p => `
+        <div onclick="showPage('${p.page}');closeNotifDropdown()" style="padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:8px;margin:2px 6px" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+          <span style="background:rgba(239,68,68,0.1);color:#ef4444;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas ${p.icon}"></i></span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1e293b">${d[p.key]} ${p.label}</div>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e) {}
+}
+function toggleNotifDropdown() {
+  const dd = document.getElementById('notif-dropdown');
+  _notifOpen = !_notifOpen;
+  dd.style.display = _notifOpen ? 'block' : 'none';
+}
+function closeNotifDropdown() {
+  _notifOpen = false;
+  document.getElementById('notif-dropdown').style.display = 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notif-btn') && !e.target.closest('#notif-dropdown')) closeNotifDropdown();
+});
+
+// ════════════════════════════════════════════
+//  SETTINGS
+// ════════════════════════════════════════════
+async function loadSettings() {
+  try {
+    const s = await GET('/api/settings');
+    document.getElementById('set-company-ar').value = s.company_name || '';
+    document.getElementById('set-company-en').value = s.company_name_en || '';
+    const wdays = (s.weekend_days || '5,6').split(',').map(Number);
+    [0,1,2,3,4,5,6].forEach(d => {
+      document.getElementById(`wd-${d}`).checked = wdays.includes(d);
+    });
+  } catch(e) { toast('خطأ في تحميل الإعدادات', 'err'); }
+}
+async function saveSettings() {
+  const wdays = [0,1,2,3,4,5,6].filter(d => document.getElementById(`wd-${d}`).checked).join(',');
+  try {
+    await fetch('/api/settings', {method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        company_name:    document.getElementById('set-company-ar').value,
+        company_name_en: document.getElementById('set-company-en').value,
+        weekend_days:    wdays
+      })
+    });
+    toast('تم حفظ الإعدادات');
+  } catch(e) { toast('خطأ في الحفظ', 'err'); }
+}
+
+// ════════════════════════════════════════════
+//  CHARTS (Chart.js)
+// ════════════════════════════════════════════
+let _chartToday = null, _chartTrend = null;
+async function loadCharts(todayData) {
+  if (window._role === 'employee') return;
+  try {
+    if (!window.Chart) return;
+    const trend = await GET('/api/stats/trend');
+    // Donut - today
+    const ctxD = document.getElementById('chart-today').getContext('2d');
+    if (_chartToday) _chartToday.destroy();
+    _chartToday = new Chart(ctxD, {
+      type: 'doughnut',
+      data: {
+        labels: ['في الوقت','متأخر','مغادرة مبكرة','غائب'],
+        datasets: [{
+          data: [todayData.on_time||0, todayData.late||0, todayData.early_leave||0, todayData.absent||0],
+          backgroundColor: ['#16a34a','#f59e0b','#f97316','#dc2626'],
+          borderWidth: 2
+        }]
+      },
+      options: {responsive:true, plugins:{legend:{position:'bottom', labels:{font:{size:11}}}}}
+    });
+    // Bar - trend
+    const ctxT = document.getElementById('chart-trend').getContext('2d');
+    if (_chartTrend) _chartTrend.destroy();
+    _chartTrend = new Chart(ctxT, {
+      type: 'bar',
+      data: {
+        labels: trend.map(r => r.att_date.slice(5)),
+        datasets: [
+          {label:'في الوقت', data: trend.map(r=>r.on_time),  backgroundColor:'#16a34a'},
+          {label:'متأخر',    data: trend.map(r=>r.late),     backgroundColor:'#f59e0b'},
+          {label:'غائب',     data: trend.map(r=>r.absent),   backgroundColor:'#dc2626'},
+        ]
+      },
+      options: {responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}},
+               plugins:{legend:{position:'bottom', labels:{font:{size:11}}}}}
+    });
+  } catch(e) {}
+}
+
 // تحويل الأرقام العربية إلى إنجليزية في كامل الصفحة
 function toEnNums(str) {
   return String(str).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x0660);
@@ -3626,6 +3853,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input[type="date"], input[type="time"]').forEach(el => el.setAttribute('lang','en'));
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function(){

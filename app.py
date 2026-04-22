@@ -244,6 +244,14 @@ def init_db():
             manager_note    TEXT,
             FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT
+        );
+        INSERT OR IGNORE INTO settings VALUES ('company_name',    'بوابة الموظف');
+        INSERT OR IGNORE INTO settings VALUES ('company_name_en', 'Employee Portal');
+        INSERT OR IGNORE INTO settings VALUES ('weekend_days',    '5,6');
         """)
         conn.commit()
         _migrate_db(conn)
@@ -1506,6 +1514,62 @@ def api_stats_month():
         'violations':     vio['c']              or 0,
         'total_deductions': float(vio['d']      or 0),
     })
+
+@app.route('/api/stats/trend')
+@login_required
+def api_stats_trend():
+    conn = get_db()
+    try:
+        rows = conn.execute("""
+            SELECT att_date,
+                SUM(CASE WHEN status='on_time'  THEN 1 ELSE 0 END) as on_time,
+                SUM(CASE WHEN status='late'      THEN 1 ELSE 0 END) as late,
+                SUM(CASE WHEN status='absent'    THEN 1 ELSE 0 END) as absent
+            FROM attendance
+            WHERE att_date >= date('now', '-30 days')
+            GROUP BY att_date ORDER BY att_date
+        """).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/notifications')
+@hr_required
+def api_notifications():
+    conn = get_db()
+    try:
+        excuses     = conn.execute("SELECT COUNT(*) FROM excuse_requests    WHERE status='pending'").fetchone()[0]
+        leaves      = conn.execute("SELECT COUNT(*) FROM leaves             WHERE status='pending'").fetchone()[0]
+        overtime    = conn.execute("SELECT COUNT(*) FROM overtime_requests  WHERE status='pending'").fetchone()[0]
+        att_reqs    = conn.execute("SELECT COUNT(*) FROM attendance_requests WHERE status='pending'").fetchone()[0]
+    finally:
+        conn.close()
+    return jsonify({'excuses': excuses, 'leaves': leaves, 'overtime': overtime,
+                    'att_requests': att_reqs, 'total': excuses+leaves+overtime+att_reqs})
+
+@app.route('/api/settings', methods=['GET'])
+@login_required
+def api_settings_get():
+    conn = get_db()
+    try:
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    finally:
+        conn.close()
+    return jsonify({r['key']: r['value'] for r in rows})
+
+@app.route('/api/settings', methods=['PUT'])
+@hr_required
+def api_settings_put():
+    data = request.get_json() or {}
+    conn = get_db()
+    try:
+        for k, v in data.items():
+            conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (k, str(v)))
+        conn.commit()
+    finally:
+        conn.close()
+    audit_log('edit_settings', 'settings', str(list(data.keys())))
+    return jsonify({'ok': True})
 
 @app.route('/api/attendance/recent')
 def api_attendance_recent():
