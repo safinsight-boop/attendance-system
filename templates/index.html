@@ -913,7 +913,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- تبويبات الحالة مع العدادات -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="excuse-tab active" id="etab-pending" onclick="switchExcuseTab('pending')">
-          <i class="fas fa-hourglass-half"></i> قيد الإجراء
+          <i class="fas fa-hourglass-half"></i> <span id="pending-tab-label">قيد الإجراء</span>
           <span id="exc-badge-pending" class="exc-badge" style="background:#f59e0b"></span>
         </button>
         <button class="excuse-tab" id="etab-approved" onclick="switchExcuseTab('approved')">
@@ -1618,6 +1618,10 @@ function initApp() {
   loadDashboard();
   if (role !== 'employee') loadEmployees();
   loadPendingBadges();
+
+  // نص تبويب الأعذار يختلف حسب الدور
+  const pendingLbl = document.getElementById('pending-tab-label');
+  if (pendingLbl) pendingLbl.textContent = role === 'employee' ? 'قيد التنفيذ' : 'قيد الإجراء';
 }
 
 function roleAr(r) {
@@ -2603,7 +2607,8 @@ async function loadExcuses() {
     // ارسم التبويب pending (قيد الإجراء)
     const tbP = document.getElementById('exc-tbody-pending');
     if (!byStatus.pending.length) {
-      tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-hourglass" style="color:#f59e0b"></i><p>لا توجد طلبات قيد الإجراء</p></div></td></tr>`;
+      const pendingLabel = _currentUser?.role === 'employee' ? 'قيد التنفيذ' : 'قيد الإجراء';
+      tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-hourglass" style="color:#f59e0b"></i><p>لا توجد طلبات ${pendingLabel}</p></div></td></tr>`;
     } else {
       tbP.innerHTML = byStatus.pending.map((r,i) => `
         <tr>
