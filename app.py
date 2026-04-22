@@ -1311,6 +1311,33 @@ def api_stats_today():
         'present':     row['present']     or 0,
     })
 
+@app.route('/api/stats/today/detail')
+def api_stats_today_detail():
+    status = request.args.get('status', '')
+    today  = str(date.today())
+    conn   = get_db()
+    try:
+        if status == 'absent':
+            # الغائبون = موظفون ليس لهم سجل اليوم أو حالتهم absent
+            rows = conn.execute("""
+                SELECT e.name_ar, e.emp_code, a.check_in, a.check_out, a.late_min, a.status
+                FROM employees e
+                LEFT JOIN attendance a ON a.employee_id=e.id AND a.att_date=?
+                WHERE a.status='absent' OR a.id IS NULL
+                ORDER BY e.name_ar
+            """, (today,)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT e.name_ar, e.emp_code, a.check_in, a.check_out, a.late_min, a.status
+                FROM attendance a
+                JOIN employees e ON e.id=a.employee_id
+                WHERE a.att_date=? AND a.status=?
+                ORDER BY e.name_ar
+            """, (today, status)).fetchall()
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
 @app.route('/api/stats/month')
 def api_stats_month():
     y = request.args.get('year',  date.today().year,  type=int)

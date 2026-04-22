@@ -541,22 +541,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <!-- Stats today -->
       <div class="stats-grid" id="stats-today-grid">
-        <div class="stat-card c-green">
+        <div class="stat-card c-green" style="cursor:pointer" onclick="openStatDetail('on_time','في الوقت اليوم')">
           <div class="stat-icon">✅</div>
           <div class="stat-num" id="s-ontime">—</div>
           <div class="stat-label">في الوقت اليوم</div>
         </div>
-        <div class="stat-card c-red">
+        <div class="stat-card c-red" style="cursor:pointer" onclick="openStatDetail('late','متأخر اليوم')">
           <div class="stat-icon">⏰</div>
           <div class="stat-num" id="s-late">—</div>
           <div class="stat-label">متأخر اليوم</div>
         </div>
-        <div class="stat-card c-yellow">
+        <div class="stat-card c-yellow" style="cursor:pointer" onclick="openStatDetail('early_leave','مغادرة مبكرة اليوم')">
           <div class="stat-icon">🚪</div>
           <div class="stat-num" id="s-earlyleave">—</div>
           <div class="stat-label">مغادرة مبكرة</div>
         </div>
-        <div class="stat-card c-blue">
+        <div class="stat-card c-blue" style="cursor:pointer" onclick="openStatDetail('absent','غياب اليوم')">
           <div class="stat-icon">🔴</div>
           <div class="stat-num" id="s-absent">—</div>
           <div class="stat-label">غياب اليوم</div>
@@ -1499,6 +1499,19 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   </div>
 </div>
 
+<!-- مودال تفاصيل إحصائية اليوم -->
+<div class="modal fade" id="statDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="stat-detail-title"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="stat-detail-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- مودال تفاصيل راتب الموظف -->
 <div class="modal fade" id="pdModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
@@ -1554,7 +1567,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1571,7 +1584,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   _holidayModal = new bootstrap.Modal(document.getElementById('holidayModal'));
   _userModal    = new bootstrap.Modal(document.getElementById('userModal'));
   _requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
-  _pdModal      = new bootstrap.Modal(document.getElementById('pdModal'));
+  _pdModal           = new bootstrap.Modal(document.getElementById('pdModal'));
+  _statDetailModal   = new bootstrap.Modal(document.getElementById('statDetailModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -1825,6 +1839,36 @@ async function loadDashboard() {
     console.error(e);
     toast('خطأ في تحميل لوحة التحكم', 'err');
   }
+}
+
+async function openStatDetail(status, title) {
+  document.getElementById('stat-detail-title').textContent = title;
+  document.getElementById('stat-detail-body').innerHTML =
+    `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>`;
+  _statDetailModal.show();
+  try {
+    const rows = await GET(`/api/stats/today/detail?status=${status}`);
+    if (!rows.length) {
+      document.getElementById('stat-detail-body').innerHTML =
+        `<div class="empty-state"><i class="fas fa-check" style="color:#16a34a"></i><p>لا يوجد موظفون</p></div>`;
+      return;
+    }
+    const statusColors = {on_time:'#16a34a', late:'#dc2626', early_leave:'#d97706', absent:'#64748b', present:'#2563eb'};
+    document.getElementById('stat-detail-body').innerHTML = `
+      <table class="tbl">
+        <thead><tr><th>#</th><th>الموظف</th><th>الحضور</th><th>الانصراف</th><th>تأخر(دق)</th></tr></thead>
+        <tbody>
+          ${rows.map((r,i) => `
+            <tr>
+              <td style="color:#94a3b8">${i+1}</td>
+              <td><b>${r.name_ar}</b>${r.emp_code ? `<br><span style="font-size:11px;color:#94a3b8">${r.emp_code}</span>` : ''}</td>
+              <td>${r.check_in || '<span style="color:#94a3b8">—</span>'}</td>
+              <td>${r.check_out || '<span style="color:#94a3b8">—</span>'}</td>
+              <td>${r.late_min ? `<b style="color:#dc2626">${r.late_min}</b>` : '—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) { toast('خطأ', 'err'); }
 }
 
 // ════════════════════════════════════════════
