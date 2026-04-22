@@ -924,10 +924,26 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
          PAGE: ATTENDANCE REQUESTS (HR)
     ══════════════════════════════════════ -->
     <div id="page-att-requests" class="page">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
-        <span style="font-size:15px;font-weight:700;color:var(--primary)">
-          <i class="fas fa-paper-plane" style="color:var(--gold);margin-left:6px"></i>طلبات الحضور
-        </span>
+      <!-- بطاقات الإحصاء -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
+        <div class="card-wrap" style="text-align:center;border-right:4px solid #d97706">
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px">طلبات التأخير</div>
+          <div id="hrstat-late-total" style="font-size:28px;font-weight:800;color:#d97706">0</div>
+          <div id="hrstat-late-pending" style="font-size:12px;color:#94a3b8">0 معلق</div>
+        </div>
+        <div class="card-wrap" style="text-align:center;border-right:4px solid #7c3aed">
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px">طلبات الخروج المبكر</div>
+          <div id="hrstat-early-total" style="font-size:28px;font-weight:800;color:#7c3aed">0</div>
+          <div id="hrstat-early-pending" style="font-size:12px;color:#94a3b8">0 معلق</div>
+        </div>
+        <div class="card-wrap" style="text-align:center;border-right:4px solid #16a34a">
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px">تمت الموافقة</div>
+          <div id="hrstat-approved" style="font-size:28px;font-weight:800;color:#16a34a">0</div>
+        </div>
+        <div class="card-wrap" style="text-align:center;border-right:4px solid #dc2626">
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px">مرفوضة</div>
+          <div id="hrstat-rejected" style="font-size:28px;font-weight:800;color:#dc2626">0</div>
+        </div>
       </div>
       <!-- تبويبان -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -2869,8 +2885,18 @@ async function loadAttRequests() {
     const rows = await GET('/api/requests');
     const late  = rows.filter(r => r.req_type === 'late_arrival');
     const early = rows.filter(r => r.req_type === 'early_leave');
-    document.getElementById('hrreq-badge-late').textContent  = late.filter(r=>r.status==='pending').length  || '';
-    document.getElementById('hrreq-badge-early').textContent = early.filter(r=>r.status==='pending').length || '';
+    const latePending  = late.filter(r=>r.status==='pending').length;
+    const earlyPending = early.filter(r=>r.status==='pending').length;
+    const approved = rows.filter(r=>r.status==='approved').length;
+    const rejected = rows.filter(r=>r.status==='rejected').length;
+    document.getElementById('hrreq-badge-late').textContent  = latePending  || '';
+    document.getElementById('hrreq-badge-early').textContent = earlyPending || '';
+    document.getElementById('hrstat-late-total').textContent   = late.length;
+    document.getElementById('hrstat-late-pending').textContent = `${latePending} معلق`;
+    document.getElementById('hrstat-early-total').textContent   = early.length;
+    document.getElementById('hrstat-early-pending').textContent = `${earlyPending} معلق`;
+    document.getElementById('hrstat-approved').textContent = approved;
+    document.getElementById('hrstat-rejected').textContent = rejected;
     document.getElementById('hrreq-tbody-late').innerHTML  = _renderReqRows(late,  true);
     document.getElementById('hrreq-tbody-early').innerHTML = _renderReqRows(early, true);
   } catch(e) { toast('خطأ', 'err'); }
