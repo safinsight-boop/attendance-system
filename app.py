@@ -2122,7 +2122,9 @@ def api_leaves_post():
         return jsonify({'error': 'تنسيق التاريخ غير صحيح'}), 400
 
     # إجازة مرضية: تحتاج وثيقة — نقبل الطلب لكن نضع ملاحظة
-    sick_doc = d.get('sick_doc', '')
+    sick_doc   = d.get('sick_doc', '')
+    attachment = d.get('attachment', '')
+    att_name   = d.get('attachment_name', '')
     # HR يوافق مباشرة، الموظف ينتظر موافقة
     init_status = 'approved' if role in ('hr', 'manager') else 'pending'
     approved_by = session['user_id'] if init_status == 'approved' else None
@@ -2132,10 +2134,10 @@ def api_leaves_post():
         conn.execute("""
             INSERT INTO leaves
                 (employee_id, leave_type, start_date, end_date, days,
-                 status, approved_by, sick_doc, notes)
-            VALUES (?,?,?,?,?,?,?,?,?)
+                 status, approved_by, sick_doc, notes, attachment, attachment_name)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
         """, (emp_id, leave_type, start_date, end_date, days,
-              init_status, approved_by, sick_doc, notes))
+              init_status, approved_by, sick_doc, notes, attachment, att_name))
         conn.commit()
         return jsonify({'ok': True, 'msg': 'تم تسجيل الإجازة', 'days': days})
     finally:
@@ -2159,6 +2161,20 @@ def api_leave_decide(lid):
     finally:
         conn.close()
     return jsonify({'ok': True})
+
+@app.route('/api/leaves/<int:lid>/attachment')
+@login_required
+def api_leave_attachment(lid):
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT attachment, attachment_name FROM leaves WHERE id=?", (lid,)
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row or not row['attachment']:
+        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+    return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
 
 @app.route('/api/leaves/<int:lid>', methods=['DELETE'])
 @hr_required

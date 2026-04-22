@@ -1122,7 +1122,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th>
-                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+                <th>الأيام</th><th>مرفق</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
               </tr></thead>
               <tbody id="leaves-tbody">
                 <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
@@ -1139,7 +1139,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
-                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+                <th>الأيام</th><th>مرفق</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
               </tr></thead>
               <tbody id="leaves-annual-tbody">
                 <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
@@ -1156,7 +1156,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
-                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+                <th>الأيام</th><th>مرفق</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
               </tr></thead>
               <tbody id="leaves-sick-tbody">
                 <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
@@ -1173,7 +1173,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <table class="tbl">
               <thead><tr>
                 <th>#</th><th>الموظف</th><th>من</th><th>إلى</th>
-                <th>الأيام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+                <th>الأيام</th><th>مرفق</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
               </tr></thead>
               <tbody id="leaves-emergency-tbody">
                 <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
@@ -1573,9 +1573,15 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <label class="fl">رقم الوثيقة الطبية</label>
           <input type="text" id="leave-sick-doc" class="fc" placeholder="رقم التقرير الطبي">
         </div>
-        <div>
+        <div style="margin-bottom:14px">
           <label class="fl">ملاحظات</label>
           <textarea id="leave-notes" class="fc" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+        </div>
+        <div>
+          <label class="fl">مرفق (اختياري) — وثيقة طبية، إذن، إلخ</label>
+          <input type="file" id="leave-file" class="fc" style="padding:6px"
+                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+          <div id="leave-file-name" style="font-size:12px;color:#64748b;margin-top:4px"></div>
         </div>
         <div id="leave-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
@@ -3196,6 +3202,7 @@ async function loadLeavesByType(tab) {
         <td>${r.start_date}</td>
         <td>${r.end_date}</td>
         <td><b>${r.days}</b></td>
+        <td>${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i> ملف</button>` : '—'}</td>
         <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
         ${isHR && r.status === 'pending' ? `
         <td>
@@ -3215,6 +3222,11 @@ function openLeaveModal(defaultType = null) {
   }
   document.getElementById('leave-err').style.display = 'none';
   document.getElementById('sick-doc-row').style.display = 'none';
+  document.getElementById('leave-file').value = '';
+  document.getElementById('leave-file-name').textContent = '';
+  document.getElementById('leave-file').onchange = function() {
+    document.getElementById('leave-file-name').textContent = this.files[0]?.name || '';
+  };
   const typeEl = document.getElementById('leave-type');
   if (defaultType && defaultType !== 'emp') typeEl.value = defaultType;
   typeEl.onchange = function() {
@@ -3224,20 +3236,34 @@ function openLeaveModal(defaultType = null) {
 }
 
 async function submitLeave() {
-  const isHR  = _currentUser?.role !== 'employee';
-  const start = document.getElementById('leave-start').value;
-  const end   = document.getElementById('leave-end').value;
-  const type  = document.getElementById('leave-type').value;
-  const notes = document.getElementById('leave-notes').value;
-  const sick  = document.getElementById('leave-sick-doc').value;
-  const err   = document.getElementById('leave-err');
+  const isHR   = _currentUser?.role !== 'employee';
+  const start  = document.getElementById('leave-start').value;
+  const end    = document.getElementById('leave-end').value;
+  const type   = document.getElementById('leave-type').value;
+  const notes  = document.getElementById('leave-notes').value;
+  const sick   = document.getElementById('leave-sick-doc').value;
+  const fileEl = document.getElementById('leave-file');
+  const err    = document.getElementById('leave-err');
   if (!start || !end) { err.textContent='التاريخ مطلوب'; err.style.display='block'; return; }
   err.style.display = 'none';
-  const body = {leave_type: type, start_date: start, end_date: end, notes, sick_doc: sick};
+  let attachment = '', att_name = '';
+  if (fileEl.files[0]) {
+    attachment = await readFileAsBase64(fileEl.files[0]);
+    att_name   = fileEl.files[0].name;
+  }
+  const body = {leave_type: type, start_date: start, end_date: end, notes, sick_doc: sick, attachment, attachment_name: att_name};
   if (isHR) body.employee_id = parseInt(document.getElementById('leave-emp').value);
   const r = await POST('/api/leaves', body);
   if (r.ok) { _leaveModal.hide(); toast(r.msg); loadLeavesByType(_currentLeaveTab); }
   else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
+}
+
+async function downloadLeaveFile(id) {
+  try {
+    const d = await GET(`/api/leaves/${id}/attachment`);
+    const a = document.createElement('a');
+    a.href = d.data; a.download = d.name || 'attachment'; a.click();
+  } catch(e) { toast('لا يوجد ملف مرفق', 'err'); }
 }
 
 async function decideLeave(id, status) {
