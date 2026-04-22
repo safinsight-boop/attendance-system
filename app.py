@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════
 #  CONFIGURATION
 # ═══════════════════════════════════════════════════════════
-DB_PATH    = 'attendance.db'
+DB_PATH    = os.environ.get('DB_PATH', '/data/attendance.db')
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://nxraodhjulwsmldjtyyv.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 TTBASE     = 'https://euapi.ttlock.com'
