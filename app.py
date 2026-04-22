@@ -3,7 +3,7 @@
 نظام إدارة الحضور والغياب — TTLock Integration
 Flask + SQLite + APScheduler + Gmail SMTP
 """
-import os, sqlite3, hashlib, requests, smtplib, logging, io, secrets
+import os, sqlite3, hashlib, requests, smtplib, logging, io, secrets, threading
 from datetime import datetime, timedelta, date
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 #  CONFIGURATION
 # ═══════════════════════════════════════════════════════════
 DB_PATH    = 'attendance.db'
+SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://nxraodhjulwsmldjtyyv.supabase.co')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
 TTBASE     = 'https://euapi.ttlock.com'
 CID        = os.getenv('TTLOCK_CLIENT_ID', '')
 CSECRET    = os.getenv('TTLOCK_CLIENT_SECRET', '')
@@ -33,6 +35,43 @@ EMAIL_FROM       = os.getenv('EMAIL_SENDER', '')
 EMAIL_PASS       = os.getenv('EMAIL_PASSWORD', '')
 SITE_URL         = os.getenv('SITE_URL', 'https://attendance-system-pd27.onrender.com')
 GRACE_MIN        = 5    # دقائق السماح قبل احتساب التأخر
+
+# ═══════════════════════════════════════════════════════════
+#  SUPABASE AUDIT LOG
+# ═══════════════════════════════════════════════════════════
+def audit_log(event_type, target_type='', target_name='', details='', status='success'):
+    """تسجيل الأحداث في Supabase — يُرسل في خيط منفصل حتى لا يبطئ التطبيق"""
+    if not SUPABASE_KEY:
+        return
+    username = session.get('username', 'system')
+    role     = session.get('role', '')
+    ip       = request.headers.get('X-Forwarded-For', request.remote_addr or '')
+    payload  = {
+        'event_type':  event_type,
+        'username':    username,
+        'role':        role,
+        'target_type': target_type,
+        'target_name': target_name,
+        'details':     details,
+        'ip_address':  ip.split(',')[0].strip(),
+        'status':      status,
+    }
+    def _send():
+        try:
+            requests.post(
+                f"{SUPABASE_URL}/rest/v1/audit_logs",
+                json=payload,
+                headers={
+                    'apikey':        SUPABASE_KEY,
+                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                    'Content-Type':  'application/json',
+                    'Prefer':        'return=minimal',
+                },
+                timeout=5
+            )
+        except Exception as e:
+            logger.warning(f"audit_log failed: {e}")
+    threading.Thread(target=_send, daemon=True).start()
 AUTO_REJECT_DAYS = 3    # أيام الرفض التلقائي للعذر
 
 # جدول المخالفات: {bracket: [(ptype, pvalue), ...]}
@@ -1448,6 +1487,7 @@ def api_run():
     try:
         target = datetime.strptime(d_str, '%Y-%m-%d').date() if d_str else None
         process_day(target)
+        audit_log('manual_run', 'attendance', d_str or str(date.today()))
         return jsonify({'ok': True, 'msg': 'تمت معالجة الحضور بنجاح'})
     except Exception as e:
         logger.error(f"Manual run error: {e}", exc_info=True)
@@ -1532,6 +1572,7 @@ def api_emps_post():
              d.get('work_end','17:00'), d.get('weekly_hours',40),
              d.get('annual_leave_days', 21), d.get('emp_code') or None))
         conn.commit()
+        audit_log('create_employee', 'employee', d['name_ar'])
         return jsonify({'ok': True, 'msg': 'تم إضافة الموظف بنجاح'})
     except sqlite3.IntegrityError:
         return jsonify({'error': 'الاسم الإنجليزي مستخدم بالفعل'}), 400
@@ -1564,6 +1605,7 @@ def api_emp_put(eid):
     try:
         conn.execute(sql, list(updates.values()) + [eid])
         conn.commit()
+        audit_log('edit_employee', 'employee', str(eid), details=str(list(updates.keys())))
     finally:
         conn.close()
     return jsonify({'ok': True, 'msg': 'تم تحديث بيانات الموظف'})
@@ -1574,6 +1616,7 @@ def api_emp_delete(eid):
     try:
         conn.execute("DELETE FROM employees WHERE id=?", (eid,))
         conn.commit()
+        audit_log('delete_employee', 'employee', str(eid))
     finally:
         conn.close()
     return jsonify({'ok': True, 'msg': 'تم حذف الموظف'})
@@ -1664,11 +1707,13 @@ def api_login():
             "SELECT * FROM users WHERE username=? AND password_hash=?",
             (un, _hash(pw))).fetchone()
         if not row:
+            audit_log('login_failed', target_name=un, status='failed')
             return jsonify({'error': 'بيانات الدخول غير صحيحة'}), 401
         session['user_id']   = row['id']
         session['username']  = row['username']
         session['role']      = row['role']
         session['employee_id'] = row['employee_id']
+        audit_log('login', details=f"role={row['role']}")
         return jsonify({'ok': True, 'role': row['role'], 'username': row['username'],
                         'employee_id': row['employee_id']})
     finally:
@@ -1676,6 +1721,7 @@ def api_login():
 
 @app.route('/api/auth/logout', methods=['POST'])
 def api_logout():
+    audit_log('logout')
     session.clear()
     return jsonify({'ok': True})
 
@@ -1731,6 +1777,7 @@ def api_users_post():
             "INSERT INTO users (username, password_hash, role, employee_id) VALUES (?,?,?,?)",
             (un, _hash(pw), role, emp_id))
         conn.commit()
+        audit_log('create_user', 'user', un, details=f"role={role}")
         return jsonify({'ok': True, 'msg': 'تم إنشاء المستخدم'})
     except sqlite3.IntegrityError:
         return jsonify({'error': 'اسم المستخدم مستخدم بالفعل'}), 400
@@ -1746,6 +1793,7 @@ def api_user_delete(uid):
     try:
         conn.execute("DELETE FROM users WHERE id=?", (uid,))
         conn.commit()
+        audit_log('delete_user', 'user', str(uid))
     finally:
         conn.close()
     return jsonify({'ok': True})
@@ -1866,6 +1914,7 @@ def api_excuse_decide(eid):
                         WHERE employee_id=? AND att_date=?
                     """, (ex['employee_id'], ex['att_date']))
         conn.commit()
+        audit_log('excuse_decide', 'excuse', str(eid), details=f"status={status}")
         _notify_excuse_decision(eid, status, note, conn)
         return jsonify({'ok': True})
     finally:
@@ -2021,6 +2070,7 @@ def api_leave_decide(lid):
             WHERE id=?
         """, (status, session['user_id'], d.get('notes'), lid))
         conn.commit()
+        audit_log('leave_decide', 'leave', str(lid), details=f"status={status}")
     finally:
         conn.close()
     return jsonify({'ok': True})
@@ -2126,6 +2176,9 @@ def api_overtime_post():
             VALUES (?, ?, ?, '', '', 'approved', ?, 'manual')
         """, (emp_id, att_date, float(ot_hours), notes))
         conn.commit()
+        emp_row = conn.execute("SELECT name_ar FROM employees WHERE id=?", (emp_id,)).fetchone()
+        emp_name = emp_row['name_ar'] if emp_row else str(emp_id)
+        audit_log('create_overtime', 'overtime', emp_name, details=f"date={att_date} hours={ot_hours} source=manual")
         return jsonify({'ok': True, 'msg': 'تم رفع التكليف بنجاح'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -2147,6 +2200,7 @@ def api_overtime_decide(oid):
             WHERE id=?
         """, (status, session['user_id'], oid))
         conn.commit()
+        audit_log('overtime_decide', 'overtime', str(oid), details=f"status={status}")
     finally:
         conn.close()
     return jsonify({'ok': True})
