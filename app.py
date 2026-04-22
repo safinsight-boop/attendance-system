@@ -377,7 +377,7 @@ def fetch_daily_records(target_date):
     token = tt_get_token()
     if not token:
         logger.error("No TTLock token — cannot fetch records")
-        return {}
+        return None
 
     start_ms = int(datetime(
         target_date.year, target_date.month, target_date.day, 0, 0, 0
@@ -621,8 +621,18 @@ def process_day(target_date=None):
     if target_date is None:
         target_date = date.today()
 
+    # لا تعالج الغياب إذا TTLock غير مربوط
+    if not CID or not TTUSR:
+        logger.warning("TTLock not configured — skipping attendance processing")
+        return {'ok': False, 'msg': 'TTLock غير مربوط — لا يمكن معالجة الحضور'}
+
     logger.info(f"=== Processing attendance for {target_date} ===")
     raw = fetch_daily_records(target_date)
+
+    # إذا فشل جلب السجلات (token فشل) لا نسجل غياب تلقائي
+    if raw is None:
+        logger.warning(f"fetch_daily_records returned None for {target_date} — skipping")
+        return {'ok': False, 'msg': 'فشل الاتصال بـ TTLock'}
 
     conn = get_db()
     try:
