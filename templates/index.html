@@ -1261,6 +1261,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     ══════════════════════════════════════ -->
     <div id="page-calendar" class="page">
       <div class="filters">
+        <div class="fg hr-only" style="display:none">
+          <label>الموظف</label>
+          <select id="cal-emp" onchange="loadCalendar()"><option value="">— اختر موظفاً —</option></select>
+        </div>
         <div class="fg">
           <label>الشهر</label>
           <select id="cal-month" onchange="loadCalendar()"></select>
@@ -1278,6 +1282,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span>معذور</span>
         <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#94a3b8;display:inline-block"></span>إجازة رسمية / عطلة</span>
       </div>
+      <div id="cal-emp-title" class="hr-only" style="display:none;font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px"></div>
       <div class="card-wrap">
         <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
       </div>
@@ -3486,19 +3491,34 @@ async function loadProfile() {
   }
 })();
 
+async function _fillCalEmpDropdown() {
+  const sel = document.getElementById('cal-emp');
+  if (!sel || sel.options.length > 1) return;
+  try {
+    const emps = await GET('/api/employees');
+    emps.forEach(e => sel.add(new Option(e.name_ar, e.id)));
+  } catch(err) {}
+}
+
 async function loadCalendar() {
   const y = parseInt(document.getElementById('cal-year').value);
   const m = parseInt(document.getElementById('cal-month').value);
   const grid = document.getElementById('cal-grid');
+  const role = window._role;
+  if (role !== 'employee') await _fillCalEmpDropdown();
+  const empId = document.getElementById('cal-emp')?.value || '';
+  if (role !== 'employee' && !empId) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8"><i class="fas fa-user" style="font-size:28px;margin-bottom:8px;display:block"></i>اختر موظفاً لعرض تقويمه</div>';
+    return;
+  }
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><i class="fas fa-spinner fa-spin"></i></div>';
   try {
-    const role = window._role;
     let records = [];
     if (role === 'employee') {
       const d = await GET(`/api/my/attendance?year=${y}&month=${m}`);
       records = (d.records || []).map(r => ({...r, label: r.name_ar || ''}));
     } else {
-      records = await GET(`/api/attendance?year=${y}&month=${m}`);
+      records = await GET(`/api/attendance?year=${y}&month=${m}&emp_id=${empId}`);
     }
     const attMap = {};
     records.forEach(r => {
@@ -3515,6 +3535,11 @@ async function loadCalendar() {
       early_leave:'مبكر', excused:'معذور', present:'حاضر',
       leave:'إجازة', official_holiday:'رسمية'
     };
+    const titleEl = document.getElementById('cal-emp-title');
+    if (titleEl) {
+      const selEl = document.getElementById('cal-emp');
+      titleEl.textContent = selEl ? (selEl.options[selEl.selectedIndex]?.text || '') : '';
+    }
     grid.innerHTML = '';
     // رؤوس الأيام
     ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'].forEach(d => {
