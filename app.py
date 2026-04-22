@@ -222,6 +222,8 @@ def _migrate_db(conn):
         "ALTER TABLE leaves ADD COLUMN attachment_name TEXT",
         "ALTER TABLE employees ADD COLUMN annual_leave_days INTEGER DEFAULT 21",
         "ALTER TABLE employees ADD COLUMN emp_code TEXT",
+        "ALTER TABLE overtime_requests ADD COLUMN notes TEXT",
+        "ALTER TABLE overtime_requests ADD COLUMN source TEXT DEFAULT 'auto'",
     ]
     for sql in migrations:
         try:
@@ -2105,6 +2107,30 @@ def api_overtime_get():
     finally:
         conn.close()
     return jsonify([dict(r) for r in rows])
+
+@app.route('/api/overtime', methods=['POST'])
+@hr_required
+def api_overtime_post():
+    d          = request.get_json(silent=True) or {}
+    emp_id     = d.get('employee_id')
+    att_date   = d.get('att_date', '')
+    ot_hours   = d.get('overtime_hours')
+    notes      = (d.get('notes') or '').strip()
+    if not emp_id or not att_date or not ot_hours:
+        return jsonify({'error': 'الموظف والتاريخ وعدد الساعات مطلوبة'}), 400
+    conn = get_db()
+    try:
+        conn.execute("""
+            INSERT INTO overtime_requests
+                (employee_id, att_date, overtime_hours, check_out_time, work_end, status, notes, source)
+            VALUES (?, ?, ?, '', '', 'approved', ?, 'manual')
+        """, (emp_id, att_date, float(ot_hours), notes))
+        conn.commit()
+        return jsonify({'ok': True, 'msg': 'تم رفع التكليف بنجاح'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route('/api/overtime/<int:oid>', methods=['PUT'])
 @hr_required

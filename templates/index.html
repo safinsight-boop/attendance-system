@@ -980,18 +980,23 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
          PAGE: OVERTIME
     ══════════════════════════════════════ -->
     <div id="page-overtime" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <span style="font-size:15px;font-weight:700;color:var(--primary)">
+          <i class="fas fa-clock" style="color:var(--gold);margin-left:6px"></i>سجل الإضافي
+        </span>
+        <button class="btn-main hr-only" style="display:none" onclick="openOtModal()">
+          <i class="fas fa-plus"></i> رفع تكليف إضافي
+        </button>
+      </div>
       <div class="card-wrap">
-        <div class="card-head">
-          <h5><i class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>سجل الإضافي</h5>
-        </div>
         <div class="table-responsive">
           <table class="tbl">
             <thead><tr>
               <th>#</th><th>الموظف</th><th>التاريخ</th><th>ساعات الإضافي</th>
-              <th>وقت الانصراف</th><th>وقت نهاية الدوام</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
+              <th>وقت الانصراف</th><th>نهاية الدوام</th><th>المصدر</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
             </tr></thead>
             <tbody id="overtime-tbody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>
+              <tr><td colspan="9"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1499,6 +1504,44 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   </div>
 </div>
 
+<!-- مودال رفع تكليف إضافي -->
+<div class="modal fade" id="otModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>رفع تكليف دوام إضافي</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">الموظف *</label>
+            <select id="ot-emp" class="fc"></select>
+          </div>
+          <div>
+            <label class="fl">التاريخ *</label>
+            <input type="date" id="ot-date" class="fc">
+          </div>
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">عدد ساعات الإضافي *</label>
+          <input type="number" id="ot-hours" class="fc" placeholder="مثال: 2.5" min="0.5" max="12" step="0.5">
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">ملاحظات</label>
+          <textarea id="ot-notes" class="fc" rows="2" placeholder="سبب التكليف أو أي تفاصيل..."></textarea>
+        </div>
+        <div id="ot-err" style="display:none;color:#dc2626;font-size:13px;margin-bottom:8px"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-main" id="ot-save-btn" onclick="submitOt()">
+          <i class="fas fa-save"></i> حفظ التكليف
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- مودال تفاصيل إحصائية اليوم -->
 <div class="modal fade" id="statDetailModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:500px">
@@ -1567,7 +1610,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1586,6 +1629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
   _pdModal           = new bootstrap.Modal(document.getElementById('pdModal'));
   _statDetailModal   = new bootstrap.Modal(document.getElementById('statDetailModal'));
+  _otModal           = new bootstrap.Modal(document.getElementById('otModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -2820,25 +2864,58 @@ async function loadOvertime() {
     const isHR = _currentUser?.role !== 'employee';
     document.querySelectorAll('#page-overtime .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>`;
       return;
     }
-    tb.innerHTML = rows.map((r, i) => `
-      <tr>
+    tb.innerHTML = rows.map((r, i) => {
+      const isManual = r.source === 'manual';
+      const srcBadge = isManual
+        ? `<span class="badge-s" style="background:#e0f2fe;color:#0369a1">تكليف يدوي</span>`
+        : `<span class="badge-s" style="background:#fef9c3;color:#854d0e">تلقائي</span>`;
+      return `<tr>
         <td style="color:#94a3b8">${i+1}</td>
         <td><b>${r.name_ar}</b></td>
         <td>${r.att_date}</td>
         <td><b style="color:#d97706">${r.overtime_hours} ساعة</b></td>
-        <td>${r.check_out_time}</td>
-        <td>${r.work_end}</td>
+        <td>${r.check_out_time || '—'}</td>
+        <td>${r.work_end || '—'}</td>
+        <td>${srcBadge}${r.notes ? `<br><span style="font-size:11px;color:#64748b">${r.notes}</span>` : ''}</td>
         <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
         ${isHR && r.status === 'pending' ? `
         <td>
           <button class="btn-sm btn-approve" onclick="decideOT(${r.id},'approved')" style="margin-left:4px">تكليف ✅</button>
           <button class="btn-sm btn-reject"  onclick="decideOT(${r.id},'rejected')">لا ❌</button>
         </td>` : `<td class="hr-only" style="display:none">—</td>`}
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   } catch(e) { toast('خطأ', 'err'); }
+}
+
+function openOtModal() {
+  const sel = document.getElementById('ot-emp');
+  sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
+  document.getElementById('ot-date').value   = new Date().toISOString().slice(0,10);
+  document.getElementById('ot-hours').value  = '';
+  document.getElementById('ot-notes').value  = '';
+  document.getElementById('ot-err').style.display = 'none';
+  const btn = document.getElementById('ot-save-btn');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-save"></i> حفظ التكليف';
+  _otModal.show();
+}
+
+async function submitOt() {
+  const emp_id = document.getElementById('ot-emp').value;
+  const date   = document.getElementById('ot-date').value;
+  const hours  = document.getElementById('ot-hours').value;
+  const notes  = document.getElementById('ot-notes').value.trim();
+  const err    = document.getElementById('ot-err');
+  if (!emp_id || !date || !hours) { err.textContent = 'الموظف والتاريخ والساعات مطلوبة'; err.style.display='block'; return; }
+  const btn = document.getElementById('ot-save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> جاري الحفظ...';
+  const r = await POST('/api/overtime', {employee_id: +emp_id, att_date: date, overtime_hours: +hours, notes});
+  if (r.ok) { _otModal.hide(); toast(r.msg); loadOvertime(); }
+  else { err.textContent = r.error || 'خطأ'; err.style.display='block'; btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> حفظ التكليف'; }
 }
 
 async function decideOT(id, status) {
