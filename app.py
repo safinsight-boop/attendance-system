@@ -265,7 +265,10 @@ def hr_required(f):
     return decorated
 
 def _gosi(emp):
-    """احتساب تأمينات GOSI = 10.75% من الأجور الثابتة (راتب + سكن + نقل)"""
+    """احتساب تأمينات GOSI = 10.75% — المتدربون (emp_code يبدأ بـ IN) معفيون"""
+    code = (emp.get('emp_code') or '').strip().lower()
+    if code.startswith('in'):
+        return 0.0
     return round((emp['salary'] + emp['housing'] + emp['transport']) * 0.1075, 2)
 
 def _leave_balance(conn, emp_id, year=None):

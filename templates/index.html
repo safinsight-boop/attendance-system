@@ -2282,8 +2282,10 @@ async function loadPayroll() {
           ${fmtSAR(r.total_ded)}
         </td>
         <td>
-          <b style="color:#b45309">${fmtSAR(r.gosi_ded ?? r.other_ded)}</b><br>
-          <span style="font-size:10px;color:#94a3b8">${fmt(r.salary + r.housing + r.transport)} × 10.75%</span>
+          ${(r.gosi_ded ?? r.other_ded) > 0
+            ? `<b style="color:#b45309">${fmtSAR(r.gosi_ded ?? r.other_ded)}</b><br>
+               <span style="font-size:10px;color:#94a3b8">${fmt(r.salary + r.housing + r.transport)} × 10.75%</span>`
+            : `<span style="font-size:12px;color:#16a34a;font-weight:600">معفى</span>`}
         </td>
         <td style="font-weight:800;color:${netColor};font-size:15px">${fmtSAR(r.net)}</td>
         <td>${r.days}</td>
@@ -2330,7 +2332,9 @@ function openPayrollDetail(r) {
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
         <span style="color:#b45309">تأمينات اجتماعية (10.75%)</span>
-        <b style="color:#b45309">- ${fmtSAR(r.gosi_ded ?? r.other_ded ?? 0)}</b>
+        ${(r.gosi_ded ?? r.other_ded ?? 0) > 0
+          ? `<b style="color:#b45309">- ${fmtSAR(r.gosi_ded ?? r.other_ded ?? 0)}</b>`
+          : `<span style="color:#16a34a;font-weight:600">معفى (متدرب)</span>`}
       </div>
       <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:15px;font-weight:700">صافي الراتب</span>
