@@ -151,6 +151,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .card-wrap {
   background: #fff; border-radius: 14px; padding: 18px 20px;
   box-shadow: 0 1px 6px rgba(26,60,64,0.07); margin-bottom: 18px;
+  transition: all .18s;
+}
+.card-wrap[onclick]:hover, .card-wrap[style*="cursor:pointer"]:hover {
+  box-shadow: 0 4px 18px rgba(26,60,64,0.18); transform: translateY(-2px);
+}
+.card-wrap[onclick]:active, .card-wrap[style*="cursor:pointer"]:active {
+  transform: translateY(0);
 }
 .card-head {
   display: flex; align-items: center; justify-content: space-between;
