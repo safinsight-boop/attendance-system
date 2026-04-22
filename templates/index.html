@@ -26,6 +26,13 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Amiri', 'Times New Roman', serif; background: var(--bg); color: var(--text); font-size: 15px; }
+/* إجبار الأرقام على العرض بالإنجليزية */
+@font-face {
+  font-family: 'EnNums';
+  src: local('Arial'), local('Helvetica Neue'), local('Helvetica');
+  unicode-range: U+0030-0039, U+002E, U+002C, U+0025, U+002B, U+002D, U+003A;
+}
+body { font-family: 'EnNums', 'Amiri', 'Times New Roman', serif; }
 * { font-variant-numeric: normal; unicode-bidi: plaintext; }
 input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
