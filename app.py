@@ -2059,39 +2059,30 @@ LEAVE_NAMES = {
 @app.route('/api/leaves', methods=['GET'])
 @login_required
 def api_leaves_get():
-    leave_type = request.args.get('leave_type')   # optional filter
+    leave_type = request.args.get('leave_type')
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    prefix = f"{y}-{m:02d}-%"
     conn = get_db()
     try:
         role   = session.get('role')
         emp_id = session.get('employee_id')
+        base = "SELECT l.*, e.name_ar FROM leaves l JOIN employees e ON e.id=l.employee_id"
         if role in ('hr', 'manager'):
+            where = "WHERE l.start_date LIKE ?"
+            params = [prefix]
             if leave_type:
-                rows = conn.execute("""
-                    SELECT l.*, e.name_ar FROM leaves l
-                    JOIN employees e ON e.id=l.employee_id
-                    WHERE l.leave_type=? ORDER BY l.created_at DESC
-                """, (leave_type,)).fetchall()
-            else:
-                rows = conn.execute("""
-                    SELECT l.*, e.name_ar FROM leaves l
-                    JOIN employees e ON e.id=l.employee_id
-                    ORDER BY l.created_at DESC
-                """).fetchall()
+                where += " AND l.leave_type=?"
+                params.append(leave_type)
+            rows = conn.execute(f"{base} {where} ORDER BY l.created_at DESC", params).fetchall()
         else:
             if not emp_id: return jsonify([])
+            where = "WHERE l.employee_id=? AND l.start_date LIKE ?"
+            params = [emp_id, prefix]
             if leave_type:
-                rows = conn.execute("""
-                    SELECT l.*, e.name_ar FROM leaves l
-                    JOIN employees e ON e.id=l.employee_id
-                    WHERE l.employee_id=? AND l.leave_type=?
-                    ORDER BY l.created_at DESC
-                """, (emp_id, leave_type)).fetchall()
-            else:
-                rows = conn.execute("""
-                    SELECT l.*, e.name_ar FROM leaves l
-                    JOIN employees e ON e.id=l.employee_id
-                    WHERE l.employee_id=? ORDER BY l.created_at DESC
-                """, (emp_id,)).fetchall()
+                where += " AND l.leave_type=?"
+                params.append(leave_type)
+            rows = conn.execute(f"{base} {where} ORDER BY l.created_at DESC", params).fetchall()
     finally:
         conn.close()
     return jsonify([dict(r) for r in rows])
@@ -2590,6 +2581,15 @@ def auto_reject_excuses():
                 "UPDATE attendance_requests SET status='rejected', decided_at=datetime('now'), manager_note=? WHERE id=?",
                 (note, rq['id']))
             _notify_request_decision(rq['id'], 'rejected', note, conn)
+
+        # الإجازات
+        leaves = conn.execute(
+            "SELECT * FROM leaves WHERE status='pending' AND created_at<?",
+            (cutoff,)).fetchall()
+        for lv in leaves:
+            conn.execute(
+                "UPDATE leaves SET status='rejected', approved_by=NULL, notes=? WHERE id=?",
+                (note, lv['id']))
 
         conn.commit()
         total = len(excuses) + len(reqs)
