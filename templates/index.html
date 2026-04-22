@@ -860,19 +860,50 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <!-- ══════════════════════════════════════
          PAGE: MY REQUESTS (employee)
     ══════════════════════════════════════ -->
+    <!-- صفحة الموظف: طلباتي -->
     <div id="page-my-requests" class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <span style="font-size:14px;color:#64748b;font-weight:600">طلبات التأخر والخروج المبكر</span>
-        <button class="btn-main" onclick="openRequestModal()">
-          <i class="fas fa-plus"></i> طلب جديد
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
+        <span style="font-size:15px;font-weight:700;color:var(--primary)">
+          <i class="fas fa-paper-plane" style="color:var(--gold);margin-left:6px"></i>طلباتي
+        </span>
+        <div style="margin-right:auto;display:flex;gap:8px">
+          <button class="btn-main" onclick="openRequestModal('late_arrival')">
+            <i class="fas fa-clock"></i> طلب تأخير
+          </button>
+          <button class="btn-main" style="background:#d97706" onclick="openRequestModal('early_leave')">
+            <i class="fas fa-sign-out-alt"></i> طلب خروج مبكر
+          </button>
+        </div>
+      </div>
+      <!-- تبويبان -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="excuse-tab active" id="myreq-tab-late" onclick="switchMyReqTab('late_arrival')">
+          <i class="fas fa-clock"></i> طلبات التأخير
+          <span id="myreq-badge-late" class="exc-badge" style="background:#d97706"></span>
+        </button>
+        <button class="excuse-tab" id="myreq-tab-early" onclick="switchMyReqTab('early_leave')">
+          <i class="fas fa-sign-out-alt"></i> طلبات الخروج المبكر
+          <span id="myreq-badge-early" class="exc-badge" style="background:#7c3aed"></span>
         </button>
       </div>
-      <div class="card-wrap">
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
-            <tbody id="myreq-tbody"></tbody>
-          </table>
+      <div id="myreq-panel-late">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
+              <tbody id="myreq-tbody-late"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="myreq-panel-early" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
+              <tbody id="myreq-tbody-early"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -881,15 +912,40 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
          PAGE: ATTENDANCE REQUESTS (HR)
     ══════════════════════════════════════ -->
     <div id="page-att-requests" class="page">
-      <div class="card-wrap">
-        <div class="card-head">
-          <h5><i class="fas fa-paper-plane" style="color:var(--gold);margin-left:8px"></i>طلبات الحضور</h5>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
+        <span style="font-size:15px;font-weight:700;color:var(--primary)">
+          <i class="fas fa-paper-plane" style="color:var(--gold);margin-left:6px"></i>طلبات الحضور
+        </span>
+      </div>
+      <!-- تبويبان -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="excuse-tab active" id="hrreq-tab-late" onclick="switchHRReqTab('late_arrival')">
+          <i class="fas fa-clock"></i> طلبات التأخير
+          <span id="hrreq-badge-late" class="exc-badge" style="background:#d97706"></span>
+        </button>
+        <button class="excuse-tab" id="hrreq-tab-early" onclick="switchHRReqTab('early_leave')">
+          <i class="fas fa-sign-out-alt"></i> طلبات الخروج المبكر
+          <span id="hrreq-badge-early" class="exc-badge" style="background:#7c3aed"></span>
+        </button>
+      </div>
+      <div id="hrreq-panel-late">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
+              <tbody id="hrreq-tbody-late"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
-            <tbody id="hrreq-tbody"></tbody>
-          </table>
+      </div>
+      <div id="hrreq-panel-early" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
+              <tbody id="hrreq-tbody-early"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1291,29 +1347,24 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:500px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-paper-plane" style="color:var(--gold);margin-left:8px"></i>طلب تأخر / خروج مبكر</h5>
+        <h5 class="modal-title" id="req-modal-title">
+          <i id="req-modal-icon" class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>
+          <span id="req-modal-label">طلب تأخير</span>
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="req-type">
         <div id="req-hr-row" style="display:none;margin-bottom:14px">
           <label class="fl">الموظف</label>
           <select id="req-emp" class="fc"></select>
         </div>
-        <div class="form2" style="margin-bottom:14px">
-          <div>
-            <label class="fl">التاريخ</label>
-            <input type="date" id="req-date" class="fc">
-          </div>
-          <div>
-            <label class="fl">نوع الطلب</label>
-            <select id="req-type" class="fc">
-              <option value="late_arrival">تأخر في الحضور</option>
-              <option value="early_leave">خروج مبكر</option>
-            </select>
-          </div>
+        <div style="margin-bottom:14px">
+          <label class="fl">التاريخ *</label>
+          <input type="date" id="req-date" class="fc">
         </div>
         <div style="margin-bottom:14px">
-          <label class="fl">الوقت المطلوب (الوصول أو المغادرة)</label>
+          <label class="fl" id="req-time-label">وقت الوصول المتوقع</label>
           <input type="time" id="req-time" class="fc">
         </div>
         <div style="margin-bottom:14px">
@@ -1321,7 +1372,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <textarea id="req-reason" class="fc" rows="3" placeholder="اكتب سبب الطلب..."></textarea>
         </div>
         <div>
-          <label class="fl">مرفق (اختياري) — وثيقة طبية، إذن، إلخ</label>
+          <label class="fl">مرفق (اختياري)</label>
           <input type="file" id="req-file" class="fc" style="padding:6px"
                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
           <div id="req-file-name" style="font-size:12px;color:#64748b;margin-top:4px"></div>
@@ -1329,7 +1380,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="req-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" onclick="submitRequest()"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
+        <button class="btn-main" id="req-submit-btn" onclick="submitRequest()"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -2602,41 +2653,76 @@ async function loadMyPayroll() {
 //  MY REQUESTS (employee)
 // ════════════════════════════════════════════
 const REQ_TYPE_AR = {late_arrival:'تأخر في الحضور', early_leave:'خروج مبكر'};
+let _myReqTab = 'late_arrival';
+let _hrReqTab = 'late_arrival';
+
+function switchMyReqTab(type) {
+  _myReqTab = type;
+  ['late_arrival','early_leave'].forEach(t => {
+    const key = t === 'late_arrival' ? 'late' : 'early';
+    document.getElementById(`myreq-tab-${key}`).classList.toggle('active', t === type);
+    document.getElementById(`myreq-panel-${key}`).style.display = t === type ? '' : 'none';
+  });
+}
+
+function switchHRReqTab(type) {
+  _hrReqTab = type;
+  ['late_arrival','early_leave'].forEach(t => {
+    const key = t === 'late_arrival' ? 'late' : 'early';
+    document.getElementById(`hrreq-tab-${key}`).classList.toggle('active', t === type);
+    document.getElementById(`hrreq-panel-${key}`).style.display = t === type ? '' : 'none';
+  });
+}
+
+function _renderReqRows(rows, showEmp) {
+  if (!rows.length) return `<tr><td colspan="${showEmp?8:7}"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+  return rows.map((r, i) => `<tr>
+    <td style="color:#94a3b8">${i+1}</td>
+    ${showEmp ? `<td><b>${r.name_ar}</b></td>` : ''}
+    <td>${r.req_date}</td>
+    <td>${r.requested_time||'—'}</td>
+    <td style="max-width:180px;text-align:right">${r.reason}</td>
+    <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
+    <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+    ${showEmp
+      ? `<td>${r.status==='pending' ?
+          `<button class="btn-sm btn-approve" onclick="decideRequest(${r.id},'approved')" style="margin-left:4px">قبول</button>
+           <button class="btn-sm btn-reject"  onclick="decideRequest(${r.id},'rejected')">رفض</button>` : '—'}
+        </td>`
+      : `<td style="color:#64748b;font-size:12px">${r.manager_note||'—'}</td>`}
+  </tr>`).join('');
+}
 
 async function loadMyRequests() {
-  const tb = document.getElementById('myreq-tbody');
   try {
     const rows = await GET('/api/requests');
-    if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
-      return;
-    }
-    tb.innerHTML = rows.map((r, i) => `<tr>
-      <td style="color:#94a3b8">${i+1}</td>
-      <td>${r.req_date}</td>
-      <td>${REQ_TYPE_AR[r.req_type]||r.req_type}</td>
-      <td>${r.requested_time||'—'}</td>
-      <td style="max-width:200px;text-align:right">${r.reason}</td>
-      <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
-      <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
-      <td style="color:#64748b;font-size:12px">${r.manager_note||'—'}</td>
-    </tr>`).join('');
+    const late  = rows.filter(r => r.req_type === 'late_arrival');
+    const early = rows.filter(r => r.req_type === 'early_leave');
+    document.getElementById('myreq-badge-late').textContent  = late.filter(r=>r.status==='pending').length  || '';
+    document.getElementById('myreq-badge-early').textContent = early.filter(r=>r.status==='pending').length || '';
+    document.getElementById('myreq-tbody-late').innerHTML  = _renderReqRows(late,  false);
+    document.getElementById('myreq-tbody-early').innerHTML = _renderReqRows(early, false);
   } catch(e) { toast('خطأ', 'err'); }
 }
 
-function openRequestModal() {
+function openRequestModal(type) {
   const isHR = _currentUser?.role !== 'employee';
+  const isLate = type === 'late_arrival';
+  document.getElementById('req-type').value = type;
+  document.getElementById('req-modal-icon').className = isLate ? 'fas fa-clock' : 'fas fa-sign-out-alt';
+  document.getElementById('req-modal-icon').style.color = isLate ? 'var(--gold)' : '#d97706';
+  document.getElementById('req-modal-label').textContent = isLate ? 'طلب تأخير' : 'طلب خروج مبكر';
+  document.getElementById('req-time-label').textContent  = isLate ? 'وقت الوصول المتوقع' : 'وقت المغادرة المطلوب';
   document.getElementById('req-hr-row').style.display = isHR ? 'block' : 'none';
-  if (isHR) {
-    const sel = document.getElementById('req-emp');
-    sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
-  }
+  if (isHR) document.getElementById('req-emp').innerHTML = allEmps.map(e=>`<option value="${e.id}">${e.name_ar}</option>`).join('');
   document.getElementById('req-date').value   = '';
   document.getElementById('req-time').value   = '';
   document.getElementById('req-reason').value = '';
   document.getElementById('req-file').value   = '';
   document.getElementById('req-file-name').textContent = '';
   document.getElementById('req-err').style.display = 'none';
+  document.getElementById('req-submit-btn').disabled = false;
+  document.getElementById('req-submit-btn').innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
   document.getElementById('req-file').onchange = function() {
     document.getElementById('req-file-name').textContent = this.files[0]?.name || '';
   };
@@ -2651,8 +2737,10 @@ async function submitRequest() {
   const reason= document.getElementById('req-reason').value.trim();
   const fileEl= document.getElementById('req-file');
   const err   = document.getElementById('req-err');
+  const btn   = document.getElementById('req-submit-btn');
   if (!date || !reason) { err.textContent='التاريخ والسبب مطلوبان'; err.style.display='block'; return; }
   err.style.display = 'none';
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> جاري الإرسال...';
   let attachment = '', att_name = '';
   if (fileEl.files[0]) {
     attachment = await readFileAsBase64(fileEl.files[0]);
@@ -2661,35 +2749,30 @@ async function submitRequest() {
   const body = {req_date:date, req_type:type, reason, requested_time:time, attachment, attachment_name:att_name};
   if (isHR) body.employee_id = parseInt(document.getElementById('req-emp').value);
   const r = await POST('/api/requests', body);
-  if (r.ok) { _requestModal.hide(); toast(r.msg); loadMyRequests(); }
-  else { err.textContent = r.error||'خطأ'; err.style.display='block'; }
+  if (r.ok) {
+    _requestModal.hide();
+    toast(r.msg);
+    if (_currentUser?.role === 'employee') loadMyRequests();
+    else loadAttRequests();
+    loadPendingBadges();
+  } else {
+    err.textContent = r.error||'خطأ'; err.style.display='block';
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
+  }
 }
 
 // ════════════════════════════════════════════
 //  ATTENDANCE REQUESTS (HR)
 // ════════════════════════════════════════════
 async function loadAttRequests() {
-  const tb = document.getElementById('hrreq-tbody');
   try {
     const rows = await GET('/api/requests');
-    if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
-      return;
-    }
-    tb.innerHTML = rows.map((r, i) => `<tr>
-      <td style="color:#94a3b8">${i+1}</td>
-      <td><b>${r.name_ar}</b></td>
-      <td>${r.req_date}</td>
-      <td>${REQ_TYPE_AR[r.req_type]||r.req_type}</td>
-      <td>${r.requested_time||'—'}</td>
-      <td style="max-width:160px;text-align:right">${r.reason}</td>
-      <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
-      <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
-      <td>${r.status==='pending' ? `
-        <button class="btn-sm btn-approve" onclick="decideRequest(${r.id},'approved')" style="margin-left:4px">قبول</button>
-        <button class="btn-sm btn-reject"  onclick="decideRequest(${r.id},'rejected')">رفض</button>` : '—'}
-      </td>
-    </tr>`).join('');
+    const late  = rows.filter(r => r.req_type === 'late_arrival');
+    const early = rows.filter(r => r.req_type === 'early_leave');
+    document.getElementById('hrreq-badge-late').textContent  = late.filter(r=>r.status==='pending').length  || '';
+    document.getElementById('hrreq-badge-early').textContent = early.filter(r=>r.status==='pending').length || '';
+    document.getElementById('hrreq-tbody-late').innerHTML  = _renderReqRows(late,  true);
+    document.getElementById('hrreq-tbody-early').innerHTML = _renderReqRows(early, true);
   } catch(e) { toast('خطأ', 'err'); }
 }
 
