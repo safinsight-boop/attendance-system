@@ -178,6 +178,36 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 }
 .leave-tab.active i { color: var(--gold); }
 
+/* ── Excuse tabs ── */
+.excuse-tab {
+  background: #fff; border: 1.5px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 7px 16px; font-family: 'Amiri'; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all .18s;
+  display: inline-flex; align-items: center; gap: 6px; position: relative;
+}
+.excuse-tab:hover { background: var(--bg); color: var(--primary); border-color: var(--primary); }
+.excuse-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(26,60,64,.25); }
+.excuse-tab.active i { color: var(--gold); }
+.exc-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; border-radius: 999px; font-size: 11px;
+  font-weight: 700; color: #fff; padding: 0 5px; margin-right: 2px;
+}
+.exc-badge:empty { display: none; }
+
+/* ── Attendance employee cards ── */
+.att-emp-card {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; gap: 12px;
+}
+.att-emp-card:hover { border-color: var(--primary); background: var(--bg); box-shadow: 0 2px 10px rgba(26,60,64,.12); }
+.att-emp-card .emp-avatar {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold); font-size: 18px; flex-shrink: 0;
+}
+
 /* ── Buttons ── */
 .btn-main {
   background: var(--primary); border: none; color: #fff;
@@ -407,6 +437,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <span class="ni"><i class="fas fa-clock"></i></span> الإضافي
       <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
+    <button class="nav-btn" id="nb-att-requests" onclick="showPage('att-requests')">
+      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلبات الحضور
+      <span id="req-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
+    </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
       <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
     </button>
@@ -576,44 +610,63 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     ══════════════════════════════════════ -->
     <div id="page-attendance" class="page">
 
+      <!-- فلاتر الشهر / السنة + تصدير -->
       <div class="filters">
         <div class="fg">
           <label>الشهر</label>
-          <select id="att-month" onchange="loadAttendance()"></select>
+          <select id="att-month" onchange="attMonthChanged()"></select>
         </div>
         <div class="fg">
           <label>السنة</label>
-          <select id="att-year" onchange="loadAttendance()"></select>
+          <select id="att-year" onchange="attMonthChanged()"></select>
         </div>
-        <div class="fg">
-          <label>الموظف</label>
-          <select id="att-emp" onchange="loadAttendance()">
-            <option value="">الكل</option>
-          </select>
-        </div>
-        <button class="btn-green" onclick="exportAtt()">
+        <button class="btn-green" id="att-export-btn" onclick="exportAtt()" style="display:none">
           <i class="fas fa-file-excel"></i> تحميل Excel
         </button>
       </div>
 
-      <div class="card-wrap">
-        <div class="card-head">
-          <h5><i class="fas fa-calendar-alt" style="color:var(--gold);margin-left:8px"></i>سجل الحضور والغياب</h5>
-          <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
+      <!-- قائمة الموظفين -->
+      <div id="att-emp-list">
+        <div class="card-wrap">
+          <div class="card-head">
+            <h5><i class="fas fa-users" style="color:var(--gold);margin-left:8px"></i>اختر موظفاً لعرض سجل حضوره</h5>
+          </div>
+          <div id="att-emp-cards" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>
+          </div>
         </div>
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>#</th><th>الموظف</th><th>التاريخ</th>
-                <th>الحضور</th><th>الانصراف</th>
-                <th>تأخر(دق)</th><th>خروج مبكر(دق)</th><th>الحالة</th>
-              </tr>
-            </thead>
-            <tbody id="att-tbody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-calendar"></i><p>اختر الشهر لعرض السجلات</p></div></td></tr>
-            </tbody>
-          </table>
+      </div>
+
+      <!-- تفاصيل الموظف المحدد -->
+      <div id="att-detail" style="display:none">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <button class="btn-sm btn-edit" onclick="attBack()">
+            <i class="fas fa-arrow-right"></i> رجوع
+          </button>
+          <span id="att-detail-name" style="font-size:16px;font-weight:700;color:var(--primary)"></span>
+          <button class="btn-green" style="margin-right:auto" onclick="exportAtt()">
+            <i class="fas fa-file-excel"></i> تحميل Excel
+          </button>
+        </div>
+        <div class="card-wrap">
+          <div class="card-head">
+            <h5><i class="fas fa-calendar-alt" style="color:var(--gold);margin-left:8px"></i>سجل الحضور والغياب</h5>
+            <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>#</th><th>التاريخ</th>
+                  <th>الحضور</th><th>الانصراف</th>
+                  <th>تأخر(دق)</th><th>خروج مبكر(دق)</th><th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody id="att-tbody">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-calendar"></i><p>لا توجد سجلات</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -845,23 +898,80 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
          PAGE: EXCUSES
     ══════════════════════════════════════ -->
     <div id="page-excuses" class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <span style="font-size:14px;color:#64748b;font-weight:600">طلبات الأعذار</span>
-        <button class="btn-main" onclick="openExcuseModal()">
-          <i class="fas fa-plus"></i> رفع عذر
+      <!-- شريط العنوان + فلتر الشهر + زر رفع عذر -->
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
+        <span style="font-size:15px;font-weight:700;color:var(--primary)"><i class="fas fa-file-alt" style="color:var(--gold);margin-left:6px"></i>طلبات الأعذار</span>
+        <div style="display:flex;gap:8px;margin-right:auto;align-items:center">
+          <select id="exc-month" class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadExcuses()"></select>
+          <select id="exc-year"  class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadExcuses()"></select>
+          <button class="btn-main" onclick="openExcuseModal()">
+            <i class="fas fa-plus"></i> رفع عذر
+          </button>
+        </div>
+      </div>
+
+      <!-- تبويبات الحالة مع العدادات -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="excuse-tab active" id="etab-pending" onclick="switchExcuseTab('pending')">
+          <i class="fas fa-hourglass-half"></i> قيد الإجراء
+          <span id="exc-badge-pending" class="exc-badge" style="background:#f59e0b"></span>
+        </button>
+        <button class="excuse-tab" id="etab-approved" onclick="switchExcuseTab('approved')">
+          <i class="fas fa-check-circle"></i> تمت الموافقة
+          <span id="exc-badge-approved" class="exc-badge" style="background:#16a34a"></span>
+        </button>
+        <button class="excuse-tab" id="etab-rejected" onclick="switchExcuseTab('rejected')">
+          <i class="fas fa-times-circle"></i> تم الرفض
+          <span id="exc-badge-rejected" class="exc-badge" style="background:#dc2626"></span>
         </button>
       </div>
-      <div class="card-wrap">
-        <div class="table-responsive">
-          <table class="tbl">
-            <thead><tr>
-              <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
-              <th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th><th class="hr-only" style="display:none">إجراء</th>
-            </tr></thead>
-            <tbody id="excuses-tbody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
-            </tbody>
-          </table>
+
+      <!-- جداول التبويبات -->
+      <div id="exc-panel-pending" class="exc-panel">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
+                <th>السبب</th><th>مرفق</th><th class="hr-only" style="display:none">إجراء</th>
+              </tr></thead>
+              <tbody id="exc-tbody-pending">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="exc-panel-approved" class="exc-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
+                <th>السبب</th><th>مرفق</th><th>ملاحظة المدير</th>
+              </tr></thead>
+              <tbody id="exc-tbody-approved">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد طلبات موافق عليها</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="exc-panel-rejected" class="exc-panel" style="display:none">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr>
+                <th>#</th><th>الموظف</th><th>التاريخ</th><th>النوع</th>
+                <th>السبب</th><th>مرفق</th><th>ملاحظة المدير</th>
+              </tr></thead>
+              <tbody id="exc-tbody-rejected">
+                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد طلبات مرفوضة</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1389,6 +1499,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   </div>
 </div>
 
+<!-- مودال تفاصيل راتب الموظف -->
+<div class="modal fade" id="pdModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="pdModal-title" style="font-size:16px"></h5>
+          <div id="pdModal-period" style="font-size:12px;color:#64748b;margin-top:2px"></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="pdModal-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-wrap"></div>
 
@@ -1428,7 +1554,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1445,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _holidayModal = new bootstrap.Modal(document.getElementById('holidayModal'));
   _userModal    = new bootstrap.Modal(document.getElementById('userModal'));
   _requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
+  _pdModal      = new bootstrap.Modal(document.getElementById('pdModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -1483,6 +1610,7 @@ function initApp() {
 
   populateYM('att-month',   'att-year');
   populateYM('pay-month',   'pay-year');
+  populateYM('exc-month',   'exc-year');
   populateYM('myatt-month', 'myatt-year');
   populateYM('myvio-month', 'myvio-year');
   populateYM('mypay-month', 'mypay-year');
@@ -1584,6 +1712,7 @@ function showPage(page) {
   if (page === 'my-violations')  loadMyViolations();
   if (page === 'my-payroll')     loadMyPayroll();
   if (page === 'my-requests')    loadMyRequests();
+  if (page === 'att-requests')   loadAttRequests();
 }
 
 // ════════════════════════════════════════════
@@ -1736,33 +1865,77 @@ async function runManual() {
 }
 
 // ════════════════════════════════════════════
-//  ATTENDANCE
+//  ATTENDANCE — قائمة موظفين → تفاصيل
 // ════════════════════════════════════════════
+let _attSelectedEmp = null; // {id, name_ar}
+
+function attMonthChanged() {
+  // عند تغيير الشهر: إعادة عرض الكروت أو تحديث التفاصيل إن كان موظف محدد
+  if (_attSelectedEmp) {
+    loadAttendanceDetail(_attSelectedEmp.id);
+  } else {
+    renderAttEmpCards();
+  }
+}
+
 async function loadAttendance() {
-  const y = document.getElementById('att-year').value;
-  const m = document.getElementById('att-month').value;
-  const e = document.getElementById('att-emp').value;
+  _attSelectedEmp = null;
+  document.getElementById('att-emp-list').style.display = '';
+  document.getElementById('att-detail').style.display   = 'none';
+  renderAttEmpCards();
+}
+
+function renderAttEmpCards() {
+  const cards = document.getElementById('att-emp-cards');
+  if (!allEmps || !allEmps.length) {
+    cards.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>لا يوجد موظفون</p></div>`;
+    return;
+  }
+  cards.innerHTML = allEmps.map(e => `
+    <div class="att-emp-card" onclick="attOpenEmp(${e.id},'${e.name_ar.replace(/'/g,"\\'")}')">
+      <div class="emp-avatar"><i class="fas fa-user"></i></div>
+      <div>
+        <div style="font-weight:700;color:var(--primary);font-size:14px">${e.name_ar}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">${e.emp_code || e.name_en}</div>
+      </div>
+      <i class="fas fa-chevron-left" style="margin-right:auto;color:#cbd5e1;font-size:12px"></i>
+    </div>`).join('');
+}
+
+async function attOpenEmp(id, nameAr) {
+  _attSelectedEmp = {id, name_ar: nameAr};
+  document.getElementById('att-emp-list').style.display = 'none';
+  document.getElementById('att-detail').style.display   = '';
+  document.getElementById('att-detail-name').textContent = nameAr;
+  await loadAttendanceDetail(id);
+}
+
+function attBack() {
+  _attSelectedEmp = null;
+  document.getElementById('att-emp-list').style.display = '';
+  document.getElementById('att-detail').style.display   = 'none';
+}
+
+async function loadAttendanceDetail(empId) {
+  const y  = document.getElementById('att-year').value;
+  const m  = document.getElementById('att-month').value;
   const tb = document.getElementById('att-tbody');
 
-  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+  tb.innerHTML = `<tr><td colspan="7"><div class="empty-state">
     <i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>`;
 
   try {
-    const url = `/api/attendance?year=${y}&month=${m}${e ? `&emp_id=${e}` : ''}`;
-    const rows = await GET(url);
-
+    const rows = await GET(`/api/attendance?year=${y}&month=${m}&emp_id=${empId}`);
     document.getElementById('att-count').textContent = `${rows.length} سجل`;
 
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+      tb.innerHTML = `<tr><td colspan="7"><div class="empty-state">
         <i class="fas fa-calendar-times"></i><p>لا توجد سجلات لهذه الفترة</p></div></td></tr>`;
       return;
     }
-
     tb.innerHTML = rows.map((r, i) => `
       <tr>
         <td style="color:#94a3b8">${i+1}</td>
-        <td><b>${r.name_ar}</b></td>
         <td>${r.att_date}</td>
         <td>${r.check_in || '—'}</td>
         <td>${r.check_out || '—'}</td>
@@ -1778,8 +1951,8 @@ async function loadAttendance() {
 function exportAtt() {
   const y = document.getElementById('att-year').value;
   const m = document.getElementById('att-month').value;
-  const e = document.getElementById('att-emp').value;
-  window.location = `/api/attendance/export?year=${y}&month=${m}${e ? `&emp_id=${e}` : ''}`;
+  const id = _attSelectedEmp?.id || '';
+  window.location = `/api/attendance/export?year=${y}&month=${m}${id ? `&emp_id=${id}` : ''}`;
 }
 
 // ════════════════════════════════════════════
@@ -2002,7 +2175,7 @@ async function loadPayroll() {
     tb.innerHTML = rows.map((r, i) => {
       const netColor = r.net < r.salary * 0.8 ? '#dc2626' : '#16a34a';
       return `
-      <tr>
+      <tr style="cursor:pointer" onclick="openPayrollDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})" title="اضغط لعرض التفاصيل">
         <td style="color:#94a3b8">${i+1}</td>
         <td>
           <b>${r.name_ar}</b><br>
@@ -2035,6 +2208,49 @@ function exportPayroll() {
   const y = document.getElementById('pay-year').value;
   const m = document.getElementById('pay-month').value;
   window.location = `/api/payroll/export?year=${y}&month=${m}`;
+}
+
+function openPayrollDetail(r) {
+  const gross    = r.salary + r.housing + r.transport + (r.commission || 0);
+  const totalDed = (r.total_ded || 0) + (r.gosi_ded || r.other_ded || 0);
+  const netColor = r.net < r.salary * 0.8 ? '#dc2626' : '#16a34a';
+  const y = document.getElementById('pay-year').value;
+  const m = document.getElementById('pay-month').value;
+  const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+  document.getElementById('pdModal-title').textContent = r.name_ar;
+  document.getElementById('pdModal-period').textContent = `${MONTHS[+m-1]} ${y}`;
+  document.getElementById('pdModal-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="mini-card"><div class="mini-label">الراتب الأساسي</div><div class="mini-num" style="color:var(--primary);font-size:16px">${fmtSAR(r.salary)}</div></div>
+      <div class="mini-card"><div class="mini-label">بدل السكن</div><div class="mini-num" style="color:var(--primary);font-size:16px">${fmtSAR(r.housing)}</div></div>
+      <div class="mini-card"><div class="mini-label">بدل المواصلات</div><div class="mini-num" style="color:var(--primary);font-size:16px">${fmtSAR(r.transport)}</div></div>
+      <div class="mini-card"><div class="mini-label">العمولة</div><div class="mini-num" style="color:var(--primary);font-size:16px">${r.commission != null ? fmtSAR(r.commission) : '—'}</div></div>
+    </div>
+    <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+        <span style="color:#64748b">إجمالي الراتب</span>
+        <b>${fmtSAR(gross)}</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+        <span style="color:#dc2626">خصومات المخالفات</span>
+        <b style="color:#dc2626">- ${fmtSAR(r.total_ded || 0)}</b>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+        <span style="color:#b45309">تأمينات اجتماعية (10.75%)</span>
+        <b style="color:#b45309">- ${fmtSAR(r.gosi_ded ?? r.other_ded ?? 0)}</b>
+      </div>
+      <div style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:700">صافي الراتب</span>
+        <span style="font-size:20px;font-weight:800;color:${netColor}">${fmtSAR(r.net)}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div class="mini-card"><div class="mini-label">أيام الحضور</div><div class="mini-num" style="color:#16a34a">${r.days || 0}</div></div>
+      <div class="mini-card"><div class="mini-label">أيام الغياب</div><div class="mini-num" style="color:#dc2626">${r.absent || 0}</div></div>
+      <div class="mini-card"><div class="mini-label">مرات التأخر</div><div class="mini-num" style="color:#d97706">${r.late || 0}</div></div>
+    </div>`;
+  _pdModal.show();
 }
 
 // ════════════════════════════════════════════
@@ -2351,33 +2567,96 @@ const VTYPE_AR = {late:'تأخر', early_leave:'مغادرة مبكرة', absent
 const STATUS_LABELS = {pending:'قيد الانتظار', approved:'مقبول', rejected:'مرفوض'};
 const STATUS_CLS    = {pending:'b-pending',     approved:'b-approved', rejected:'b-rejected'};
 
+let _excuseTab = 'pending';
+
+function switchExcuseTab(tab) {
+  _excuseTab = tab;
+  document.querySelectorAll('.excuse-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`etab-${tab}`).classList.add('active');
+  document.querySelectorAll('.exc-panel').forEach(p => p.style.display = 'none');
+  document.getElementById(`exc-panel-${tab}`).style.display = '';
+}
+
 async function loadExcuses() {
-  const tb = document.getElementById('excuses-tbody');
-  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  const y  = document.getElementById('exc-year').value;
+  const m  = document.getElementById('exc-month').value;
+  const isHR = _currentUser?.role !== 'employee';
+
+  // أعرض spinner في كل تبويب
+  ['pending','approved','rejected'].forEach(s => {
+    document.getElementById(`exc-tbody-${s}`).innerHTML =
+      `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  });
+
   try {
-    const rows = await GET('/api/excuses');
-    const isHR = _currentUser?.role !== 'employee';
-    document.querySelectorAll('#page-excuses .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
-    if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-file-alt"></i><p>لا توجد أعذار</p></div></td></tr>`;
-      return;
+    const rows = await GET(`/api/excuses?year=${y}&month=${m}`);
+
+    // قسّم حسب الحالة
+    const byStatus = {pending:[], approved:[], rejected:[]};
+    rows.forEach(r => { if (byStatus[r.status]) byStatus[r.status].push(r); });
+
+    // حدّث العدادات
+    document.getElementById('exc-badge-pending').textContent  = byStatus.pending.length  || '';
+    document.getElementById('exc-badge-approved').textContent = byStatus.approved.length || '';
+    document.getElementById('exc-badge-rejected').textContent = byStatus.rejected.length || '';
+
+    // ارسم التبويب pending (قيد الإجراء)
+    const tbP = document.getElementById('exc-tbody-pending');
+    if (!byStatus.pending.length) {
+      tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-hourglass" style="color:#f59e0b"></i><p>لا توجد طلبات قيد الإجراء</p></div></td></tr>`;
+    } else {
+      tbP.innerHTML = byStatus.pending.map((r,i) => `
+        <tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b></td>
+          <td>${r.att_date}</td>
+          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
+          <td style="max-width:180px;text-align:right">${r.reason}</td>
+          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+          ${isHR ? `<td class="hr-only">
+            <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
+            <button class="btn-sm btn-reject"  onclick="decideExcuse(${r.id},'rejected')">رفض</button>
+          </td>` : '<td style="display:none"></td>'}
+        </tr>`).join('');
     }
-    tb.innerHTML = rows.map((r, i) => `
-      <tr>
-        <td style="color:#94a3b8">${i+1}</td>
-        <td><b>${r.name_ar}</b></td>
-        <td>${r.att_date}</td>
-        <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
-        <td style="max-width:180px;text-align:right">${r.reason}</td>
-        <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
-        <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
-        <td style="color:#64748b;font-size:12px">${r.manager_note || '—'}</td>
-        ${isHR && r.status === 'pending' ? `
-        <td>
-          <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
-          <button class="btn-sm btn-reject"  onclick="decideExcuse(${r.id},'rejected')">رفض</button>
-        </td>` : `<td class="hr-only" style="display:none">—</td>`}
-      </tr>`).join('');
+
+    // ارسم التبويب approved (تمت الموافقة)
+    const tbA = document.getElementById('exc-tbody-approved');
+    if (!byStatus.approved.length) {
+      tbA.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد طلبات موافق عليها</p></div></td></tr>`;
+    } else {
+      tbA.innerHTML = byStatus.approved.map((r,i) => `
+        <tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b></td>
+          <td>${r.att_date}</td>
+          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
+          <td style="max-width:180px;text-align:right">${r.reason}</td>
+          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+          <td style="color:#16a34a;font-size:12px">${r.manager_note || '—'}</td>
+        </tr>`).join('');
+    }
+
+    // ارسم التبويب rejected (تم الرفض)
+    const tbR = document.getElementById('exc-tbody-rejected');
+    if (!byStatus.rejected.length) {
+      tbR.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد طلبات مرفوضة</p></div></td></tr>`;
+    } else {
+      tbR.innerHTML = byStatus.rejected.map((r,i) => `
+        <tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b></td>
+          <td>${r.att_date}</td>
+          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
+          <td style="max-width:180px;text-align:right">${r.reason}</td>
+          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+          <td style="color:#dc2626;font-size:12px">${r.manager_note || '—'}</td>
+        </tr>`).join('');
+    }
+
+    // أظهر التبويب الحالي
+    switchExcuseTab(_excuseTab);
+
   } catch(e) { toast('خطأ في تحميل الأعذار', 'err'); }
 }
 

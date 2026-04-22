@@ -1428,14 +1428,14 @@ def api_emps_post():
         conn.execute("""
             INSERT INTO employees
                 (name_ar,name_en,email,salary,housing,transport,commission,
-                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
              d.get('salary',0), d.get('housing',0), d.get('transport',0),
              (None if d.get('commission') is None else d.get('commission')), d.get('other_ded',0),
              d.get('work_type','fixed'), d.get('work_start','08:00'),
              d.get('work_end','17:00'), d.get('weekly_hours',40),
-             d.get('annual_leave_days', 21)))
+             d.get('annual_leave_days', 21), d.get('emp_code') or None))
         conn.commit()
         return jsonify({'ok': True, 'msg': 'تم إضافة الموظف بنجاح'})
     except sqlite3.IntegrityError:
@@ -1676,17 +1676,21 @@ def api_user_password(uid):
 @app.route('/api/excuses', methods=['GET'])
 @login_required
 def api_excuses_get():
+    y   = request.args.get('year',  date.today().year,  type=int)
+    m   = request.args.get('month', date.today().month, type=int)
+    prefix = f"{y}-{m:02d}-%"
     conn = get_db()
     try:
-        role = session.get('role')
+        role   = session.get('role')
         emp_id = session.get('employee_id')
         if role in ('hr', 'manager'):
             rows = conn.execute("""
                 SELECT ex.*, e.name_ar, e.name_en
                 FROM excuse_requests ex
                 JOIN employees e ON e.id=ex.employee_id
+                WHERE ex.att_date LIKE ?
                 ORDER BY ex.submitted_at DESC
-            """).fetchall()
+            """, (prefix,)).fetchall()
         else:
             if not emp_id:
                 return jsonify([])
@@ -1694,9 +1698,9 @@ def api_excuses_get():
                 SELECT ex.*, e.name_ar, e.name_en
                 FROM excuse_requests ex
                 JOIN employees e ON e.id=ex.employee_id
-                WHERE ex.employee_id=?
+                WHERE ex.employee_id=? AND ex.att_date LIKE ?
                 ORDER BY ex.submitted_at DESC
-            """, (emp_id,)).fetchall()
+            """, (emp_id, prefix)).fetchall()
     finally:
         conn.close()
     return jsonify([dict(r) for r in rows])
