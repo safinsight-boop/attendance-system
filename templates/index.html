@@ -30,7 +30,7 @@ body { font-family: 'Amiri', 'Times New Roman', serif; background: var(--bg); co
 @font-face {
   font-family: 'EnNums';
   src: local('Arial'), local('Helvetica Neue'), local('Helvetica');
-  unicode-range: U+0030-0039, U+002E, U+002C, U+0025, U+002B, U+002D, U+003A;
+  unicode-range: U+0030-0039, U+002E, U+002C, U+0025, U+002B, U+002D, U+003A, U+002F, U+0660-0669;
 }
 body { font-family: 'EnNums', 'Amiri', 'Times New Roman', serif; }
 * { font-variant-numeric: normal; unicode-bidi: plaintext; }
@@ -3558,7 +3558,7 @@ async function loadAudit() {
     const rows = await GET('/api/audit-logs?limit=100');
     if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-shield-alt"></i><p>لا توجد أحداث مسجلة</p></div></td></tr>'; return; }
     tb.innerHTML = rows.map(r => {
-      const dt = r.created_at ? new Date(r.created_at).toLocaleString('ar-SA') : '—';
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '—';
       const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
       const statusBadge = r.status === 'success'
         ? '<span class="badge bg-success">نجح</span>'
