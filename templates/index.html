@@ -3576,6 +3576,27 @@ async function loadAudit() {
     }).join('');
   } catch(e) { toast('خطأ في تحميل سجل الأحداث', 'err'); }
 }
+// تحويل الأرقام العربية إلى إنجليزية في كامل الصفحة
+function toEnNums(str) {
+  return String(str).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x0660);
+}
+function fixNums(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (/[٠-٩]/.test(node.nodeValue)) node.nodeValue = toEnNums(node.nodeValue);
+  }
+}
+// عند تحميل الصفحة وبعد كل تحديث للـ DOM
+const _numObserver = new MutationObserver(muts => {
+  muts.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType===1) fixNums(n); }));
+});
+document.addEventListener('DOMContentLoaded', () => {
+  fixNums(document.body);
+  _numObserver.observe(document.body, {childList:true, subtree:true});
+  // date inputs دائماً lang=en
+  document.querySelectorAll('input[type="date"], input[type="time"]').forEach(el => el.setAttribute('lang','en'));
+});
 </script>
 </body>
 </html>
