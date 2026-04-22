@@ -565,15 +565,15 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <!-- Mini stats month -->
       <div class="mini-stats">
-        <div class="mini-card">
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('violations','مخالفات الشهر')">
           <div class="mini-label">⚠️ مخالفات الشهر</div>
           <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
         </div>
-        <div class="mini-card">
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('deductions','إجمالي الخصومات')">
           <div class="mini-label">💸 إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
           <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
         </div>
-        <div class="mini-card">
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('absent','غياب الشهر')">
           <div class="mini-label">📅 غياب الشهر</div>
           <div class="mini-num" style="color:#64748b" id="s-mabsent">—</div>
         </div>
@@ -1868,6 +1868,50 @@ async function openStatDetail(status, title) {
             </tr>`).join('')}
         </tbody>
       </table>`;
+  } catch(e) { toast('خطأ', 'err'); }
+}
+
+async function openMonthStatDetail(type, title) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  document.getElementById('stat-detail-title').textContent = `${title} — ${MONTHS[m-1]} ${y}`;
+  document.getElementById('stat-detail-body').innerHTML =
+    `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>`;
+  _statDetailModal.show();
+  try {
+    const rows = await GET(`/api/stats/month/detail?type=${type}&year=${y}&month=${m}`);
+    if (!rows.length) {
+      document.getElementById('stat-detail-body').innerHTML =
+        `<div class="empty-state"><i class="fas fa-check" style="color:#16a34a"></i><p>لا توجد بيانات</p></div>`;
+      return;
+    }
+    let html = '';
+    if (type === 'violations') {
+      html = `<table class="tbl"><thead><tr><th>#</th><th>الموظف</th><th>عدد المخالفات</th><th>إجمالي الخصم</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b>${r.emp_code?`<br><span style="font-size:11px;color:#94a3b8">${r.emp_code}</span>`:''}</td>
+          <td><b style="color:#dc2626">${r.cnt}</b></td>
+          <td>${fmtSAR(r.total_ded||0)}</td>
+        </tr>`).join('')}</tbody></table>`;
+    } else if (type === 'deductions') {
+      html = `<table class="tbl"><thead><tr><th>#</th><th>الموظف</th><th>عدد المخالفات</th><th>إجمالي الخصم</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b>${r.emp_code?`<br><span style="font-size:11px;color:#94a3b8">${r.emp_code}</span>`:''}</td>
+          <td>${r.cnt}</td>
+          <td><b style="color:#d97706">${fmtSAR(r.total_ded)}</b></td>
+        </tr>`).join('')}</tbody></table>`;
+    } else if (type === 'absent') {
+      html = `<table class="tbl"><thead><tr><th>#</th><th>الموظف</th><th>أيام الغياب</th></tr></thead><tbody>
+        ${rows.map((r,i)=>`<tr>
+          <td style="color:#94a3b8">${i+1}</td>
+          <td><b>${r.name_ar}</b>${r.emp_code?`<br><span style="font-size:11px;color:#94a3b8">${r.emp_code}</span>`:''}</td>
+          <td><b style="color:#64748b">${r.cnt}</b></td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+    document.getElementById('stat-detail-body').innerHTML = html;
   } catch(e) { toast('خطأ', 'err'); }
 }
 

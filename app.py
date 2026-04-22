@@ -1338,6 +1338,45 @@ def api_stats_today_detail():
         conn.close()
     return jsonify([dict(r) for r in rows])
 
+@app.route('/api/stats/month/detail')
+def api_stats_month_detail():
+    y      = request.args.get('year',  date.today().year,  type=int)
+    m      = request.args.get('month', date.today().month, type=int)
+    dtype  = request.args.get('type', '')
+    prefix = f"{y}-{m:02d}-%"
+    conn   = get_db()
+    try:
+        if dtype == 'violations':
+            rows = conn.execute("""
+                SELECT e.name_ar, e.emp_code, COUNT(*) AS cnt,
+                       SUM(v.deduction) AS total_ded
+                FROM violations v JOIN employees e ON e.id=v.employee_id
+                WHERE v.vio_date LIKE ?
+                GROUP BY v.employee_id ORDER BY cnt DESC
+            """, (prefix,)).fetchall()
+        elif dtype == 'deductions':
+            rows = conn.execute("""
+                SELECT e.name_ar, e.emp_code,
+                       COALESCE(SUM(v.deduction),0) AS total_ded,
+                       COUNT(v.id) AS cnt
+                FROM employees e
+                LEFT JOIN violations v ON v.employee_id=e.id AND v.vio_date LIKE ?
+                WHERE total_ded > 0
+                GROUP BY e.id ORDER BY total_ded DESC
+            """, (prefix,)).fetchall()
+        elif dtype == 'absent':
+            rows = conn.execute("""
+                SELECT e.name_ar, e.emp_code, COUNT(*) AS cnt
+                FROM attendance a JOIN employees e ON e.id=a.employee_id
+                WHERE a.att_date LIKE ? AND a.status='absent'
+                GROUP BY a.employee_id ORDER BY cnt DESC
+            """, (prefix,)).fetchall()
+        else:
+            rows = []
+    finally:
+        conn.close()
+    return jsonify([dict(r) for r in rows])
+
 @app.route('/api/stats/month')
 def api_stats_month():
     y = request.args.get('year',  date.today().year,  type=int)
