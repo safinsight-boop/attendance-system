@@ -1320,6 +1320,62 @@ def export_payroll_excel(year, month):
     out.seek(0)
     return out
 
+def export_gosi_excel(year, month):
+    wb  = openpyxl.Workbook()
+    ws  = wb.active
+    ws.title = 'GOSI'
+    ws.sheet_view.rightToLeft   = True
+    ws.sheet_view.showGridLines = False
+    month_ar = MONTHS_AR[month - 1]
+
+    _xcol(ws, [6, 30, 20, 18, 18, 18, 18])
+
+    # عنوان
+    _xrow(ws, 1, 44)
+    _xmerge(ws, 1, 1, 7,
+            f"تقرير التأمينات الاجتماعية (GOSI)  —  {month_ar} {year}",
+            bold=True, size=14, fg=_XC['white'], bg=_XC['navy'], h='center')
+
+    # رؤوس الأعمدة
+    _xrow(ws, 2, 26)
+    for ci, h in enumerate(['#', 'اسم الموظف', 'رقم الموظف',
+                             'الراتب الأساسي', 'السكن', 'النقل',
+                             'نسبة GOSI (10.75%)'], 1):
+        _xc(ws, 2, ci, h, bold=True, size=10,
+            fg=_XC['white'], bg=_XC['blue'])
+
+    conn = get_db()
+    try:
+        emps = conn.execute("SELECT * FROM employees ORDER BY name_ar").fetchall()
+        total_gosi = 0.0
+        for i, emp_row in enumerate(emps, 1):
+            emp      = dict(emp_row)
+            gosi_ded = _gosi(emp)
+            total_gosi += gosi_ded
+            bg = _XC['lrow1'] if i % 2 else _XC['white']
+            _xrow(ws, i + 2, 22)
+            vals = [i, emp['name_ar'], emp['emp_code'] or '—',
+                    emp['salary'], emp['housing'], emp['transport'],
+                    round(gosi_ded, 2)]
+            for ci, v in enumerate(vals, 1):
+                _xc(ws, i + 2, ci, v, size=10, bg=bg,
+                    fg=_XC['red'] if ci == 7 and gosi_ded == 0 else _XC['dark'])
+
+        # سطر المجموع
+        r = len(emps) + 3
+        _xrow(ws, r, 26)
+        _xmerge(ws, r, 1, 6, 'الإجمالي',
+                bold=True, size=11, fg=_XC['white'], bg=_XC['navy'], h='right')
+        _xc(ws, r, 7, round(total_gosi, 2),
+            bold=True, size=11, fg=_XC['white'], bg=_XC['navy'])
+    finally:
+        conn.close()
+
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    return out
+
 # ═══════════════════════════════════════════════════════════
 #  FLASK ROUTES
 # ═══════════════════════════════════════════════════════════
@@ -1671,6 +1727,35 @@ def api_payroll_export():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
         download_name=f"payroll_{y}_{m:02d}.xlsx")
+
+@app.route('/api/gosi/export')
+@hr_required
+def api_gosi_export():
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    out = export_gosi_excel(y, m)
+    audit_log('export_gosi', details=f"{y}-{m:02d}")
+    return send_file(out,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f"gosi_{y}_{m:02d}.xlsx")
+
+@app.route('/api/audit-logs')
+@hr_required
+def api_audit_logs():
+    if not SUPABASE_KEY:
+        return jsonify([])
+    limit  = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    try:
+        resp = requests.get(
+            f"{SUPABASE_URL}/rest/v1/audit_logs",
+            headers={'apikey': SUPABASE_KEY, 'Authorization': f'Bearer {SUPABASE_KEY}'},
+            params={'order': 'created_at.desc', 'limit': limit, 'offset': offset},
+            timeout=8)
+        return jsonify(resp.json())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/violations')
 def api_violations():

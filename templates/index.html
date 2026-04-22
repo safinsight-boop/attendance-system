@@ -447,6 +447,12 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <button class="nav-btn" id="nb-users" onclick="showPage('users')">
       <span class="ni"><i class="fas fa-user-shield"></i></span> المستخدمون
     </button>
+    <button class="nav-btn hr-only" id="nb-calendar" onclick="showPage('calendar')">
+      <span class="ni"><i class="fas fa-calendar-alt"></i></span> تقويم الإجازات
+    </button>
+    <button class="nav-btn hr-only" id="nb-audit" onclick="showPage('audit')">
+      <span class="ni"><i class="fas fa-shield-alt"></i></span> سجل الأحداث
+    </button>
   </div>
 
   <!-- بطاقة بيانات الموظف -->
@@ -497,6 +503,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     </button>
     <button class="nav-btn" id="nb-leaves-emp" onclick="showPage('leaves')">
       <span class="ni"><i class="fas fa-umbrella-beach"></i></span> إجازاتي
+    </button>
+    <button class="nav-btn" id="nb-profile" onclick="showPage('profile')">
+      <span class="ni"><i class="fas fa-id-card"></i></span> ملفي الشخصي
     </button>
   </div>
 
@@ -725,6 +734,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
         <button class="btn-green" onclick="exportPayroll()">
           <i class="fas fa-file-excel"></i> تحميل مسيرة الرواتب
+        </button>
+        <button class="btn-main" onclick="exportGosi()" style="background:#7c3aed">
+          <i class="fas fa-file-excel"></i> تقرير GOSI
         </button>
       </div>
 
@@ -1192,6 +1204,82 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════
+         صفحة: ملف شخصي (للموظف)
+    ══════════════════════════════════════ -->
+    <div id="page-profile" class="page">
+      <div style="max-width:780px;margin:0 auto">
+        <div class="card-wrap" style="margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+            <div id="prof-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--primary);font-weight:800;flex-shrink:0">؟</div>
+            <div>
+              <div id="prof-name-ar" style="font-size:20px;font-weight:800;color:#1e293b">—</div>
+              <div id="prof-name-en" style="font-size:13px;color:#64748b">—</div>
+              <div id="prof-code" style="font-size:12px;color:#94a3b8;margin-top:2px">—</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px" id="prof-info-grid"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div class="card-wrap" style="text-align:center">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">رصيد الإجازات السنوية</div>
+            <div id="prof-leave-remaining" style="font-size:32px;font-weight:800;color:#16a34a">—</div>
+            <div id="prof-leave-detail" style="font-size:12px;color:#94a3b8">— من — يوم</div>
+          </div>
+          <div class="card-wrap" style="text-align:center">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">أيام الحضور هذا الشهر</div>
+            <div id="prof-att-days" style="font-size:32px;font-weight:800;color:#2563eb">—</div>
+            <div style="font-size:12px;color:#94a3b8">يوم حضور مسجل</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         صفحة: تقويم الإجازات
+    ══════════════════════════════════════ -->
+    <div id="page-calendar" class="page">
+      <div class="filters">
+        <div class="fg">
+          <label>الشهر</label>
+          <select id="cal-month" onchange="loadCalendar()"></select>
+        </div>
+        <div class="fg">
+          <label>السنة</label>
+          <select id="cal-year" onchange="loadCalendar()"></select>
+        </div>
+      </div>
+      <div id="cal-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span>في الوقت</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span>متأخر</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#dc2626;display:inline-block"></span>غائب</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#3b82f6;display:inline-block"></span>إجازة</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span>معذور</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#94a3b8;display:inline-block"></span>إجازة رسمية / عطلة</span>
+      </div>
+      <div class="card-wrap">
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         صفحة: سجل الأحداث (Audit Log)
+    ══════════════════════════════════════ -->
+    <div id="page-audit" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:13px;color:#64748b">آخر 100 حدث مسجل</span>
+        <button class="btn-main" onclick="loadAudit()"><i class="fas fa-sync-alt"></i> تحديث</button>
+      </div>
+      <div class="card-wrap">
+        <div class="table-responsive">
+          <table class="tbl">
+            <thead><tr><th>التاريخ</th><th>المستخدم</th><th>الدور</th><th>الحدث</th><th>الهدف</th><th>التفاصيل</th><th>IP</th><th>الحالة</th></tr></thead>
+            <tbody id="audit-tbody"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- .page-body -->
 </div><!-- .main -->
 
@@ -1651,6 +1739,9 @@ const PAGE_TITLES = {
   overtime:       'سجل الإضافي',
   leaves:         'الإجازات',
   users:          'إدارة المستخدمين',
+  calendar:       'تقويم الإجازات والحضور',
+  audit:          'سجل الأحداث',
+  profile:        'ملفي الشخصي',
   'my-attendance':'حضوري وغيابي',
   'my-violations':'مخالفاتي',
   'my-payroll':   'راتبي الشهري',
@@ -1693,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function initApp() {
   const role = _currentUser.role;
+  window._role = role;
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('sidebar-username').textContent =
     `👤 ${_currentUser.username} (${roleAr(role)})`;
@@ -1826,6 +1918,9 @@ function showPage(page) {
   if (page === 'my-payroll')     loadMyPayroll();
   if (page === 'my-requests')    loadMyRequests();
   if (page === 'att-requests')   loadAttRequests();
+  if (page === 'calendar')       loadCalendar();
+  if (page === 'audit')          loadAudit();
+  if (page === 'profile')        loadProfile();
 }
 
 // ════════════════════════════════════════════
@@ -2397,6 +2492,11 @@ function exportPayroll() {
   const y = document.getElementById('pay-year').value;
   const m = document.getElementById('pay-month').value;
   window.location = `/api/payroll/export?year=${y}&month=${m}`;
+}
+function exportGosi() {
+  const y = document.getElementById('pay-year').value;
+  const m = document.getElementById('pay-month').value;
+  window.location = `/api/gosi/export?year=${y}&month=${m}`;
 }
 
 function openPayrollDetail(r) {
@@ -3220,6 +3320,149 @@ async function deleteUser(id) {
   if (!confirm('حذف هذا المستخدم؟')) return;
   const r = await DEL(`/api/users/${id}`);
   if (r.ok) { toast('تم الحذف'); loadUsers(); }
+}
+
+// ════════════════════════════════════════════
+//  PROFILE PAGE
+// ════════════════════════════════════════════
+async function loadProfile() {
+  try {
+    const d = await GET('/api/my/attendance?year=' + new Date().getFullYear() + '&month=' + (new Date().getMonth()+1));
+    const emp = d.records?.[0];
+    const bal = d.leave_balance;
+    // نأخذ بيانات الموظف من الـ sidebar
+    document.getElementById('prof-name-ar').textContent = document.getElementById('emp-sidebar-name').textContent || '—';
+    document.getElementById('prof-name-en').textContent = document.getElementById('emp-sidebar-nameen').textContent || '—';
+    document.getElementById('prof-code').textContent    = 'رقم الموظف: ' + (document.getElementById('emp-sidebar-id').textContent || '—');
+    document.getElementById('prof-avatar').textContent  = document.getElementById('emp-avatar-initials').textContent || '؟';
+    if (bal) {
+      document.getElementById('prof-leave-remaining').textContent = bal.remaining;
+      document.getElementById('prof-leave-detail').textContent    = `متبقي من أصل ${bal.entitlement} يوم`;
+    }
+    const attended = d.records?.filter(r => r.status !== 'absent').length || 0;
+    document.getElementById('prof-att-days').textContent = attended;
+    // معلومات إضافية
+    const grid = document.getElementById('prof-info-grid');
+    grid.innerHTML = '';
+    const wtype = document.getElementById('emp-sidebar-wtype').textContent;
+    const hours = document.getElementById('emp-sidebar-hours').textContent;
+    const salary = document.getElementById('emp-sidebar-salary').textContent;
+    [['نوع الدوام', wtype], ['وقت الدوام', hours], ['الراتب الأساسي', salary],
+     ['سنة الرصيد', bal?.year || '—']].forEach(([k,v]) => {
+      grid.innerHTML += `<div style="background:#f8fafc;border-radius:8px;padding:12px">
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">${k}</div>
+        <div style="font-size:14px;font-weight:700;color:#1e293b">${v}</div>
+      </div>`;
+    });
+  } catch(e) { toast('خطأ في تحميل الملف الشخصي', 'err'); }
+}
+
+// ════════════════════════════════════════════
+//  CALENDAR PAGE
+// ════════════════════════════════════════════
+(function initCalendarFilters() {
+  const now = new Date();
+  const ms = document.getElementById('cal-month');
+  const ys = document.getElementById('cal-year');
+  if (!ms || !ys) return;
+  MONTHS.forEach((n,i) => { const o = new Option(n, i+1); if(i+1===now.getMonth()+1) o.selected=true; ms.add(o); });
+  for (let y = now.getFullYear(); y >= now.getFullYear()-2; y--) {
+    const o = new Option(y, y); if(y===now.getFullYear()) o.selected=true; ys.add(o);
+  }
+})();
+
+async function loadCalendar() {
+  const y = parseInt(document.getElementById('cal-year').value);
+  const m = parseInt(document.getElementById('cal-month').value);
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><i class="fas fa-spinner fa-spin"></i></div>';
+  try {
+    const role = window._role;
+    let records = [];
+    if (role === 'employee') {
+      const d = await GET(`/api/my/attendance?year=${y}&month=${m}`);
+      records = (d.records || []).map(r => ({...r, label: r.name_ar || ''}));
+    } else {
+      records = await GET(`/api/attendance?year=${y}&month=${m}`);
+    }
+    const attMap = {};
+    records.forEach(r => {
+      if (!attMap[r.att_date]) attMap[r.att_date] = [];
+      attMap[r.att_date].push(r);
+    });
+    const colors = {
+      on_time:'#16a34a', late:'#f59e0b', absent:'#dc2626',
+      early_leave:'#f97316', excused:'#8b5cf6', present:'#2563eb',
+      leave:'#3b82f6', official_holiday:'#94a3b8'
+    };
+    const labels = {
+      on_time:'في الوقت', late:'متأخر', absent:'غائب',
+      early_leave:'مبكر', excused:'معذور', present:'حاضر',
+      leave:'إجازة', official_holiday:'رسمية'
+    };
+    grid.innerHTML = '';
+    // رؤوس الأيام
+    ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'].forEach(d => {
+      grid.innerHTML += `<div style="font-size:11px;font-weight:700;color:#64748b;padding:6px 2px;border-bottom:2px solid #e2e8f0">${d}</div>`;
+    });
+    const firstDay = new Date(y, m-1, 1).getDay();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dayRecs = attMap[ds] || [];
+      const isWeekend = [5,6].includes(new Date(y,m-1,d).getDay());
+      let bg = isWeekend ? '#f1f5f9' : '#fff';
+      let dots = '';
+      if (dayRecs.length > 0) {
+        const s = dayRecs[0].status;
+        bg = (colors[s] || '#e2e8f0') + '22';
+        dots = `<div style="margin-top:3px;font-size:9px;color:${colors[s]||'#64748b'};font-weight:700">${labels[s]||s}</div>`;
+        if (dayRecs.length > 1) dots += `<div style="font-size:9px;color:#94a3b8">+${dayRecs.length-1}</div>`;
+      }
+      grid.innerHTML += `<div style="background:${bg};border-radius:6px;padding:5px 3px;min-height:52px;border:1px solid #e2e8f0;cursor:default" title="${ds}">
+        <div style="font-size:12px;font-weight:700;color:${isWeekend?'#94a3b8':'#1e293b'}">${d}</div>
+        ${dots}
+      </div>`;
+    }
+  } catch(e) { toast('خطأ في تحميل التقويم', 'err'); }
+}
+
+// ════════════════════════════════════════════
+//  AUDIT LOG PAGE
+// ════════════════════════════════════════════
+const AUDIT_LABELS = {
+  login:'تسجيل دخول', logout:'تسجيل خروج', login_failed:'محاولة دخول فاشلة',
+  create_employee:'إضافة موظف', edit_employee:'تعديل موظف', delete_employee:'حذف موظف',
+  create_user:'إنشاء مستخدم', delete_user:'حذف مستخدم',
+  excuse_decide:'قرار عذر', leave_decide:'قرار إجازة',
+  overtime_decide:'قرار إضافي', create_overtime:'رفع تكليف إضافي',
+  manual_run:'تشغيل يدوي', export_gosi:'تصدير GOSI',
+};
+async function loadAudit() {
+  const tb = document.getElementById('audit-tbody');
+  tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>';
+  try {
+    const rows = await GET('/api/audit-logs?limit=100');
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-shield-alt"></i><p>لا توجد أحداث مسجلة</p></div></td></tr>'; return; }
+    tb.innerHTML = rows.map(r => {
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('ar-SA') : '—';
+      const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
+      const statusBadge = r.status === 'success'
+        ? '<span class="badge bg-success">نجح</span>'
+        : '<span class="badge bg-danger">فشل</span>';
+      return `<tr>
+        <td style="font-size:11px;white-space:nowrap">${dt}</td>
+        <td><b>${r.username||'—'}</b></td>
+        <td>${r.role||'—'}</td>
+        <td>${evLabel}</td>
+        <td>${r.target_name||'—'}</td>
+        <td style="font-size:11px;color:#64748b">${r.details||'—'}</td>
+        <td style="font-size:11px">${r.ip_address||'—'}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { toast('خطأ في تحميل سجل الأحداث', 'err'); }
 }
 </script>
 </body>
