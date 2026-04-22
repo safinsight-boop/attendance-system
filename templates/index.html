@@ -2913,7 +2913,7 @@ async function openReqStatModal(filter, title) {
   document.getElementById('reqstat-label').textContent = title;
   const tb = document.getElementById('reqstat-tbody');
   tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>';
-  _reqStatModal.show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('reqStatModal')).show();
   let rows = _allReqRows.length ? _allReqRows : await GET('/api/requests');
   if (filter === 'late_arrival')  rows = rows.filter(r => r.req_type === 'late_arrival');
   else if (filter === 'early_leave') rows = rows.filter(r => r.req_type === 'early_leave');
