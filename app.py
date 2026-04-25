@@ -271,6 +271,7 @@ def _migrate_db(conn):
         "ALTER TABLE employees ADD COLUMN emp_code TEXT",
         "ALTER TABLE overtime_requests ADD COLUMN notes TEXT",
         "ALTER TABLE overtime_requests ADD COLUMN source TEXT DEFAULT 'auto'",
+        "ALTER TABLE employees ADD COLUMN weekend_days TEXT DEFAULT '5,6'",
     ]
     for sql in migrations:
         try:
@@ -1683,14 +1684,15 @@ def api_emps_post():
         conn.execute("""
             INSERT INTO employees
                 (name_ar,name_en,email,salary,housing,transport,commission,
-                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code,weekend_days)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
              d.get('salary',0), d.get('housing',0), d.get('transport',0),
              (None if d.get('commission') is None else d.get('commission')), d.get('other_ded',0),
              d.get('work_type','fixed'), d.get('work_start','08:00'),
              d.get('work_end','17:00'), d.get('weekly_hours',40),
-             d.get('annual_leave_days', 21), d.get('emp_code') or None))
+             d.get('annual_leave_days', 21), d.get('emp_code') or None,
+             d.get('weekend_days', '5,6')))
         conn.commit()
         audit_log('create_employee', 'employee', d['name_ar'])
         return jsonify({'ok': True, 'msg': 'تم إضافة الموظف بنجاح'})
@@ -1716,7 +1718,7 @@ def api_emp_put(eid):
     d = request.get_json(silent=True) or {}
     allowed = ['name_ar','name_en','email','salary','housing','transport',
                'commission','other_ded','work_type','work_start','work_end',
-               'weekly_hours','annual_leave_days','emp_code']
+               'weekly_hours','annual_leave_days','emp_code','weekend_days']
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
         return jsonify({'error': 'لا توجد حقول للتحديث'}), 400

@@ -1370,18 +1370,6 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <label>اسم الشركة (إنجليزي)</label>
             <input type="text" id="set-company-en" class="fc" placeholder="Company Name">
           </div>
-          <div class="fg">
-            <label>أيام نهاية الأسبوع (عطلة)</label>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-0" value="0"> الأحد</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-1" value="1"> الاثنين</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-2" value="2"> الثلاثاء</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-3" value="3"> الأربعاء</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-4" value="4"> الخميس</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-5" value="5"> الجمعة</label>
-              <label style="display:flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" id="wd-6" value="6"> السبت</label>
-            </div>
-          </div>
           <button class="btn-main" style="margin-top:10px" onclick="saveSettings()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
         </div>
       </div>
@@ -1461,6 +1449,19 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
               <option value="fixed">ثابت (Fixed)</option>
               <option value="flex">مرن (Flex)</option>
             </select>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:14px">
+          <label class="fl">أيام العطلة الأسبوعية</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-0" value="0"> الأحد</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-1" value="1"> الاثنين</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-2" value="2"> الثلاثاء</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-3" value="3"> الأربعاء</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-4" value="4"> الخميس</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-5" value="5"> الجمعة</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="emp-wd-6" value="6"> السبت</label>
           </div>
         </div>
 
@@ -2471,6 +2472,11 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-otherded').value  = emp?.other_ded   || 0;
   document.getElementById('emp-annual-days').value = emp?.annual_leave_days ?? 21;
 
+  const empWdays = (emp?.weekend_days || '5,6').split(',').map(Number);
+  [0,1,2,3,4,5,6].forEach(d => {
+    document.getElementById(`emp-wd-${d}`).checked = empWdays.includes(d);
+  });
+
   // show leave balance if editing
   const balEl = document.getElementById('emp-annual-balance');
   if (emp?.leave_balance) {
@@ -2518,6 +2524,7 @@ async function saveEmployee() {
     commission:        document.getElementById('emp-commission').value.trim() === '' ? null : +document.getElementById('emp-commission').value,
     other_ded:         0,
     annual_leave_days: +document.getElementById('emp-annual-days').value || 21,
+    weekend_days:      [0,1,2,3,4,5,6].filter(d => document.getElementById(`emp-wd-${d}`).checked).join(',') || '5,6',
   };
 
   if (!data.name_ar || !data.name_en) {
@@ -3777,20 +3784,14 @@ async function loadSettings() {
     const s = await GET('/api/settings');
     document.getElementById('set-company-ar').value = s.company_name || '';
     document.getElementById('set-company-en').value = s.company_name_en || '';
-    const wdays = (s.weekend_days || '5,6').split(',').map(Number);
-    [0,1,2,3,4,5,6].forEach(d => {
-      document.getElementById(`wd-${d}`).checked = wdays.includes(d);
-    });
   } catch(e) { toast('خطأ في تحميل الإعدادات', 'err'); }
 }
 async function saveSettings() {
-  const wdays = [0,1,2,3,4,5,6].filter(d => document.getElementById(`wd-${d}`).checked).join(',');
   try {
     await fetch('/api/settings', {method:'PUT', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         company_name:    document.getElementById('set-company-ar').value,
         company_name_en: document.getElementById('set-company-en').value,
-        weekend_days:    wdays
       })
     });
     toast('تم حفظ الإعدادات');
