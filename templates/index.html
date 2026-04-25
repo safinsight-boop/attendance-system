@@ -131,6 +131,12 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .stat-card.c-blue   { border-color: var(--primary); }
 .stat-card.c-purple { border-color: #6d6875; }
 .stat-icon  { font-size: 26px; margin-bottom: 10px; }
+.stat-icon-wrap {
+  width: 54px; height: 54px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+}
+.stat-icon-wrap i { font-size: 22px; }
 .stat-num   { font-size: 34px; font-weight: 900; color: var(--primary); line-height: 1; }
 .stat-label { font-size: 13px; color: var(--muted); margin-top: 5px; }
 
@@ -593,22 +599,30 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- Stats today -->
       <div class="stats-grid" id="stats-today-grid">
         <div class="stat-card c-green" style="cursor:pointer" onclick="openStatDetail('on_time','في الوقت اليوم')">
-          <div class="stat-icon">✅</div>
+          <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)">
+            <i class="fas fa-user-check" style="color:#16a34a"></i>
+          </div>
           <div class="stat-num" id="s-ontime">—</div>
           <div class="stat-label">في الوقت اليوم</div>
         </div>
         <div class="stat-card c-red" style="cursor:pointer" onclick="openStatDetail('late','متأخر اليوم')">
-          <div class="stat-icon">⏰</div>
+          <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)">
+            <i class="fas fa-clock" style="color:#dc2626"></i>
+          </div>
           <div class="stat-num" id="s-late">—</div>
           <div class="stat-label">متأخر اليوم</div>
         </div>
         <div class="stat-card c-yellow" style="cursor:pointer" onclick="openStatDetail('early_leave','مغادرة مبكرة اليوم')">
-          <div class="stat-icon">🚪</div>
+          <div class="stat-icon-wrap" style="background:rgba(197,160,89,0.12)">
+            <i class="fas fa-person-walking-arrow-right" style="color:var(--gold)"></i>
+          </div>
           <div class="stat-num" id="s-earlyleave">—</div>
           <div class="stat-label">مغادرة مبكرة</div>
         </div>
         <div class="stat-card c-blue" style="cursor:pointer" onclick="openStatDetail('absent','غياب اليوم')">
-          <div class="stat-icon">🔴</div>
+          <div class="stat-icon-wrap" style="background:rgba(0,75,87,0.12)">
+            <i class="fas fa-user-xmark" style="color:var(--primary)"></i>
+          </div>
           <div class="stat-num" id="s-absent">—</div>
           <div class="stat-label">غياب اليوم</div>
         </div>
