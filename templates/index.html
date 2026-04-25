@@ -6,7 +6,6 @@
 <title>بوابة الموظف</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>.flatpickr-calendar{direction:ltr;font-family:Arial,sans-serif;}</style>
 <style id="print-style">
@@ -37,14 +36,14 @@
   --card:     #ffffff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Amiri', 'Times New Roman', serif; background: var(--bg); color: var(--text); font-size: 15px; }
+body { font-family: 'Dubai', 'Arial', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
 /* إجبار الأرقام على العرض بالإنجليزية */
 @font-face {
   font-family: 'EnNums';
   src: local('Arial'), local('Helvetica Neue'), local('Helvetica');
   unicode-range: U+0030-0039, U+002E, U+002C, U+0025, U+002B, U+002D, U+003A, U+002F, U+0660-0669;
 }
-body { font-family: 'EnNums', 'Amiri', 'Times New Roman', serif; }
+body { font-family: 'EnNums', 'Dubai', 'Arial', sans-serif; }
 * { font-variant-numeric: normal; unicode-bidi: plaintext; }
 input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
@@ -197,7 +196,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 /* ── Leave Tabs ── */
 .leave-tab {
   background: #fff; border: 1.5px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 7px 14px; font-family: 'Amiri'; font-size: 13px;
+  border-radius: 8px; padding: 7px 14px; font-family: 'Dubai'; font-size: 13px;
   font-weight: 600; cursor: pointer; transition: all .18s; display: flex;
   align-items: center; gap: 6px;
 }
@@ -211,7 +210,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 /* ── Excuse tabs ── */
 .excuse-tab {
   background: #fff; border: 1.5px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 7px 16px; font-family: 'Amiri'; font-size: 13px;
+  border-radius: 8px; padding: 7px 16px; font-family: 'Dubai'; font-size: 13px;
   font-weight: 600; cursor: pointer; transition: all .18s;
   display: inline-flex; align-items: center; gap: 6px; position: relative;
 }
@@ -242,7 +241,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .btn-main {
   background: var(--primary); border: none; color: #fff;
   border-radius: 9px; padding: 9px 18px;
-  font-family: 'Amiri'; font-size: 14px; font-weight: 700;
+  font-family: 'Dubai'; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: all .18s;
   display: inline-flex; align-items: center; gap: 7px;
 }
@@ -250,7 +249,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .btn-gold {
   background: var(--gold); border: none; color: var(--primary);
   border-radius: 9px; padding: 9px 18px;
-  font-family: 'Amiri'; font-size: 14px; font-weight: 700;
+  font-family: 'Dubai'; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: all .18s;
   display: inline-flex; align-items: center; gap: 7px;
 }
@@ -258,14 +257,14 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .btn-green {
   background: #2a9d8f; border: none; color: #fff;
   border-radius: 9px; padding: 9px 18px;
-  font-family: 'Amiri'; font-size: 14px; font-weight: 700;
+  font-family: 'Dubai'; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: background .18s;
   display: inline-flex; align-items: center; gap: 7px;
 }
 .btn-green:hover { background: #21867a; }
 .btn-sm {
   border: none; border-radius: 7px; padding: 5px 11px;
-  font-family: 'Amiri'; font-size: 12.5px; font-weight: 600;
+  font-family: 'Dubai'; font-size: 12.5px; font-weight: 600;
   cursor: pointer; transition: all .15s;
 }
 .btn-edit        { background: #e8f4f4; color: var(--primary); }
@@ -288,7 +287,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 }
 .fg select, .fg input[type="date"], .fg input[type="number"] {
   border: 1.5px solid var(--border); border-radius: 9px;
-  padding: 8px 12px; font-family: 'Amiri'; font-size: 14px;
+  padding: 8px 12px; font-family: 'Dubai'; font-size: 14px;
   color: var(--text); background: #fff; outline: none;
   min-width: 130px; transition: border .18s;
 }
@@ -304,7 +303,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .fl { display: block; font-size: 12.5px; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
 .fc {
   width: 100%; border: 1.5px solid var(--border); border-radius: 9px;
-  padding: 9px 12px; font-family: 'Amiri'; font-size: 14px;
+  padding: 9px 12px; font-family: 'Dubai'; font-size: 14px;
   color: var(--text); outline: none; transition: border .18s; background: #fff;
 }
 .fc:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,60,64,0.08); }
