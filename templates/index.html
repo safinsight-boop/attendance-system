@@ -858,39 +858,6 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
          PAGE: MY ATTENDANCE (employee)
     ══════════════════════════════════════ -->
     <div id="page-my-attendance" class="page">
-      <!-- بطاقة رصيد الإجازة السنوية -->
-      <div id="leave-balance-card" class="card-wrap" style="margin-bottom:16px;display:none">
-        <div class="card-head">
-          <h5><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>رصيد الإجازة السنوية</h5>
-          <span id="leave-bal-year" style="font-size:13px;color:#64748b;font-weight:600"></span>
-        </div>
-        <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);padding:14px 18px">
-          <div class="mini-card">
-            <div class="mini-label">الحق السنوي</div>
-            <div class="mini-num" id="lb-entitlement" style="color:var(--primary)">—</div>
-            <div style="font-size:11px;color:#94a3b8">يوم</div>
-          </div>
-          <div class="mini-card">
-            <div class="mini-label">المستخدم</div>
-            <div class="mini-num" id="lb-used" style="color:#dc2626">—</div>
-            <div style="font-size:11px;color:#94a3b8">يوم</div>
-          </div>
-          <div class="mini-card">
-            <div class="mini-label">المتبقي</div>
-            <div class="mini-num" id="lb-remaining" style="color:#16a34a">—</div>
-            <div style="font-size:11px;color:#94a3b8">يوم</div>
-          </div>
-        </div>
-        <!-- شريط تقدم -->
-        <div style="padding:0 18px 16px">
-          <div style="background:#e2e8f0;border-radius:999px;height:10px;overflow:hidden">
-            <div id="lb-bar" style="height:100%;border-radius:999px;background:linear-gradient(90deg,#16a34a,#86efac);transition:width .5s"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px">
-            <span>المستخدم</span><span>الحق السنوي</span>
-          </div>
-        </div>
-      </div>
 
       <div class="filters">
         <div class="fg"><label>الشهر</label><select id="myatt-month" onchange="loadMyAttendance()"></select></div>
@@ -1167,6 +1134,25 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     ══════════════════════════════════════ -->
     <div id="page-leaves" class="page">
 
+      <!-- بطاقة رصيد الإجازة السنوية — للموظفين فقط -->
+      <div id="leave-balance-card" class="card-wrap emp-only" style="margin-bottom:16px;display:none">
+        <div class="card-head">
+          <h5><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>رصيد الإجازة السنوية</h5>
+          <span id="leave-bal-year" style="font-size:13px;color:#64748b;font-weight:600"></span>
+        </div>
+        <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);padding:14px 18px">
+          <div class="mini-card"><div class="mini-label">الحق السنوي</div><div class="mini-num" id="lb-entitlement" style="color:var(--primary)">—</div><div style="font-size:11px;color:#94a3b8">يوم</div></div>
+          <div class="mini-card"><div class="mini-label">المستخدم</div><div class="mini-num" id="lb-used" style="color:#dc2626">—</div><div style="font-size:11px;color:#94a3b8">يوم</div></div>
+          <div class="mini-card"><div class="mini-label">المتبقي</div><div class="mini-num" id="lb-remaining" style="color:#16a34a">—</div><div style="font-size:11px;color:#94a3b8">يوم</div></div>
+        </div>
+        <div style="padding:0 18px 16px">
+          <div style="background:#e2e8f0;border-radius:999px;height:10px;overflow:hidden">
+            <div id="lb-bar" style="height:100%;border-radius:999px;background:linear-gradient(90deg,#16a34a,#86efac);transition:width .5s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px"><span>المستخدم</span><span>الحق السنوي</span></div>
+        </div>
+      </div>
+
       <!-- شريط العنوان + فلتر الشهر + زر إضافة -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
         <span style="font-size:15px;font-weight:700;color:var(--primary)">
@@ -1202,7 +1188,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <!-- تبويبات الحالة -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="excuse-tab active" id="lvtab-pending" onclick="switchLeaveTab('pending')">
+        <button class="excuse-tab active" id="lvtab-all" onclick="switchLeaveTab('all')">
+          <i class="fas fa-list"></i> جميع الطلبات
+        </button>
+        <button class="excuse-tab" id="lvtab-pending" onclick="switchLeaveTab('pending')">
           <i class="fas fa-hourglass-half"></i> قيد الإجراء
           <span id="lv-badge-pending" class="exc-badge" style="background:#f59e0b"></span>
         </button>
@@ -1220,7 +1209,17 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
 
       <!-- لوحات التبويبات -->
-      <div id="lvpanel-pending">
+      <div id="lvpanel-all">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>الأيام</th><th>الحالة</th><th>مرفق</th><th class="hr-only" style="display:none">إجراء</th></tr></thead>
+              <tbody id="lv-tbody-all"><tr><td colspan="9"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="lvpanel-pending" style="display:none">
         <div class="card-wrap">
           <div class="table-responsive">
             <table class="tbl">
@@ -1531,15 +1530,19 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           </div>
         </div>
 
-        <div class="form2" style="margin-bottom:4px">
-          <div>
-            <label class="fl">عمولة المبيعات (<span class="sar-sym">S.R</span>)</label>
-            <input type="number" id="emp-commission" class="fc" value="0" min="0">
-          </div>
-          <div>
-            <label class="fl">تأمينات GOSI</label>
-            <input type="text" id="emp-otherded" class="fc" value="محسوبة تلقائياً (10.75%)" readonly style="background:#f1f5f9;color:#64748b;cursor:not-allowed">
-          </div>
+        <div style="margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="emp-has-commission" onchange="toggleCommissionField()">
+            <span>له عمولات مبيعات</span>
+          </label>
+        </div>
+        <div id="emp-commission-row" style="display:none;margin-bottom:4px">
+          <label class="fl">عمولة المبيعات (<span class="sar-sym">S.R</span>)</label>
+          <input type="number" id="emp-commission" class="fc" value="0" min="0">
+        </div>
+        <div style="margin-bottom:4px">
+          <label class="fl">تأمينات GOSI</label>
+          <input type="text" id="emp-otherded" class="fc" value="محسوبة تلقائياً (10.75%)" readonly style="background:#f1f5f9;color:#64748b;cursor:not-allowed">
         </div>
 
         <div id="emp-err" style="color:#dc2626;font-size:13px;margin-top:12px;display:none;padding:10px 14px;background:#fff1f2;border-radius:8px"></div>
@@ -1677,16 +1680,12 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <input type="date" lang="en" id="leave-end" class="fc">
           </div>
         </div>
-        <div id="sick-doc-row" style="display:none;margin-bottom:14px">
-          <label class="fl">رقم الوثيقة الطبية</label>
-          <input type="text" id="leave-sick-doc" class="fc" placeholder="رقم التقرير الطبي">
-        </div>
         <div style="margin-bottom:14px">
           <label class="fl">ملاحظات</label>
           <textarea id="leave-notes" class="fc" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
         </div>
         <div>
-          <label class="fl">مرفق (اختياري) — وثيقة طبية، إذن، إلخ</label>
+          <label class="fl" id="leave-file-label">مرفق (اختياري)</label>
           <input type="file" id="leave-file" class="fc" style="padding:6px"
                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
           <div id="leave-file-name" style="font-size:12px;color:#64748b;margin-top:4px"></div>
@@ -1860,6 +1859,44 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   </div>
 </div>
 
+<!-- MODAL: DECIDE (قبول/رفض مع ملاحظة) -->
+<div class="modal fade" id="decideModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="decide-title">تأكيد الإجراء</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="decide-id">
+        <input type="hidden" id="decide-status">
+        <input type="hidden" id="decide-type">
+        <div>
+          <label class="fl">ملاحظة للموظف (اختياري)</label>
+          <textarea id="decide-note" class="fc" rows="3" placeholder="اكتب ملاحظتك هنا..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-main" id="decide-btn" onclick="confirmDecide()"><i class="fas fa-check"></i> تأكيد</button>
+        <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LEAVE DETAIL -->
+<div class="modal fade" id="lvDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>تفاصيل الإجازة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="lv-detail-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-wrap"></div>
 
@@ -1903,7 +1940,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal, _decideModal, _lvDetailModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1924,6 +1961,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   _statDetailModal   = new bootstrap.Modal(document.getElementById('statDetailModal'));
   _otModal           = new bootstrap.Modal(document.getElementById('otModal'));
   _reqStatModal      = new bootstrap.Modal(document.getElementById('reqStatModal'));
+  _decideModal       = new bootstrap.Modal(document.getElementById('decideModal'));
+  _lvDetailModal     = new bootstrap.Modal(document.getElementById('lvDetailModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -2484,8 +2523,11 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-salary').value    = emp?.salary      || 0;
   document.getElementById('emp-housing').value   = emp?.housing     || 0;
   document.getElementById('emp-transport').value = emp?.transport   || 0;
-  document.getElementById('emp-commission').value= emp?.commission  || 0;
-  document.getElementById('emp-otherded').value  = emp?.other_ded   || 0;
+  const hasCommission = emp?.commission !== null && emp?.commission !== undefined;
+  document.getElementById('emp-has-commission').checked = hasCommission;
+  document.getElementById('emp-commission-row').style.display = hasCommission ? '' : 'none';
+  document.getElementById('emp-commission').value = emp?.commission || 0;
+  document.getElementById('emp-otherded').value   = emp?.other_ded  || 0;
   document.getElementById('emp-annual-days').value = emp?.annual_leave_days ?? 21;
 
   const empWdays = (emp?.weekend_days || '5,6').split(',').map(Number);
@@ -2507,6 +2549,11 @@ function openEmpModal(emp = null) {
 
   toggleWorkType();
   _empModal.show();
+}
+
+function toggleCommissionField() {
+  const has = document.getElementById('emp-has-commission').checked;
+  document.getElementById('emp-commission-row').style.display = has ? '' : 'none';
 }
 
 function toggleWorkType() {
@@ -2537,7 +2584,7 @@ async function saveEmployee() {
     salary:       +document.getElementById('emp-salary').value,
     housing:      +document.getElementById('emp-housing').value,
     transport:    +document.getElementById('emp-transport').value,
-    commission:        document.getElementById('emp-commission').value.trim() === '' ? null : +document.getElementById('emp-commission').value,
+    commission:        document.getElementById('emp-has-commission').checked ? +document.getElementById('emp-commission').value : null,
     other_ded:         0,
     annual_leave_days: +document.getElementById('emp-annual-days').value || 21,
     weekend_days:      [0,1,2,3,4,5,6].filter(d => document.getElementById(`emp-wd-${d}`).checked).join(',') || '5,6',
@@ -2860,20 +2907,21 @@ async function loadMyPayroll() {
   try {
     const d = await GET(`/api/my/payroll?year=${y}&month=${m}`);
     const e = d.employee;
+    const isTrainee = (e.emp_code || '').trim().toLowerCase().startsWith('in');
     box.innerHTML = `
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
         <div class="stat-card c-blue">
-          <div class="stat-icon">💰</div>
+          <div class="stat-icon-wrap" style="background:rgba(37,99,235,0.12)"><i class="fas fa-coins" style="color:#2563eb"></i></div>
           <div class="stat-num">${fmtSAR(d.gross)}</div>
           <div class="stat-label">الراتب الإجمالي (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-red">
-          <div class="stat-icon">📉</div>
+          <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)"><i class="fas fa-arrow-trend-down" style="color:#dc2626"></i></div>
           <div class="stat-num">${fmtSAR(d.deductions + d.other_ded)}</div>
           <div class="stat-label">إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-green">
-          <div class="stat-icon">✅</div>
+          <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)"><i class="fas fa-wallet" style="color:#16a34a"></i></div>
           <div class="stat-num">${fmtSAR(d.net)}</div>
           <div class="stat-label">الراتب الصافي (<span class="sar-sym">S.R</span>)</div>
         </div>
@@ -2885,17 +2933,17 @@ async function loadMyPayroll() {
             <tr><td style="font-weight:600;width:50%">الراتب الأساسي</td><td>${fmtSAR(e.salary)}</td></tr>
             <tr><td style="font-weight:600">بدل السكن</td><td>${fmtSAR(e.housing)}</td></tr>
             <tr><td style="font-weight:600">بدل المواصلات</td><td>${fmtSAR(e.transport)}</td></tr>
-            ${e.commission !== null && e.commission !== undefined ? `<tr><td style="font-weight:600">العمولة</td><td>${fmtSAR(e.commission)}</td></tr>` : ''}
+            ${(e.commission !== null && e.commission !== undefined) ? `<tr><td style="font-weight:600">العمولة</td><td>${fmtSAR(e.commission)}</td></tr>` : ''}
             <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">خصومات مخالفات</td><td style="color:#dc2626;font-weight:700">${fmtSAR(d.deductions)}</td></tr>
-            <tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmtSAR(d.other_ded)}</td></tr>
+            ${!isTrainee ? `<tr style="background:#fff7ed"><td style="font-weight:700;color:#dc2626">تأمينات GOSI (10.75%)</td><td style="color:#dc2626;font-weight:700">${fmtSAR(d.other_ded)}</td></tr>` : ''}
             <tr style="background:#dcfce7"><td style="font-weight:800;font-size:15px">الصافي</td><td style="font-weight:800;font-size:15px;color:#16a34a">${fmtSAR(d.net)}</td></tr>
           </tbody>
         </table>
       </div>
       <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);margin-top:14px">
-        <div class="mini-card"><div class="mini-label">✅ أيام الحضور</div><div class="mini-num" style="color:#22c55e">${d.attendance_days}</div></div>
-        <div class="mini-card"><div class="mini-label">🔴 أيام الغياب</div><div class="mini-num" style="color:#ef4444">${d.absent_days}</div></div>
-        <div class="mini-card"><div class="mini-label">⏰ أيام التأخر</div><div class="mini-num" style="color:#f59e0b">${d.late_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><i class="fas fa-calendar-check" style="color:#22c55e"></i> أيام الحضور</div><div class="mini-num" style="color:#22c55e">${d.attendance_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><i class="fas fa-user-xmark" style="color:#ef4444"></i> أيام الغياب</div><div class="mini-num" style="color:#ef4444">${d.absent_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><i class="fas fa-clock" style="color:#f59e0b"></i> أيام التأخر</div><div class="mini-num" style="color:#f59e0b">${d.late_days}</div></div>
       </div>
       ${d.violations.length ? `
       <div class="card-wrap" style="margin-top:18px">
@@ -2940,16 +2988,16 @@ function switchHRReqTab(type) {
 
 function _renderReqRows(rows, showEmp) {
   if (!rows.length) return `<tr><td colspan="${showEmp?8:7}"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
-  return rows.map((r, i) => `<tr>
+  return rows.map((r, i) => `<tr style="cursor:pointer" onclick="showReqDetail(${r.id})">
     <td style="color:#94a3b8">${i+1}</td>
     ${showEmp ? `<td><b>${r.name_ar}</b></td>` : ''}
     <td>${r.req_date}</td>
     <td>${r.requested_time||'—'}</td>
     <td style="max-width:180px;text-align:right">${r.reason}</td>
-    <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
+    <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
     <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
     ${showEmp
-      ? `<td>${r.status==='pending' ?
+      ? `<td onclick="event.stopPropagation()">${r.status==='pending' ?
           `<button class="btn-sm btn-approve" onclick="decideRequest(${r.id},'approved')" style="margin-left:4px">قبول</button>
            <button class="btn-sm btn-reject"  onclick="decideRequest(${r.id},'rejected')">رفض</button>` : '—'}
         </td>`
@@ -2957,11 +3005,32 @@ function _renderReqRows(rows, showEmp) {
   </tr>`).join('');
 }
 
+function showReqDetail(id) {
+  const all = [...(window._allReqRows||[]), ...((window._myReqRows)||[])];
+  const r = all.find(x=>x.id===id);
+  if (!r) return;
+  const REQ_TYPE = {late_arrival:'تأخير وصول', early_leave:'خروج مبكر'};
+  const content = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">
+      ${r.name_ar?`<div><div style="font-size:11px;color:#94a3b8">الموظف</div><div style="font-weight:700">${r.name_ar}</div></div>`:''}
+      <div><div style="font-size:11px;color:#94a3b8">النوع</div><div style="font-weight:700">${REQ_TYPE[r.req_type]||r.req_type}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">التاريخ</div><div style="font-weight:700">${r.req_date}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">الوقت المطلوب</div><div style="font-weight:700">${r.requested_time||'—'}</div></div>
+      <div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">السبب</div><div style="font-weight:600">${r.reason}</div></div>
+      ${r.manager_note?`<div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">ملاحظة المدير</div><div style="font-weight:600">${r.manager_note}</div></div>`:''}
+    </div>
+    ${r.attachment_name?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button></div>`:''}
+  `;
+  document.getElementById('lv-detail-body').innerHTML = content;
+  _lvDetailModal.show();
+}
+
 async function loadMyRequests() {
   try {
     const rows = await GET('/api/requests');
     const late  = rows.filter(r => r.req_type === 'late_arrival');
     const early = rows.filter(r => r.req_type === 'early_leave');
+    window._myReqRows = rows;
     document.getElementById('myreq-badge-late').textContent  = late.filter(r=>r.status==='pending').length  || '';
     document.getElementById('myreq-badge-early').textContent = early.filter(r=>r.status==='pending').length || '';
     document.getElementById('myreq-tbody-late').innerHTML  = _renderReqRows(late,  false);
@@ -3078,11 +3147,8 @@ async function loadAttRequests() {
   } catch(e) { toast('خطأ', 'err'); }
 }
 
-async function decideRequest(id, status) {
-  const note = status === 'rejected' ? prompt('ملاحظة للموظف (اختياري):') || '' : '';
-  const r = await PUT(`/api/requests/${id}`, {status, note});
-  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadAttRequests(); loadPendingBadges(); }
-  else toast(r.error||'خطأ', 'err');
+function decideRequest(id, status) {
+  openDecideModal(id, status, 'request');
 }
 
 // ════════════════════════════════════════════
@@ -3315,7 +3381,7 @@ async function decideOT(id, status) {
 const LEAVE_NAMES = {annual:'إجازة سنوية', sick:'إجازة مرضية', emergency:'إجازة اضطرارية',
                      official:'إجازة رسمية', official_holiday:'إجازة رسمية'};
 
-let _currentLeaveTab = 'pending';
+let _currentLeaveTab = 'all';
 
 // تهيئة فلاتر الشهر/السنة لصفحة الإجازات
 (function initLeaveFilters() {
@@ -3334,7 +3400,7 @@ function switchLeaveTab(tab) {
   document.querySelectorAll('#page-leaves .excuse-tab').forEach(b => b.classList.remove('active'));
   const tabEl = document.getElementById(`lvtab-${tab}`);
   if (tabEl) tabEl.classList.add('active');
-  ['pending','approved','rejected','holidays'].forEach(t => {
+  ['all','pending','approved','rejected','holidays'].forEach(t => {
     const p = document.getElementById(`lvpanel-${t}`);
     if (p) p.style.display = t === tab ? '' : 'none';
   });
@@ -3349,6 +3415,26 @@ async function loadLeaves() {
   if (htab) htab.style.display = isHR ? '' : 'none';
   const hbtn = document.querySelector('#page-leaves .hr-only[onclick*="holidays"]');
   if (hbtn) hbtn.style.display = isHR ? '' : 'none';
+
+  // رصيد الإجازة السنوية للموظف في خانة الإجازات
+  const lbCard = document.getElementById('leave-balance-card');
+  if (!isHR && lbCard) {
+    try {
+      const y = new Date().getFullYear();
+      const att = await GET(`/api/my/attendance?year=${y}&month=${new Date().getMonth()+1}`);
+      const lb = att.leave_balance;
+      if (lb) {
+        lbCard.style.display = '';
+        document.getElementById('lb-entitlement').textContent = lb.entitlement;
+        document.getElementById('lb-used').textContent        = lb.used;
+        document.getElementById('lb-remaining').textContent   = lb.remaining;
+        document.getElementById('leave-bal-year').textContent = lb.year;
+        const pct = lb.entitlement > 0 ? Math.round(lb.used / lb.entitlement * 100) : 0;
+        document.getElementById('lb-bar').style.width = pct + '%';
+      } else { lbCard.style.display = 'none'; }
+    } catch(e) { lbCard.style.display = 'none'; }
+  } else if (lbCard) { lbCard.style.display = 'none'; }
+
   try {
     const y = document.getElementById('lv-year')?.value  || new Date().getFullYear();
     const m = document.getElementById('lv-month')?.value || new Date().getMonth()+1;
@@ -3363,7 +3449,7 @@ async function loadLeaves() {
     document.getElementById('lv-badge-approved').textContent = approved.length || '';
     document.getElementById('lv-badge-rejected').textContent = rejected.length || '';
     window._lvRows = rows;
-    _renderLeaveTab(_currentLeaveTab);
+    _renderLeaveTab(_currentLeaveTab || 'all');
   } catch(e) { toast('خطأ في تحميل الإجازات', 'err'); }
 }
 
@@ -3371,46 +3457,83 @@ function _renderLeaveTab(status) {
   const tb = document.getElementById(`lv-tbody-${status}`);
   if (!tb) return;
   const isHR = _currentUser?.role !== 'employee';
-  const rows = (window._lvRows || []).filter(r => r.status === status);
+  const rows = status === 'all' ? (window._lvRows || []) : (window._lvRows || []).filter(r => r.status === status);
+  const colSpan = status === 'all' ? 9 : 8;
   if (!rows.length) {
-    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
     return;
   }
-  tb.innerHTML = rows.map((r,i) => `<tr>
+  const STATUS_LV = {pending:'<span class="badge-s b-pending">قيد الإجراء</span>', approved:'<span class="badge-s b-approved">موافق</span>', rejected:'<span class="badge-s b-rejected">مرفوض</span>'};
+  tb.innerHTML = rows.map((r,i) => `<tr style="cursor:pointer" onclick="showLeaveDetail(${r.id})">
     <td style="color:#94a3b8">${i+1}</td>
     <td><b>${r.name_ar}</b></td>
     <td>${LEAVE_NAMES[r.leave_type] || r.leave_type}</td>
     <td>${r.start_date}</td>
     <td>${r.end_date}</td>
     <td><b>${r.days}</b></td>
-    <td>${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+    ${status === 'all' ? `<td>${STATUS_LV[r.status]||r.status}</td>` : ''}
+    <td onclick="event.stopPropagation()">${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
     ${status === 'pending' && isHR ? `
-    <td>
-      <button class="btn-sm btn-approve" onclick="decideLeave(${r.id},'approved')" style="margin-left:4px">قبول</button>
-      <button class="btn-sm btn-reject"  onclick="decideLeave(${r.id},'rejected')">رفض</button>
-    </td>` : `<td style="font-size:11px;color:#64748b">${r.notes||'—'}</td>`}
+    <td onclick="event.stopPropagation()">
+      <button class="btn-sm btn-approve" onclick="openDecideModal(${r.id},'approved','leave')" style="margin-left:4px">قبول</button>
+      <button class="btn-sm btn-reject"  onclick="openDecideModal(${r.id},'rejected','leave')">رفض</button>
+    </td>` : status !== 'all' ? `<td style="font-size:11px;color:#64748b">${r.notes||'—'}</td>` : `<td onclick="event.stopPropagation()">${r.status==='pending'&&isHR?`<button class="btn-sm btn-approve" onclick="openDecideModal(${r.id},'approved','leave')" style="margin-left:4px">قبول</button><button class="btn-sm btn-reject" onclick="openDecideModal(${r.id},'rejected','leave')">رفض</button>`:'—'}</td>`}
   </tr>`).join('');
+}
+
+function showLeaveDetail(id) {
+  const r = (window._lvRows||[]).find(x=>x.id===id);
+  if (!r) return;
+  const STATUS_AR = {pending:'قيد الإجراء', approved:'موافق عليها', rejected:'مرفوضة'};
+  const content = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 0">
+      <div><div style="font-size:11px;color:#94a3b8">الموظف</div><div style="font-weight:700">${r.name_ar}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">نوع الإجازة</div><div style="font-weight:700">${LEAVE_NAMES[r.leave_type]||r.leave_type}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">من</div><div style="font-weight:700">${r.start_date}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">إلى</div><div style="font-weight:700">${r.end_date}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">عدد الأيام</div><div style="font-weight:700">${r.days} يوم</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">الحالة</div><div style="font-weight:700">${STATUS_AR[r.status]||r.status}</div></div>
+      ${r.notes?`<div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">الملاحظات</div><div style="font-weight:600">${r.notes}</div></div>`:''}
+    </div>
+    ${r.attachment?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button></div>`:''}
+  `;
+  document.getElementById('lv-detail-body').innerHTML = content;
+  _lvDetailModal.show();
 }
 
 function openLeaveModal(defaultType = null) {
   const isHR = _currentUser?.role !== 'employee';
+  const isTrainee = !isHR && (_currentUser?.employee?.emp_code || '').trim().toLowerCase().startsWith('in');
   document.getElementById('leave-hr-row').style.display = isHR ? 'block' : 'none';
   if (isHR) {
     const sel = document.getElementById('leave-emp');
     sel.innerHTML = allEmps.map(e => `<option value="${e.id}">${e.name_ar}</option>`).join('');
   }
+  // فلترة أنواع الإجازات: المتدربون فقط إجازة مرضية
+  const typeEl = document.getElementById('leave-type');
+  typeEl.innerHTML = isTrainee
+    ? '<option value="sick">إجازة مرضية</option>'
+    : `<option value="annual">إجازة سنوية (21 يوم)</option>
+       <option value="sick">إجازة مرضية</option>
+       <option value="emergency">إجازة اضطرارية (حتى 3 أيام)</option>`;
+  if (defaultType && defaultType !== 'emp') typeEl.value = defaultType;
   document.getElementById('leave-err').style.display = 'none';
-  document.getElementById('sick-doc-row').style.display = 'none';
   document.getElementById('leave-file').value = '';
   document.getElementById('leave-file-name').textContent = '';
   document.getElementById('leave-file').onchange = function() {
     document.getElementById('leave-file-name').textContent = this.files[0]?.name || '';
   };
-  const typeEl = document.getElementById('leave-type');
-  if (defaultType && defaultType !== 'emp') typeEl.value = defaultType;
-  typeEl.onchange = function() {
-    document.getElementById('sick-doc-row').style.display = this.value === 'sick' ? 'block' : 'none';
-  };
+  function updateLeaveFileLabel() {
+    const lbl = document.getElementById('leave-file-label');
+    if (!lbl) return;
+    if (typeEl.value === 'sick') {
+      lbl.innerHTML = 'التقرير الطبي <span style="color:#dc2626;font-weight:700">*</span>';
+    } else {
+      lbl.textContent = 'مرفق (اختياري)';
+    }
+  }
+  typeEl.onchange = updateLeaveFileLabel;
+  updateLeaveFileLabel();
   _leaveModal.show();
 }
 
@@ -3420,17 +3543,23 @@ async function submitLeave() {
   const end    = document.getElementById('leave-end').value;
   const type   = document.getElementById('leave-type').value;
   const notes  = document.getElementById('leave-notes').value;
-  const sick   = document.getElementById('leave-sick-doc').value;
   const fileEl = document.getElementById('leave-file');
   const err    = document.getElementById('leave-err');
   if (!start || !end) { err.textContent='التاريخ مطلوب'; err.style.display='block'; return; }
+  if (type === 'sick' && !fileEl.files[0]) {
+    err.textContent = 'التقرير الطبي مطلوب للإجازة المرضية'; err.style.display = 'block'; return;
+  }
+  if (type === 'emergency' && start && end) {
+    const days = Math.round((new Date(end) - new Date(start)) / 86400000) + 1;
+    if (days > 3) { err.textContent = 'الإجازة الاضطرارية لا تتجاوز 3 أيام'; err.style.display = 'block'; return; }
+  }
   err.style.display = 'none';
   let attachment = '', att_name = '';
   if (fileEl.files[0]) {
     attachment = await readFileAsBase64(fileEl.files[0]);
     att_name   = fileEl.files[0].name;
   }
-  const body = {leave_type: type, start_date: start, end_date: end, notes, sick_doc: sick, attachment, attachment_name: att_name};
+  const body = {leave_type: type, start_date: start, end_date: end, notes, attachment, attachment_name: att_name};
   if (isHR) body.employee_id = parseInt(document.getElementById('leave-emp').value);
   const r = await POST('/api/leaves', body);
   if (r.ok) { _leaveModal.hide(); toast(r.msg); loadLeaves(); }
@@ -3445,10 +3574,31 @@ async function downloadLeaveFile(id) {
   } catch(e) { toast('لا يوجد ملف مرفق', 'err'); }
 }
 
-async function decideLeave(id, status) {
-  const r = await PUT(`/api/leaves/${id}`, {status});
-  if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeaves(); }
-  else toast(r.error || 'خطأ', 'err');
+function openDecideModal(id, status, type='leave') {
+  document.getElementById('decide-id').value     = id;
+  document.getElementById('decide-status').value = status;
+  document.getElementById('decide-type').value   = type;
+  document.getElementById('decide-note').value   = '';
+  document.getElementById('decide-title').textContent = status === 'approved' ? 'الموافقة على الطلب' : 'رفض الطلب';
+  document.getElementById('decide-btn').className = status === 'approved' ? 'btn-main btn-approve' : 'btn-main btn-reject';
+  _decideModal.show();
+}
+
+async function confirmDecide() {
+  const id     = document.getElementById('decide-id').value;
+  const status = document.getElementById('decide-status').value;
+  const type   = document.getElementById('decide-type').value;
+  const note   = document.getElementById('decide-note').value.trim();
+  _decideModal.hide();
+  if (type === 'leave') {
+    const r = await PUT(`/api/leaves/${id}`, {status, notes: note});
+    if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeaves(); }
+    else toast(r.error||'خطأ','err');
+  } else {
+    const r = await PUT(`/api/requests/${id}`, {status, note});
+    if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadAttRequests(); loadPendingBadges(); }
+    else toast(r.error||'خطأ','err');
+  }
 }
 
 // ════════════════════════════════════════════
