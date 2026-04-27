@@ -332,7 +332,7 @@ def _gosi(emp):
     code = (emp.get('emp_code') or '').strip().lower()
     if code.startswith('in'):
         return 0.0
-    return round((emp['salary'] + emp['housing'] + emp['transport']) * 0.1075, 2)
+    return round(((emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0)) * 0.1075, 2)
 
 def _leave_balance(conn, emp_id, year=None):
     """رصيد الإجازة السنوية: الحق - المستخدم = المتبقي"""
@@ -1095,7 +1095,7 @@ def export_payroll_excel(year, month):
                 (emp['id'], prefix)).fetchall()
 
             total_ded = sum(v['deduction'] for v in vios)
-            gross     = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+            gross     = (emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0) + (emp['commission'] or 0)
             gosi_ded  = _gosi(emp)
             net       = gross - total_ded - gosi_ded
 
@@ -1719,8 +1719,8 @@ def api_emps_post():
                  other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code,weekend_days)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
-             d.get('salary',0), d.get('housing',0), d.get('transport',0),
-             (None if d.get('commission') is None else d.get('commission')), d.get('other_ded',0),
+             d.get('salary',0) or 0, d.get('housing',0) or 0, d.get('transport',0) or 0,
+             d.get('commission') or 0, d.get('other_ded',0) or 0,
              d.get('work_type','fixed'), d.get('work_start','08:00'),
              d.get('work_end','17:00'), d.get('weekly_hours',40),
              d.get('annual_leave_days', 21), d.get('emp_code') or None,
@@ -1814,7 +1814,7 @@ def api_payroll():
                     SUM(CASE WHEN status='late'   THEN 1 ELSE 0 END) AS late
                 FROM attendance WHERE employee_id=? AND att_date LIKE ?""",
                 (emp['id'], prefix)).fetchone()
-            gross    = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+            gross    = (emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0) + (emp['commission'] or 0)
             gosi_ded = _gosi(emp)
             net      = gross - (vd['d'] or 0) - gosi_ded
             result.append({
@@ -2543,11 +2543,14 @@ def api_my_payroll():
             "SELECT * FROM attendance WHERE employee_id=? AND att_date LIKE ? ORDER BY att_date",
             (emp_id, prefix)).fetchall()
         total_ded = sum(v['deduction'] for v in vios)
-        gross    = emp['salary'] + emp['housing'] + emp['transport'] + emp['commission']
+        gross    = (emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0) + (emp['commission'] or 0)
         gosi_ded = _gosi(emp)
         net      = gross - total_ded - gosi_ded
+        emp_out  = dict(emp)
+        for k in ('salary','housing','transport','commission','other_ded'):
+            emp_out[k] = emp_out.get(k) or 0
         return jsonify({
-            'employee': emp,
+            'employee': emp_out,
             'year': y, 'month': m,
             'gross': round(gross, 2),
             'deductions': round(total_ded, 2),
