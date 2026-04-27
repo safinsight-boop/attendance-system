@@ -929,9 +929,12 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           </button>
         </div>
       </div>
-      <!-- تبويبان -->
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="excuse-tab active" id="myreq-tab-late" onclick="switchMyReqTab('late_arrival')">
+      <!-- تبويبات -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="excuse-tab active" id="myreq-tab-all" onclick="switchMyReqTab('all')">
+          <i class="fas fa-list"></i> جميع الطلبات
+        </button>
+        <button class="excuse-tab" id="myreq-tab-late" onclick="switchMyReqTab('late_arrival')">
           <i class="fas fa-clock"></i> طلبات التأخير
           <span id="myreq-badge-late" class="exc-badge" style="background:#d97706"></span>
         </button>
@@ -940,7 +943,17 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <span id="myreq-badge-early" class="exc-badge" style="background:#7c3aed"></span>
         </button>
       </div>
-      <div id="myreq-panel-late">
+      <div id="myreq-panel-all">
+        <div class="card-wrap">
+          <div class="table-responsive">
+            <table class="tbl">
+              <thead><tr><th>#</th><th>النوع</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
+              <tbody id="myreq-tbody-all"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="myreq-panel-late" style="display:none">
         <div class="card-wrap">
           <div class="table-responsive">
             <table class="tbl">
@@ -2970,10 +2983,12 @@ let _hrReqTab = 'late_arrival';
 
 function switchMyReqTab(type) {
   _myReqTab = type;
-  ['late_arrival','early_leave'].forEach(t => {
-    const key = t === 'late_arrival' ? 'late' : 'early';
-    document.getElementById(`myreq-tab-${key}`).classList.toggle('active', t === type);
-    document.getElementById(`myreq-panel-${key}`).style.display = t === type ? '' : 'none';
+  ['all','late_arrival','early_leave'].forEach(t => {
+    const key = t === 'late_arrival' ? 'late' : t === 'early_leave' ? 'early' : 'all';
+    const tabEl = document.getElementById(`myreq-tab-${key}`);
+    const panelEl = document.getElementById(`myreq-panel-${key}`);
+    if (tabEl) tabEl.classList.toggle('active', t === type);
+    if (panelEl) panelEl.style.display = t === type ? '' : 'none';
   });
 }
 
@@ -3033,6 +3048,25 @@ async function loadMyRequests() {
     window._myReqRows = rows;
     document.getElementById('myreq-badge-late').textContent  = late.filter(r=>r.status==='pending').length  || '';
     document.getElementById('myreq-badge-early').textContent = early.filter(r=>r.status==='pending').length || '';
+    // تبويب الكل
+    const REQ_TYPE_AR = {late_arrival:'تأخير', early_leave:'خروج مبكر'};
+    const tbAll = document.getElementById('myreq-tbody-all');
+    if (tbAll) {
+      if (!rows.length) {
+        tbAll.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+      } else {
+        tbAll.innerHTML = rows.map((r,i) => `<tr style="cursor:pointer" onclick="showReqDetail(${r.id})">
+          <td style="color:#94a3b8">${i+1}</td>
+          <td>${REQ_TYPE_AR[r.req_type]||r.req_type}</td>
+          <td>${r.req_date}</td>
+          <td>${r.requested_time||'—'}</td>
+          <td style="max-width:180px;text-align:right">${r.reason}</td>
+          <td onclick="event.stopPropagation()">${r.attachment_name?`<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i></button>`:'—'}</td>
+          <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
+          <td style="color:#64748b;font-size:12px">${r.manager_note||'—'}</td>
+        </tr>`).join('');
+      }
+    }
     document.getElementById('myreq-tbody-late').innerHTML  = _renderReqRows(late,  false);
     document.getElementById('myreq-tbody-early').innerHTML = _renderReqRows(early, false);
   } catch(e) { toast('خطأ', 'err'); }
