@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>بوابة الموظف</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<style>.flatpickr-calendar{direction:ltr;font-family:Arial,sans-serif;}</style>
+<style>.flatpickr-calendar{direction:ltr;font-family:Arial,sans-serif;}
+  .css-spin { display:inline-block; animation:icon-spin 1s linear infinite; }
+  @keyframes icon-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
 <style id="print-style">
 @media print {
   .sidebar, .topbar, .filters, .btn-main, .btn-green, .card-head button,
@@ -414,7 +416,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 <div id="login-overlay">
   <div class="login-box">
     <div class="login-logo">
-      <div class="ico"><i class="fas fa-fingerprint"></i></div>
+      <div class="ico">🔐</div>
       <h2>بوابة الموظف</h2>
       <p>سجّل دخولك للمتابعة</p>
     </div>
@@ -431,7 +433,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     </div>
     <button class="btn-main" style="width:100%;justify-content:center;padding:12px"
             id="login-btn" onclick="doLogin()">
-      <i class="fas fa-sign-in-alt"></i> دخول
+      🔑 دخول
     </button>
   </div>
 </div>
@@ -441,7 +443,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 ════════════════════════════════════════════ -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon"><i class="fas fa-fingerprint"></i></div>
+    <div class="logo-icon">🔐</div>
     <div>
       <div class="logo-name">بوابة الموظف</div>
       <div class="logo-sub">نظام الحضور والرواتب</div>
@@ -451,72 +453,72 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="nav-group">
     <div class="nav-label">الرئيسية</div>
     <button class="nav-btn active" id="nb-dashboard" onclick="showPage('dashboard')">
-      <span class="ni"><i class="fas fa-chart-pie"></i></span> لوحة التحكم
+      <span class="ni">📊</span> لوحة التحكم
     </button>
     <button class="nav-btn hr-only" id="nb-attendance" onclick="showPage('attendance')" style="display:none">
-      <span class="ni"><i class="fas fa-calendar-check"></i></span> سجل الحضور
+      <span class="ni">📋</span> سجل الحضور
     </button>
   </div>
 
   <div class="nav-group hr-only" style="display:none">
     <div class="nav-label">الإدارة</div>
     <button class="nav-btn" id="nb-employees" onclick="showPage('employees')">
-      <span class="ni"><i class="fas fa-users"></i></span> الموظفون
+      <span class="ni">👥</span> الموظفون
     </button>
     <button class="nav-btn" id="nb-payroll" onclick="showPage('payroll')">
-      <span class="ni"><i class="fas fa-money-bill-wave"></i></span> مسيرة الرواتب
+      <span class="ni">💵</span> مسيرة الرواتب
     </button>
     <button class="nav-btn" id="nb-excuses" onclick="showPage('excuses')">
-      <span class="ni"><i class="fas fa-file-alt"></i></span> الأعذار
+      <span class="ni">📄</span> الأعذار
       <span id="excuse-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-overtime" onclick="showPage('overtime')">
-      <span class="ni"><i class="fas fa-clock"></i></span> الإضافي
+      <span class="ni">🕐</span> الإضافي
       <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-att-requests" onclick="showPage('att-requests')">
-      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلبات الحضور
+      <span class="ni">✉️</span> طلبات الحضور
       <span id="req-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
-      <span class="ni"><i class="fas fa-umbrella-beach"></i></span> الإجازات
+      <span class="ni">🏖️</span> الإجازات
     </button>
     <button class="nav-btn" id="nb-users" onclick="showPage('users')">
-      <span class="ni"><i class="fas fa-user-shield"></i></span> المستخدمون
+      <span class="ni">🛡️</span> المستخدمون
     </button>
     <button class="nav-btn hr-only" id="nb-calendar" onclick="showPage('calendar')">
-      <span class="ni"><i class="fas fa-calendar-alt"></i></span> تقويم الإجازات
+      <span class="ni">📅</span> تقويم الإجازات
     </button>
     <button class="nav-btn hr-only" id="nb-audit" onclick="showPage('audit')">
-      <span class="ni"><i class="fas fa-shield-alt"></i></span> سجل الأحداث
+      <span class="ni">🔒</span> سجل الأحداث
     </button>
     <button class="nav-btn hr-only" id="nb-settings" onclick="showPage('settings')">
-      <span class="ni"><i class="fas fa-cog"></i></span> إعدادات النظام
+      <span class="ni">⚙️</span> إعدادات النظام
     </button>
   </div>
 
   <div class="nav-group emp-only" style="display:none">
     <div class="nav-label">حسابي</div>
     <button class="nav-btn" id="nb-my-attendance" onclick="showPage('my-attendance')">
-      <span class="ni"><i class="fas fa-calendar-check"></i></span> حضوري وغيابي
+      <span class="ni">📋</span> حضوري وغيابي
     </button>
     <button class="nav-btn" id="nb-my-violations" onclick="showPage('my-violations')">
-      <span class="ni"><i class="fas fa-exclamation-triangle"></i></span> مخالفاتي
+      <span class="ni">⚠️</span> مخالفاتي
     </button>
     <button class="nav-btn" id="nb-my-payroll" onclick="showPage('my-payroll')">
-      <span class="ni"><i class="fas fa-wallet"></i></span> راتبي
+      <span class="ni">👛</span> راتبي
     </button>
     <button class="nav-btn" id="nb-my-requests" onclick="showPage('my-requests')">
-      <span class="ni"><i class="fas fa-paper-plane"></i></span> طلباتي
+      <span class="ni">✉️</span> طلباتي
     </button>
     <button class="nav-btn" id="nb-excuses-emp" onclick="showPage('excuses')">
-      <span class="ni"><i class="fas fa-file-alt"></i></span> أعذاري
+      <span class="ni">📄</span> أعذاري
     </button>
     <button class="nav-btn" id="nb-leaves-emp" onclick="showPage('leaves')">
-      <span class="ni"><i class="fas fa-umbrella-beach"></i></span> إجازاتي
+      <span class="ni">🏖️</span> إجازاتي
     </button>
     <button class="nav-btn" id="nb-profile" onclick="showPage('profile')">
-      <span class="ni"><i class="fas fa-id-card"></i></span> ملفي الشخصي
+      <span class="ni">🪪</span> ملفي الشخصي
     </button>
   </div>
 
@@ -525,10 +527,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <button onclick="doLogout()" style="background:rgba(198,166,100,0.15);color:var(--gold);border:1px solid rgba(198,166,100,0.3);
       border-radius:7px;padding:6px 14px;font-family:Tajawal;font-size:12px;cursor:pointer;width:100%;transition:all .18s"
       onmouseover="this.style.background='rgba(198,166,100,0.25)'" onmouseout="this.style.background='rgba(198,166,100,0.15)'">
-      <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+      🚪 تسجيل الخروج
     </button>
     <div style="margin-top:8px;color:rgba(198,166,100,0.5);font-size:11px">
-      <i class="fas fa-clock" style="margin-left:4px"></i>
+      <span style="margin-left:4px">🕐</span>
       آخر تحديث: <span id="last-update">—</span>
     </div>
   </div>
@@ -548,7 +550,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
       <div class="hr-only" style="position:relative;display:none">
         <button id="notif-btn" onclick="toggleNotifDropdown()" style="background:transparent;border:none;cursor:pointer;position:relative;padding:6px 10px;border-radius:8px;color:#1e293b;font-size:18px">
-          <i class="fas fa-bell"></i>
+          🔔
           <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px"></span>
         </button>
         <div id="notif-dropdown" style="display:none;position:absolute;left:0;top:44px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);min-width:240px;z-index:999;padding:12px 0">
@@ -557,7 +559,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
       </div>
       <button class="btn-main" onclick="openRunModal()">
-        <i class="fas fa-play"></i> تشغيل يدوي
+        ▶️ تشغيل يدوي
       </button>
     </div>
   </div>
@@ -573,28 +575,28 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div class="stats-grid" id="stats-today-grid">
         <div class="stat-card c-green" style="cursor:pointer" onclick="openStatDetail('on_time','في الوقت اليوم')">
           <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)">
-            <i class="fas fa-user-check" style="color:#16a34a"></i>
+            <span style="color:#16a34a">✅</span>
           </div>
           <div class="stat-num" id="s-ontime">—</div>
           <div class="stat-label">في الوقت اليوم</div>
         </div>
         <div class="stat-card c-red" style="cursor:pointer" onclick="openStatDetail('late','متأخر اليوم')">
           <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)">
-            <i class="fas fa-clock" style="color:#dc2626"></i>
+            <span style="color:#dc2626">🕐</span>
           </div>
           <div class="stat-num" id="s-late">—</div>
           <div class="stat-label">متأخر اليوم</div>
         </div>
         <div class="stat-card c-yellow" style="cursor:pointer" onclick="openStatDetail('early_leave','مغادرة مبكرة اليوم')">
           <div class="stat-icon-wrap" style="background:rgba(197,160,89,0.12)">
-            <i class="fas fa-person-walking-arrow-right" style="color:var(--gold)"></i>
+            <span style="color:var(--gold)">🚶</span>
           </div>
           <div class="stat-num" id="s-earlyleave">—</div>
           <div class="stat-label">مغادرة مبكرة</div>
         </div>
         <div class="stat-card c-blue" style="cursor:pointer" onclick="openStatDetail('absent','غياب اليوم')">
           <div class="stat-icon-wrap" style="background:rgba(0,75,87,0.12)">
-            <i class="fas fa-user-xmark" style="color:var(--primary)"></i>
+            <span style="color:var(--primary)">❌</span>
           </div>
           <div class="stat-num" id="s-absent">—</div>
           <div class="stat-label">غياب اليوم</div>
@@ -632,9 +634,9 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- Recent attendance -->
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-history" style="color:var(--gold);margin-left:8px"></i>آخر سجلات الحضور</h5>
+          <h5><span style="color:var(--gold);margin-left:8px">📜</span>آخر سجلات الحضور</h5>
           <button class="btn-main" style="padding:6px 14px;font-size:13px" onclick="loadDashboard()">
-            <i class="fas fa-sync-alt"></i> تحديث
+            🔄 تحديث
           </button>
         </div>
         <div class="table-responsive">
@@ -647,7 +649,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
               </tr>
             </thead>
             <tbody id="recent-tbody">
-              <tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              <tr><td colspan="6"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -671,7 +673,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <select id="att-year" onchange="attMonthChanged()"></select>
         </div>
         <button class="btn-green" id="att-export-btn" onclick="exportAtt()" style="display:none">
-          <i class="fas fa-file-excel"></i> تحميل Excel
+          📊 تحميل Excel
         </button>
       </div>
 
@@ -679,10 +681,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div id="att-emp-list">
         <div class="card-wrap">
           <div class="card-head">
-            <h5><i class="fas fa-users" style="color:var(--gold);margin-left:8px"></i>اختر موظفاً لعرض سجل حضوره</h5>
+            <h5><span style="color:var(--gold);margin-left:8px">👥</span>اختر موظفاً لعرض سجل حضوره</h5>
           </div>
           <div id="att-emp-cards" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
-            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>
+            <div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div>
           </div>
         </div>
       </div>
@@ -691,16 +693,16 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div id="att-detail" style="display:none">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <button class="btn-sm btn-edit" onclick="attBack()">
-            <i class="fas fa-arrow-right"></i> رجوع
+            ← رجوع
           </button>
           <span id="att-detail-name" style="font-size:16px;font-weight:700;color:var(--primary)"></span>
           <button class="btn-green" style="margin-right:auto" onclick="exportAtt()">
-            <i class="fas fa-file-excel"></i> تحميل Excel
+            📊 تحميل Excel
           </button>
         </div>
         <div class="card-wrap">
           <div class="card-head">
-            <h5><i class="fas fa-calendar-alt" style="color:var(--gold);margin-left:8px"></i>سجل الحضور والغياب</h5>
+            <h5><span style="color:var(--gold);margin-left:8px">📅</span>سجل الحضور والغياب</h5>
             <span id="att-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
             <input type="search" id="att-search" class="fc" placeholder="🔍 بحث..." style="max-width:180px;margin:0;padding:5px 10px;font-size:13px" oninput="filterAttRows(this.value)">
           </div>
@@ -714,7 +716,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
                 </tr>
               </thead>
               <tbody id="att-tbody">
-                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-calendar"></i><p>لا توجد سجلات</p></div></td></tr>
+                <tr><td colspan="7"><div class="empty-state">📅<p>لا توجد سجلات</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -732,7 +734,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <span id="emp-count-lbl" style="font-size:14px;color:#64748b;font-weight:600;white-space:nowrap"></span>
         <input type="search" id="emp-search" class="fc" placeholder="🔍 بحث باسم الموظف أو رقمه..." style="max-width:280px;margin:0" oninput="filterEmps(this.value)">
         <button class="btn-main" onclick="openEmpModal()">
-          <i class="fas fa-plus"></i> إضافة موظف
+          ➕ إضافة موظف
         </button>
       </div>
 
@@ -753,7 +755,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
               </tr>
             </thead>
             <tbody id="emp-tbody">
-              <tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              <tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -776,13 +778,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <select id="pay-year" onchange="loadPayroll()"></select>
         </div>
         <button class="btn-green" onclick="exportPayroll()">
-          <i class="fas fa-file-excel"></i> تحميل مسيرة الرواتب
+          📊 تحميل مسيرة الرواتب
         </button>
         <button class="btn-main" onclick="exportGosi()" style="background:#7c3aed">
-          <i class="fas fa-file-excel"></i> تقرير GOSI
+          📊 تقرير GOSI
         </button>
         <button class="btn-main" onclick="printAdminPayroll()" style="background:#0f766e">
-          <i class="fas fa-print"></i> طباعة PDF
+          🖨️ طباعة PDF
         </button>
       </div>
 
@@ -804,7 +806,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-money-check-alt" style="color:var(--gold);margin-left:8px"></i>تفاصيل الرواتب</h5>
+          <h5><span style="color:var(--gold);margin-left:8px">💳</span>تفاصيل الرواتب</h5>
         </div>
         <div class="table-responsive">
           <table class="tbl">
@@ -817,7 +819,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
               </tr>
             </thead>
             <tbody id="pay-tbody">
-              <tr><td colspan="10"><div class="empty-state"><i class="fas fa-coins"></i><p>اختر الشهر لعرض الرواتب</p></div></td></tr>
+              <tr><td colspan="10"><div class="empty-state">🪙<p>اختر الشهر لعرض الرواتب</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -836,7 +838,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-calendar-check" style="color:var(--gold);margin-left:8px"></i>سجل حضوري وغيابي</h5>
+          <h5><span style="color:var(--gold);margin-left:8px">📋</span>سجل حضوري وغيابي</h5>
           <span id="myatt-count" style="font-size:13px;color:#64748b;font-weight:600"></span>
         </div>
         <div class="table-responsive">
@@ -858,7 +860,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="card-wrap">
         <div class="card-head">
-          <h5><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>مخالفاتي</h5>
+          <h5><span style="color:#ef4444;margin-left:8px">⚠️</span>مخالفاتي</h5>
         </div>
         <div class="table-responsive">
           <table class="tbl">
@@ -878,7 +880,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div class="fg"><label>السنة</label><select id="mypay-year"  onchange="loadMyPayroll()"></select></div>
       </div>
       <div id="mypay-content">
-        <div class="empty-state"><i class="fas fa-wallet"></i><p>اختر الشهر لعرض راتبك</p></div>
+        <div class="empty-state">👛<p>اختر الشهر لعرض راتبك</p></div>
       </div>
     </div>
 
@@ -889,28 +891,28 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-my-requests" class="page">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
         <span style="font-size:15px;font-weight:700;color:var(--primary)">
-          <i class="fas fa-paper-plane" style="color:var(--gold);margin-left:6px"></i>طلباتي
+          <span style="color:var(--gold);margin-left:6px">✉️</span>طلباتي
         </span>
         <div style="margin-right:auto;display:flex;gap:8px">
           <button class="btn-main" onclick="openRequestModal('late_arrival')">
-            <i class="fas fa-clock"></i> طلب تأخير
+            🕐 طلب تأخير
           </button>
           <button class="btn-main" style="background:#d97706" onclick="openRequestModal('early_leave')">
-            <i class="fas fa-sign-out-alt"></i> طلب خروج مبكر
+            🚪 طلب خروج مبكر
           </button>
         </div>
       </div>
       <!-- تبويبات -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="excuse-tab active" id="myreq-tab-all" onclick="switchMyReqTab('all')">
-          <i class="fas fa-list"></i> جميع الطلبات
+          📋 جميع الطلبات
         </button>
         <button class="excuse-tab" id="myreq-tab-late" onclick="switchMyReqTab('late_arrival')">
-          <i class="fas fa-clock"></i> طلبات التأخير
+          🕐 طلبات التأخير
           <span id="myreq-badge-late" class="exc-badge" style="background:#d97706"></span>
         </button>
         <button class="excuse-tab" id="myreq-tab-early" onclick="switchMyReqTab('early_leave')">
-          <i class="fas fa-sign-out-alt"></i> طلبات الخروج المبكر
+          🚪 طلبات الخروج المبكر
           <span id="myreq-badge-early" class="exc-badge" style="background:#7c3aed"></span>
         </button>
       </div>
@@ -919,7 +921,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>النوع</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
-              <tbody id="myreq-tbody-all"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="myreq-tbody-all"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -929,7 +931,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
-              <tbody id="myreq-tbody-late"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="myreq-tbody-late"><tr><td colspan="7"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -939,7 +941,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>التاريخ</th><th>الوقت المطلوب</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة المدير</th></tr></thead>
-              <tbody id="myreq-tbody-early"><tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="myreq-tbody-early"><tr><td colspan="7"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -974,11 +976,11 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- تبويبان -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button class="excuse-tab active" id="hrreq-tab-late" onclick="switchHRReqTab('late_arrival')">
-          <i class="fas fa-clock"></i> طلبات التأخير
+          🕐 طلبات التأخير
           <span id="hrreq-badge-late" class="exc-badge" style="background:#d97706"></span>
         </button>
         <button class="excuse-tab" id="hrreq-tab-early" onclick="switchHRReqTab('early_leave')">
-          <i class="fas fa-sign-out-alt"></i> طلبات الخروج المبكر
+          🚪 طلبات الخروج المبكر
           <span id="hrreq-badge-early" class="exc-badge" style="background:#7c3aed"></span>
         </button>
       </div>
@@ -987,7 +989,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
-              <tbody id="hrreq-tbody-late"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="hrreq-tbody-late"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -997,7 +999,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>إجراء</th></tr></thead>
-              <tbody id="hrreq-tbody-early"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="hrreq-tbody-early"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1010,12 +1012,12 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-excuses" class="page">
       <!-- شريط العنوان + فلتر الشهر + زر رفع عذر -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
-        <span style="font-size:15px;font-weight:700;color:var(--primary)"><i class="fas fa-file-alt" style="color:var(--gold);margin-left:6px"></i>طلبات الأعذار</span>
+        <span style="font-size:15px;font-weight:700;color:var(--primary)"><span style="color:var(--gold);margin-left:6px">📄</span>طلبات الأعذار</span>
         <div style="display:flex;gap:8px;margin-right:auto;align-items:center">
           <select id="exc-month" class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadExcuses()"></select>
           <select id="exc-year"  class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadExcuses()"></select>
           <button class="btn-main" onclick="openExcuseModal()">
-            <i class="fas fa-plus"></i> رفع عذر
+            ➕ رفع عذر
           </button>
         </div>
       </div>
@@ -1023,15 +1025,15 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- تبويبات الحالة مع العدادات -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="excuse-tab active" id="etab-pending" onclick="switchExcuseTab('pending')">
-          <i class="fas fa-hourglass-half"></i> <span id="pending-tab-label">قيد الإجراء</span>
+          ⏳ <span id="pending-tab-label">قيد الإجراء</span>
           <span id="exc-badge-pending" class="exc-badge" style="background:#f59e0b"></span>
         </button>
         <button class="excuse-tab" id="etab-approved" onclick="switchExcuseTab('approved')">
-          <i class="fas fa-check-circle"></i> تمت الموافقة
+          ✅ تمت الموافقة
           <span id="exc-badge-approved" class="exc-badge" style="background:#16a34a"></span>
         </button>
         <button class="excuse-tab" id="etab-rejected" onclick="switchExcuseTab('rejected')">
-          <i class="fas fa-times-circle"></i> تم الرفض
+          ❌ تم الرفض
           <span id="exc-badge-rejected" class="exc-badge" style="background:#dc2626"></span>
         </button>
       </div>
@@ -1046,7 +1048,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
                 <th>السبب</th><th>مرفق</th><th class="hr-only" style="display:none">إجراء</th>
               </tr></thead>
               <tbody id="exc-tbody-pending">
-                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+                <tr><td colspan="7"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1062,7 +1064,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
                 <th>السبب</th><th>مرفق</th><th>ملاحظة المدير</th>
               </tr></thead>
               <tbody id="exc-tbody-approved">
-                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد طلبات موافق عليها</p></div></td></tr>
+                <tr><td colspan="7"><div class="empty-state"><span style="color:#16a34a">✅</span><p>لا توجد طلبات موافق عليها</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1078,7 +1080,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
                 <th>السبب</th><th>مرفق</th><th>ملاحظة المدير</th>
               </tr></thead>
               <tbody id="exc-tbody-rejected">
-                <tr><td colspan="7"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد طلبات مرفوضة</p></div></td></tr>
+                <tr><td colspan="7"><div class="empty-state"><span style="color:#dc2626">❌</span><p>لا توجد طلبات مرفوضة</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1092,10 +1094,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-overtime" class="page">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
         <span style="font-size:15px;font-weight:700;color:var(--primary)">
-          <i class="fas fa-clock" style="color:var(--gold);margin-left:6px"></i>سجل الإضافي
+          <span style="color:var(--gold);margin-left:6px">🕐</span>سجل الإضافي
         </span>
         <button class="btn-main hr-only" style="display:none" onclick="openOtModal()">
-          <i class="fas fa-plus"></i> رفع تكليف إضافي
+          ➕ رفع تكليف إضافي
         </button>
       </div>
       <div class="card-wrap">
@@ -1106,7 +1108,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
               <th>وقت الانصراف</th><th>نهاية الدوام</th><th>المصدر</th><th>الحالة</th><th class="hr-only" style="display:none">إجراء</th>
             </tr></thead>
             <tbody id="overtime-tbody">
-              <tr><td colspan="9"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>
+              <tr><td colspan="9"><div class="empty-state">🕐<p>لا توجد سجلات إضافي</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1121,7 +1123,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- بطاقة رصيد الإجازة السنوية — للموظفين فقط -->
       <div id="leave-balance-card" class="card-wrap emp-only" style="margin-bottom:16px;display:none">
         <div class="card-head">
-          <h5><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>رصيد الإجازة السنوية</h5>
+          <h5><span style="color:var(--gold);margin-left:8px">🏖️</span>رصيد الإجازة السنوية</h5>
           <span id="leave-bal-year" style="font-size:13px;color:#64748b;font-weight:600"></span>
         </div>
         <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);padding:14px 18px">
@@ -1140,16 +1142,16 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- شريط العنوان + فلتر الشهر + زر إضافة -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
         <span style="font-size:15px;font-weight:700;color:var(--primary)">
-          <i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:6px"></i>طلبات الإجازات
+          <span style="color:var(--gold);margin-left:6px">🏖️</span>طلبات الإجازات
         </span>
         <div style="display:flex;gap:8px;margin-right:auto;align-items:center">
           <select id="lv-month" class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadLeaves()"></select>
           <select id="lv-year"  class="fc" style="width:auto;padding:6px 10px;font-size:13px" onchange="loadLeaves()"></select>
           <button class="btn-main" onclick="openLeaveModal()">
-            <i class="fas fa-plus"></i> طلب إجازة
+            ➕ طلب إجازة
           </button>
           <button class="btn-main hr-only" onclick="switchLeaveTab('holidays')" style="display:none;background:#64748b">
-            <i class="fas fa-star"></i> الرسمية
+            ⭐ الرسمية
           </button>
         </div>
       </div>
@@ -1173,22 +1175,22 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- تبويبات الحالة -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <button class="excuse-tab active" id="lvtab-all" onclick="switchLeaveTab('all')">
-          <i class="fas fa-list"></i> جميع الطلبات
+          📋 جميع الطلبات
         </button>
         <button class="excuse-tab" id="lvtab-pending" onclick="switchLeaveTab('pending')">
-          <i class="fas fa-hourglass-half"></i> قيد الإجراء
+          ⏳ قيد الإجراء
           <span id="lv-badge-pending" class="exc-badge" style="background:#f59e0b"></span>
         </button>
         <button class="excuse-tab" id="lvtab-approved" onclick="switchLeaveTab('approved')">
-          <i class="fas fa-check-circle"></i> تمت الموافقة
+          ✅ تمت الموافقة
           <span id="lv-badge-approved" class="exc-badge" style="background:#16a34a"></span>
         </button>
         <button class="excuse-tab" id="lvtab-rejected" onclick="switchLeaveTab('rejected')">
-          <i class="fas fa-times-circle"></i> تم الرفض
+          ❌ تم الرفض
           <span id="lv-badge-rejected" class="exc-badge" style="background:#dc2626"></span>
         </button>
         <button class="excuse-tab hr-only" id="lvtab-holidays" onclick="switchLeaveTab('holidays')" style="display:none">
-          <i class="fas fa-star"></i> الإجازات الرسمية
+          ⭐ الإجازات الرسمية
         </button>
       </div>
 
@@ -1198,7 +1200,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>الأيام</th><th>الحالة</th><th>مرفق</th><th class="hr-only" style="display:none">إجراء</th></tr></thead>
-              <tbody id="lv-tbody-all"><tr><td colspan="9"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="lv-tbody-all"><tr><td colspan="9"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1208,7 +1210,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>الأيام</th><th>مرفق</th><th class="hr-only" style="display:none">إجراء</th></tr></thead>
-              <tbody id="lv-tbody-pending"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+              <tbody id="lv-tbody-pending"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1219,7 +1221,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>الأيام</th><th>مرفق</th><th>ملاحظة</th></tr></thead>
-              <tbody id="lv-tbody-approved"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد إجازات موافق عليها</p></div></td></tr></tbody>
+              <tbody id="lv-tbody-approved"><tr><td colspan="8"><div class="empty-state"><span style="color:#16a34a">✅</span><p>لا توجد إجازات موافق عليها</p></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1230,7 +1232,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div class="table-responsive">
             <table class="tbl">
               <thead><tr><th>#</th><th>الموظف</th><th>النوع</th><th>من</th><th>إلى</th><th>الأيام</th><th>مرفق</th><th>ملاحظة</th></tr></thead>
-              <tbody id="lv-tbody-rejected"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد إجازات مرفوضة</p></div></td></tr></tbody>
+              <tbody id="lv-tbody-rejected"><tr><td colspan="8"><div class="empty-state"><span style="color:#dc2626">❌</span><p>لا توجد إجازات مرفوضة</p></div></td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1242,7 +1244,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <table class="tbl">
               <thead><tr><th>#</th><th>التاريخ</th><th>الاسم</th><th>إجراء</th></tr></thead>
               <tbody id="holidays-tbody">
-                <tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>
+                <tr><td colspan="4"><div class="empty-state">⭐<p>لا توجد إجازات رسمية</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1258,7 +1260,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
         <span style="font-size:14px;color:#64748b;font-weight:600">إدارة المستخدمين</span>
         <button class="btn-main" onclick="openUserModal()">
-          <i class="fas fa-plus"></i> إضافة مستخدم
+          ➕ إضافة مستخدم
         </button>
       </div>
       <div class="card-wrap">
@@ -1266,7 +1268,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <table class="tbl">
             <thead><tr><th>#</th><th>اسم المستخدم</th><th>الدور</th><th>الموظف المرتبط</th><th>إجراء</th></tr></thead>
             <tbody id="users-tbody">
-              <tr><td colspan="5"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>
+              <tr><td colspan="5"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1325,10 +1327,10 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- تبويبات: فقط للأدمن -->
       <div class="hr-only" style="display:none;display:flex;gap:8px;margin-bottom:16px" id="cal-tabs">
         <button class="excuse-tab active" id="cal-tab-timeline" onclick="switchCalTab('timeline')">
-          <i class="fas fa-calendar-week"></i> جدول إجازات الفريق
+          📅 جدول إجازات الفريق
         </button>
         <button class="excuse-tab" id="cal-tab-personal" onclick="switchCalTab('personal')">
-          <i class="fas fa-user-clock"></i> تقويم موظف
+          🕐 تقويم موظف
         </button>
       </div>
       <!-- لوحة الجدول الزمني -->
@@ -1359,13 +1361,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-audit" class="page">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <span style="font-size:13px;color:#64748b">آخر 100 حدث مسجل</span>
-        <button class="btn-main" onclick="loadAudit()"><i class="fas fa-sync-alt"></i> تحديث</button>
+        <button class="btn-main" onclick="loadAudit()">🔄 تحديث</button>
       </div>
       <div class="card-wrap">
         <div class="table-responsive">
           <table class="tbl">
             <thead><tr><th>التاريخ</th><th>المستخدم</th><th>الدور</th><th>الحدث</th><th>الهدف</th><th>التفاصيل</th><th>IP</th><th>الحالة</th></tr></thead>
-            <tbody id="audit-tbody"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr></tbody>
+            <tbody id="audit-tbody"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1377,7 +1379,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div id="page-settings" class="page">
       <div style="max-width:600px;margin:0 auto">
         <div class="card-wrap">
-          <h5 style="font-weight:800;margin-bottom:20px"><i class="fas fa-cog" style="color:var(--gold);margin-left:8px"></i>إعدادات النظام</h5>
+          <h5 style="font-weight:800;margin-bottom:20px"><span style="color:var(--gold);margin-left:8px">⚙️</span>إعدادات النظام</h5>
           <div class="fg">
             <label>اسم الشركة (عربي)</label>
             <input type="text" id="set-company-ar" class="fc" placeholder="اسم شركتك">
@@ -1386,7 +1388,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
             <label>اسم الشركة (إنجليزي)</label>
             <input type="text" id="set-company-en" class="fc" placeholder="Company Name">
           </div>
-          <button class="btn-main" style="margin-top:10px" onclick="saveSettings()"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+          <button class="btn-main" style="margin-top:10px" onclick="saveSettings()">💾 حفظ الإعدادات</button>
         </div>
       </div>
     </div>
@@ -1401,7 +1403,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-play-circle" style="color:var(--gold);margin-left:8px"></i>تشغيل يدوي</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">▶️</span>تشغيل يدوي</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1413,7 +1415,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="modal-footer">
         <button class="btn-main" onclick="runManual()" id="run-btn">
-          <i class="fas fa-play"></i> تشغيل
+          ▶️ تشغيل
         </button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
@@ -1429,7 +1431,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="emp-modal-title">
-          <i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة موظف
+          <span style="color:var(--gold);margin-left:8px">👤</span>إضافة موظف
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -1501,7 +1503,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
         <!-- تاريخ تطبيق تغيير الجدول -->
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:14px">
-          <label class="fl" style="color:#92400e"><i class="fas fa-calendar-day" style="margin-left:6px"></i>تاريخ تطبيق تغيير الجدول <span style="font-size:11px;color:#b45309">(اختياري — اتركه فارغاً لتطبيق فوري)</span></label>
+          <label class="fl" style="color:#92400e"><span style="margin-left:6px">📅</span>تاريخ تطبيق تغيير الجدول <span style="font-size:11px;color:#b45309">(اختياري — اتركه فارغاً لتطبيق فوري)</span></label>
           <input type="date" id="emp-schedule-date" class="fc" style="max-width:220px">
           <div style="font-size:11px;color:#92400e;margin-top:4px">إذا حددت تاريخاً، ستُحسب المخالفات بالجدول الجديد ابتداءً من هذا التاريخ</div>
         </div>
@@ -1557,7 +1559,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="modal-footer">
         <button class="btn-main" onclick="saveEmployee()" id="save-emp-btn">
-          <i class="fas fa-save"></i> حفظ البيانات
+          💾 حفظ البيانات
         </button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
@@ -1571,7 +1573,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="req-modal-title">
-          <i id="req-modal-icon" class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>
+          <span id="req-modal-icon" style="color:var(--gold);margin-left:8px">🕐</span>
           <span id="req-modal-label">طلب تأخير</span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -1603,7 +1605,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="req-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" id="req-submit-btn" onclick="submitRequest()"><i class="fas fa-paper-plane"></i> إرسال الطلب</button>
+        <button class="btn-main" id="req-submit-btn" onclick="submitRequest()">✉️ إرسال الطلب</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1615,7 +1617,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-file-alt" style="color:var(--gold);margin-left:8px"></i>رفع عذر</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">📄</span>رفع عذر</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1650,7 +1652,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="excuse-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" onclick="submitExcuse()"><i class="fas fa-paper-plane"></i> إرسال العذر</button>
+        <button class="btn-main" onclick="submitExcuse()">✉️ إرسال العذر</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1662,7 +1664,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>طلب إجازة</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">🏖️</span>طلب إجازة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1701,7 +1703,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="leave-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" onclick="submitLeave()"><i class="fas fa-check"></i> تأكيد الطلب</button>
+        <button class="btn-main" onclick="submitLeave()">✔️ تأكيد الطلب</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1713,14 +1715,14 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="reqstat-title"><i class="fas fa-list" style="color:var(--gold);margin-left:8px"></i><span id="reqstat-label"></span></h5>
+        <h5 class="modal-title" id="reqstat-title"><span style="color:var(--gold);margin-left:8px">📋</span><span id="reqstat-label"></span></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" style="padding:0">
         <div class="table-responsive">
           <table class="tbl">
             <thead><tr><th>#</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>السبب</th><th>مرفق</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
-            <tbody id="reqstat-tbody"><tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr></tbody>
+            <tbody id="reqstat-tbody"><tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1733,7 +1735,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-star" style="color:var(--gold);margin-left:8px"></i>إضافة إجازة رسمية</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">⭐</span>إضافة إجازة رسمية</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1750,7 +1752,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="holiday-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" onclick="submitHoliday()"><i class="fas fa-save"></i> حفظ</button>
+        <button class="btn-main" onclick="submitHoliday()">💾 حفظ</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1762,7 +1764,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة مستخدم</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">👤</span>إضافة مستخدم</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1793,7 +1795,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="user-err" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" onclick="submitUser()"><i class="fas fa-save"></i> إنشاء</button>
+        <button class="btn-main" onclick="submitUser()">💾 إنشاء</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1805,7 +1807,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:440px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-clock" style="color:var(--gold);margin-left:8px"></i>رفع تكليف دوام إضافي</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">🕐</span>رفع تكليف دوام إضافي</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1831,7 +1833,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-main" id="ot-save-btn" onclick="submitOt()">
-          <i class="fas fa-save"></i> حفظ التكليف
+          💾 حفظ التكليف
         </button>
       </div>
     </div>
@@ -1885,7 +1887,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-main" id="decide-btn" onclick="confirmDecide()"><i class="fas fa-check"></i> تأكيد</button>
+        <button class="btn-main" id="decide-btn" onclick="confirmDecide()">✔️ تأكيد</button>
         <button class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
       </div>
     </div>
@@ -1909,7 +1911,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>تفاصيل المخالفة</h5>
+        <h5 class="modal-title"><span style="color:#ef4444;margin-left:8px">⚠️</span>تفاصيل المخالفة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="vio-detail-body"></div>
@@ -1921,7 +1923,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-umbrella-beach" style="color:var(--gold);margin-left:8px"></i>تفاصيل الإجازة</h5>
+        <h5 class="modal-title"><span style="color:var(--gold);margin-left:8px">🏖️</span>تفاصيل الإجازة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="lv-detail-body"></div>
@@ -2084,7 +2086,7 @@ async function doLogin() {
     err.style.display = 'block';
   }
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
+  btn.innerHTML = '🔑 دخول';
 }
 
 async function doLogout() {
@@ -2192,11 +2194,11 @@ async function DEL(url) {
 //  TOAST
 // ════════════════════════════════════════════
 function toast(msg, type = 'ok') {
-  const icons = { ok:'check-circle', err:'times-circle', inf:'info-circle' };
+  const icons = { ok:'✅', err:'❌', inf:'ℹ️' };
   const wrap = document.getElementById('toast-wrap');
   const el = document.createElement('div');
   el.className = `toast-el ${type}`;
-  el.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i> ${msg}`;
+  el.innerHTML = `${icons[type] || 'ℹ️'} ${msg}`;
   wrap.appendChild(el);
   setTimeout(() => el.style.opacity = '0', 3500);
   setTimeout(() => el.remove(), 3900);
@@ -2249,7 +2251,7 @@ async function loadDashboard() {
     const tb = document.getElementById('recent-tbody');
     if (!recent.length) {
       tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">
-        <i class="fas fa-inbox"></i><p>لا توجد سجلات اليوم</p></div></td></tr>`;
+        📥<p>لا توجد سجلات اليوم</p></div></td></tr>`;
     } else {
       window._recentRows = recent;
       tb.innerHTML = recent.map((r, i) => `
@@ -2272,13 +2274,13 @@ async function loadDashboard() {
 async function openStatDetail(status, title) {
   document.getElementById('stat-detail-title').textContent = title;
   document.getElementById('stat-detail-body').innerHTML =
-    `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>`;
+    `<div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div>`;
   _statDetailModal.show();
   try {
     const rows = await GET(`/api/stats/today/detail?status=${status}`);
     if (!rows.length) {
       document.getElementById('stat-detail-body').innerHTML =
-        `<div class="empty-state"><i class="fas fa-check" style="color:#16a34a"></i><p>لا يوجد موظفون</p></div>`;
+        `<div class="empty-state"><span style="color:#16a34a">✔️</span><p>لا يوجد موظفون</p></div>`;
       return;
     }
     const statusColors = {on_time:'#16a34a', late:'#dc2626', early_leave:'#d97706', absent:'#64748b', present:'#2563eb'};
@@ -2305,13 +2307,13 @@ async function openMonthStatDetail(type, title) {
   const m = now.getMonth() + 1;
   document.getElementById('stat-detail-title').textContent = `${title} — ${MONTHS[m-1]} ${y}`;
   document.getElementById('stat-detail-body').innerHTML =
-    `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div>`;
+    `<div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div>`;
   _statDetailModal.show();
   try {
     const rows = await GET(`/api/stats/month/detail?type=${type}&year=${y}&month=${m}`);
     if (!rows.length) {
       document.getElementById('stat-detail-body').innerHTML =
-        `<div class="empty-state"><i class="fas fa-check" style="color:#16a34a"></i><p>لا توجد بيانات</p></div>`;
+        `<div class="empty-state"><span style="color:#16a34a">✔️</span><p>لا توجد بيانات</p></div>`;
       return;
     }
     let html = '';
@@ -2349,7 +2351,7 @@ async function openMonthStatDetail(type, title) {
 function openRunModal() {
   document.getElementById('run-date').value = '';
   document.getElementById('run-result').style.display = 'none';
-  document.getElementById('run-btn').innerHTML = '<i class="fas fa-play"></i> تشغيل';
+  document.getElementById('run-btn').innerHTML = '▶️ تشغيل';
   document.getElementById('run-btn').disabled = false;
   _runModal.show();
 }
@@ -2368,19 +2370,19 @@ async function runManual() {
     res.style.display = 'block';
     if (r.ok) {
       res.innerHTML = `<div style="background:#dcfce7;padding:11px 14px;border-radius:8px;color:#15803d;font-weight:600">
-        <i class="fas fa-check-circle" style="margin-left:6px"></i>${r.msg}</div>`;
+        <span style="margin-left:6px">✅</span>${r.msg}</div>`;
       loadDashboard();
       toast('تمت المعالجة بنجاح');
     } else {
       res.innerHTML = `<div style="background:#fee2e2;padding:11px 14px;border-radius:8px;color:#b91c1c">
-        <i class="fas fa-times-circle" style="margin-left:6px"></i>${r.msg}</div>`;
+        <span style="margin-left:6px">❌</span>${r.msg}</div>`;
     }
   } catch(e) {
     res.style.display = 'block';
     res.innerHTML = `<div style="background:#fee2e2;padding:11px 14px;border-radius:8px;color:#b91c1c">خطأ: ${e.message}</div>`;
   }
 
-  btn.innerHTML = '<i class="fas fa-play"></i> تشغيل';
+  btn.innerHTML = '▶️ تشغيل';
   btn.disabled  = false;
 }
 
@@ -2408,17 +2410,17 @@ async function loadAttendance() {
 function renderAttEmpCards() {
   const cards = document.getElementById('att-emp-cards');
   if (!allEmps || !allEmps.length) {
-    cards.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>لا يوجد موظفون</p></div>`;
+    cards.innerHTML = `<div class="empty-state">👥<p>لا يوجد موظفون</p></div>`;
     return;
   }
   cards.innerHTML = allEmps.map(e => `
     <div class="att-emp-card" onclick="attOpenEmp(${e.id},'${e.name_ar.replace(/'/g,"\\'")}')">
-      <div class="emp-avatar"><i class="fas fa-user"></i></div>
+      <div class="emp-avatar">👤</div>
       <div>
         <div style="font-weight:700;color:var(--primary);font-size:14px">${e.name_ar}</div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px">${e.emp_code || e.name_en}</div>
       </div>
-      <i class="fas fa-chevron-left" style="margin-right:auto;color:#cbd5e1;font-size:12px"></i>
+      <span style="margin-right:auto;color:#cbd5e1;font-size:12px">❮</span>
     </div>`).join('');
 }
 
@@ -2442,7 +2444,7 @@ async function loadAttendanceDetail(empId) {
   const tb = document.getElementById('att-tbody');
 
   tb.innerHTML = `<tr><td colspan="7"><div class="empty-state">
-    <i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>`;
+    <span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>`;
 
   try {
     const rows = await GET(`/api/attendance?year=${y}&month=${m}&emp_id=${empId}`);
@@ -2451,7 +2453,7 @@ async function loadAttendanceDetail(empId) {
 
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="7"><div class="empty-state">
-        <i class="fas fa-calendar-times"></i><p>لا توجد سجلات لهذه الفترة</p></div></td></tr>`;
+        📅<p>لا توجد سجلات لهذه الفترة</p></div></td></tr>`;
       return;
     }
     tb.innerHTML = rows.map((r, i) => `
@@ -2500,7 +2502,7 @@ function renderEmps() {
 
   if (!allEmps.length) {
     tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
-      <i class="fas fa-users"></i><p>لا يوجد موظفون — أضف موظفاً للبدء</p></div></td></tr>`;
+      👥<p>لا يوجد موظفون — أضف موظفاً للبدء</p></div></td></tr>`;
     return;
   }
 
@@ -2536,10 +2538,10 @@ function renderEmps() {
       <td style="font-size:12.5px;color:#64748b">${e.email || '—'}</td>
       <td onclick="event.stopPropagation()">
         <button class="btn-sm btn-edit" onclick="editEmp(${e.id})" style="margin-left:6px">
-          <i class="fas fa-edit"></i> تعديل
+          ✏️ تعديل
         </button>
         <button class="btn-sm btn-del" onclick="deleteEmp(${e.id},'${e.name_ar}')">
-          <i class="fas fa-trash"></i>
+          🗑️
         </button>
       </td>
     </tr>`;
@@ -2551,8 +2553,8 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-id').value = emp?.id || '';
   document.getElementById('emp-modal-title').innerHTML =
     isEdit
-      ? '<i class="fas fa-user-edit" style="color:var(--gold);margin-left:8px"></i>تعديل بيانات الموظف'
-      : '<i class="fas fa-user-plus" style="color:var(--gold);margin-left:8px"></i>إضافة موظف جديد';
+      ? '<span style="color:var(--gold);margin-left:8px">✏️</span>تعديل بيانات الموظف'
+      : '<span style="color:var(--gold);margin-left:8px">👤</span>إضافة موظف جديد';
 
   document.getElementById('emp-namear').value    = emp?.name_ar     || '';
   document.getElementById('emp-nameen').value    = emp?.name_en     || '';
@@ -2587,7 +2589,7 @@ function openEmpModal(emp = null) {
   }
 
   document.getElementById('emp-err').style.display = 'none';
-  document.getElementById('save-emp-btn').innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+  document.getElementById('save-emp-btn').innerHTML = '💾 حفظ البيانات';
   document.getElementById('save-emp-btn').disabled = false;
 
   toggleWorkType();
@@ -2657,13 +2659,13 @@ async function saveEmployee() {
       err.textContent = `⚠️ ${r.error || 'حدث خطأ غير متوقع'}`;
       err.style.display = 'block';
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+      btn.innerHTML = '💾 حفظ البيانات';
     }
   } catch(e) {
     err.textContent = '⚠️ خطأ في الاتصال بالخادم';
     err.style.display = 'block';
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-save"></i> حفظ البيانات';
+    btn.innerHTML = '💾 حفظ البيانات';
   }
 }
 
@@ -2687,7 +2689,7 @@ async function loadPayroll() {
   const tb = document.getElementById('pay-tbody');
 
   tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
-    <i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>`;
+    <span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>`;
 
   try {
     const rows = await GET(`/api/payroll?year=${y}&month=${m}`);
@@ -2705,7 +2707,7 @@ async function loadPayroll() {
 
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="10"><div class="empty-state">
-        <i class="fas fa-coins"></i><p>لا توجد بيانات لهذا الشهر</p></div></td></tr>`;
+        🪙<p>لا توجد بيانات لهذا الشهر</p></div></td></tr>`;
       return;
     }
 
@@ -2895,7 +2897,7 @@ async function loadMyAttendance() {
   const y  = document.getElementById('myatt-year').value;
   const m  = document.getElementById('myatt-month').value;
   const tb = document.getElementById('myatt-tbody');
-  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr>`;
   try {
     const resp = await GET(`/api/my/attendance?year=${y}&month=${m}`);
     // response is now {records, leave_balance}
@@ -2919,7 +2921,7 @@ async function loadMyAttendance() {
     window._myAttRows = rows;
     document.getElementById('myatt-count').textContent = `${rows.length} سجل`;
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-calendar"></i><p>لا توجد سجلات</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">📅<p>لا توجد سجلات</p></div></td></tr>`;
       return;
     }
     tb.innerHTML = rows.map((r, i) => {
@@ -2958,12 +2960,12 @@ async function loadMyViolations() {
   const y  = document.getElementById('myvio-year').value;
   const m  = document.getElementById('myvio-month').value;
   const tb = document.getElementById('myvio-tbody');
-  tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+  tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr>`;
   try {
     const rows = await GET(`/api/my/violations?year=${y}&month=${m}`);
     window._vioRows = rows;
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle" style="color:#22c55e"></i><p>لا توجد مخالفات هذا الشهر ✅</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span style="color:#22c55e">✅</span><p>لا توجد مخالفات هذا الشهر ✅</p></div></td></tr>`;
       return;
     }
     tb.innerHTML = rows.map((r, i) => {
@@ -2996,7 +2998,7 @@ function showVioDetail(idx) {
               r.ptype === 'day'     ? `خصم ${r.pvalue} يوم` : r.ptype;
   const excuseSection = r.excuse_id
     ? `<div><div style="font-size:11px;color:#94a3b8">حالة العذر</div><div><span class="badge-s ${STATUS_CLS[r.excuse_status]||'b-pending'}">${STATUS_LABELS[r.excuse_status]||'—'}</span></div></div>`
-    : `<div style="grid-column:1/-1"><button class="btn-main" style="font-size:12px" onclick="_vioDetailModal.hide();openExcuseFromRow('${r.vio_date}','${r.vtype}')"><i class="fas fa-upload"></i> رفع عذر</button></div>`;
+    : `<div style="grid-column:1/-1"><button class="btn-main" style="font-size:12px" onclick="_vioDetailModal.hide();openExcuseFromRow('${r.vio_date}','${r.vtype}')">📤 رفع عذر</button></div>`;
   document.getElementById('vio-detail-body').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">
       <div><div style="font-size:11px;color:#94a3b8">التاريخ</div><div style="font-weight:700">${r.vio_date}</div></div>
@@ -3010,7 +3012,7 @@ function showVioDetail(idx) {
 
 function showAttDetail(idx) {
   const r = (window._attDetailRows||[])[idx]; if (!r) return;
-  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+  showRowDetail('<span style="color:var(--gold)">📋</span>', 'تفاصيل الحضور', [
     ['التاريخ', r.att_date],
     ['الحالة', `<span class="badge-s b-${r.status}">${r.status==='present'?'حاضر':r.status==='late'?'متأخر':r.status==='absent'?'غائب':r.status==='early_leave'?'خروج مبكر':r.status}</span>`, false],
     ['وقت الحضور', r.check_in],
@@ -3024,8 +3026,8 @@ function showMyAttDetail(idx) {
   const r = (window._myAttRows||[])[idx]; if (!r) return;
   const excusePart = r.excuse_status
     ? `<span class="badge-s ${STATUS_CLS[r.excuse_status]||'b-pending'}">${STATUS_LABELS[r.excuse_status]}</span>`
-    : ((['late','early_leave','absent'].includes(r.status)) ? `<button class="btn-main" style="font-size:12px" onclick="_rowDetailModal.hide();openExcuseFromRow('${r.att_date}','${r.status}')"><i class="fas fa-upload"></i> رفع عذر</button>` : '—');
-  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+    : ((['late','early_leave','absent'].includes(r.status)) ? `<button class="btn-main" style="font-size:12px" onclick="_rowDetailModal.hide();openExcuseFromRow('${r.att_date}','${r.status}')">📤 رفع عذر</button>` : '—');
+  showRowDetail('<span style="color:var(--gold)">📋</span>', 'تفاصيل الحضور', [
     ['التاريخ', r.att_date],
     ['الحالة', `<span class="badge-s b-${r.status}">${r.status==='present'?'حاضر':r.status==='late'?'متأخر':r.status==='absent'?'غائب':r.status==='early_leave'?'خروج مبكر':r.status}</span>`, false],
     ['وقت الحضور', r.check_in],
@@ -3044,8 +3046,8 @@ function showExcuseDetail(id) {
   const footer = (isHR && r.status==='pending')
     ? `<button class="btn-sm btn-approve" onclick="_rowDetailModal.hide();decideExcuse(${r.id},'approved')" style="margin-left:8px">قبول</button>
        <button class="btn-sm btn-reject" onclick="_rowDetailModal.hide();decideExcuse(${r.id},'rejected')">رفض</button>`
-    : (r.attachment_name ? `<button class="btn-main" style="font-size:12px" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button>` : '');
-  showRowDetail('<i class="fas fa-file-alt" style="color:var(--gold)"></i>', 'تفاصيل العذر', [
+    : (r.attachment_name ? `<button class="btn-main" style="font-size:12px" onclick="downloadExcuseFile(${r.id})">📎 تحميل المرفق</button>` : '');
+  showRowDetail('<span style="color:var(--gold)">📄</span>', 'تفاصيل العذر', [
     ['الموظف', `<b>${r.name_ar}</b>`],
     ['التاريخ', r.att_date],
     ['النوع', VTYPE_AR[r.vtype]||r.vtype],
@@ -3063,7 +3065,7 @@ function showOtDetail(idx) {
     ? `<button class="btn-sm btn-approve" onclick="_rowDetailModal.hide();decideOT(${r.id},'approved')" style="margin-left:8px">تكليف ✅</button>
        <button class="btn-sm btn-reject" onclick="_rowDetailModal.hide();decideOT(${r.id},'rejected')">لا ❌</button>`
     : '';
-  showRowDetail('<i class="fas fa-clock" style="color:var(--gold)"></i>', 'تفاصيل الإضافي', [
+  showRowDetail('<span style="color:var(--gold)">🕐</span>', 'تفاصيل الإضافي', [
     ['الموظف', `<b>${r.name_ar}</b>`],
     ['التاريخ', r.att_date],
     ['ساعات الإضافي', `<b style="color:#d97706">${r.overtime_hours} ساعة</b>`],
@@ -3080,7 +3082,7 @@ function showAuditDetail(idx) {
   const r = (window._auditRows||[])[idx]; if (!r) return;
   const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '—';
   const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
-  showRowDetail('<i class="fas fa-shield-alt" style="color:var(--gold)"></i>', 'تفاصيل الحدث', [
+  showRowDetail('<span style="color:var(--gold)">🔒</span>', 'تفاصيل الحدث', [
     ['التاريخ والوقت', dt, true],
     ['المستخدم', r.username],
     ['الدور', r.role],
@@ -3095,7 +3097,7 @@ function showAuditDetail(idx) {
 function showRecentDetail(idx) {
   const r = (window._recentRows||[])[idx]; if (!r) return;
   const stAr = {present:'حاضر', late:'متأخر', absent:'غائب', early_leave:'خروج مبكر', excused:'معذور'};
-  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+  showRowDetail('<span style="color:var(--gold)">📋</span>', 'تفاصيل الحضور', [
     ['الموظف', `<b>${r.name_ar}</b>`],
     ['التاريخ', r.att_date],
     ['الحالة', `<span class="badge-s b-${r.status}">${stAr[r.status]||r.status}</span>`],
@@ -3107,7 +3109,7 @@ function showRecentDetail(idx) {
 
 function showHolidayDetail(idx) {
   const r = (window._holidayRows||[])[idx]; if (!r) return;
-  showRowDetail('<i class="fas fa-star" style="color:var(--gold)"></i>', 'تفاصيل الإجازة الرسمية', [
+  showRowDetail('<span style="color:var(--gold)">⭐</span>', 'تفاصيل الإجازة الرسمية', [
     ['الاسم', `<b>${r.name}</b>`, true],
     ['التاريخ', r.h_date],
   ]);
@@ -3117,7 +3119,7 @@ function showUserDetail(idx) {
   const r = (window._userRows||[])[idx]; if (!r) return;
   const roleAR = {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'};
   const roleColor = r.role==='hr'?'b-late':r.role==='manager'?'b-ontime':'b-present';
-  showRowDetail('<i class="fas fa-user" style="color:var(--gold)"></i>', 'تفاصيل المستخدم', [
+  showRowDetail('<span style="color:var(--gold)">👤</span>', 'تفاصيل المستخدم', [
     ['اسم المستخدم', `<b>${r.username}</b>`],
     ['الدور', `<span class="badge-s ${roleColor}">${roleAR[r.role]||r.role}</span>`],
     ['الموظف المرتبط', r.name_ar || '—'],
@@ -3156,7 +3158,7 @@ async function loadMyPayroll() {
   const y   = document.getElementById('mypay-year').value;
   const m   = document.getElementById('mypay-month').value;
   const box = document.getElementById('mypay-content');
-  box.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>`;
+  box.innerHTML = `<div class="empty-state"><span class="css-spin">⏳</span></div>`;
   try {
     const d = await GET(`/api/my/payroll?year=${y}&month=${m}`);
     window._myPayrollData = {d, y, m};
@@ -3165,22 +3167,22 @@ async function loadMyPayroll() {
     box.innerHTML = `
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">
         <button class="btn-main" onclick="printPayslip()" style="background:#1e293b">
-          <i class="fas fa-print"></i> طباعة / تحميل PDF
+          🖨️ طباعة / تحميل PDF
         </button>
       </div>
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
         <div class="stat-card c-blue">
-          <div class="stat-icon-wrap" style="background:rgba(37,99,235,0.12)"><i class="fas fa-coins" style="color:#2563eb"></i></div>
+          <div class="stat-icon-wrap" style="background:rgba(37,99,235,0.12)"><span style="color:#2563eb">🪙</span></div>
           <div class="stat-num">${fmtSAR(d.gross)}</div>
           <div class="stat-label">الراتب الإجمالي (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-red">
-          <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)"><i class="fas fa-arrow-trend-down" style="color:#dc2626"></i></div>
+          <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)"><span style="color:#dc2626">📉</span></div>
           <div class="stat-num">${fmtSAR(d.deductions + d.other_ded)}</div>
           <div class="stat-label">إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
         </div>
         <div class="stat-card c-green">
-          <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)"><i class="fas fa-wallet" style="color:#16a34a"></i></div>
+          <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)"><span style="color:#16a34a">👛</span></div>
           <div class="stat-num">${fmtSAR(d.net)}</div>
           <div class="stat-label">الراتب الصافي (<span class="sar-sym">S.R</span>)</div>
         </div>
@@ -3200,13 +3202,13 @@ async function loadMyPayroll() {
         </table>
       </div>
       <div class="mini-stats" style="grid-template-columns:repeat(3,1fr);margin-top:14px">
-        <div class="mini-card"><div class="mini-label"><i class="fas fa-calendar-check" style="color:#22c55e"></i> أيام الحضور</div><div class="mini-num" style="color:#22c55e">${d.attendance_days}</div></div>
-        <div class="mini-card"><div class="mini-label"><i class="fas fa-user-xmark" style="color:#ef4444"></i> أيام الغياب</div><div class="mini-num" style="color:#ef4444">${d.absent_days}</div></div>
-        <div class="mini-card"><div class="mini-label"><i class="fas fa-clock" style="color:#f59e0b"></i> أيام التأخر</div><div class="mini-num" style="color:#f59e0b">${d.late_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><span style="color:#22c55e">📋</span> أيام الحضور</div><div class="mini-num" style="color:#22c55e">${d.attendance_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><span style="color:#ef4444">❌</span> أيام الغياب</div><div class="mini-num" style="color:#ef4444">${d.absent_days}</div></div>
+        <div class="mini-card"><div class="mini-label"><span style="color:#f59e0b">🕐</span> أيام التأخر</div><div class="mini-num" style="color:#f59e0b">${d.late_days}</div></div>
       </div>
       ${d.violations.length ? `
       <div class="card-wrap" style="margin-top:18px">
-        <div class="card-head"><h5><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>تفاصيل المخالفات</h5></div>
+        <div class="card-head"><h5><span style="color:#ef4444;margin-left:8px">⚠️</span>تفاصيل المخالفات</h5></div>
         <table class="tbl">
           <thead><tr><th>التاريخ</th><th>المخالفة</th><th>العقوبة</th><th>الخصم</th></tr></thead>
           <tbody>${d.violations.map(v => `<tr>
@@ -3217,7 +3219,7 @@ async function loadMyPayroll() {
           </tr>`).join('')}</tbody>
         </table>
       </div>` : ''}`;
-  } catch(e) { box.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>خطأ في تحميل الراتب</p></div>`; }
+  } catch(e) { box.innerHTML = `<div class="empty-state">⚠️<p>خطأ في تحميل الراتب</p></div>`; }
 }
 
 function printPayslip() {
@@ -3345,14 +3347,14 @@ function switchHRReqTab(type) {
 }
 
 function _renderReqRows(rows, showEmp) {
-  if (!rows.length) return `<tr><td colspan="${showEmp?8:7}"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+  if (!rows.length) return `<tr><td colspan="${showEmp?8:7}"><div class="empty-state">📥<p>لا توجد طلبات</p></div></td></tr>`;
   return rows.map((r, i) => `<tr style="cursor:pointer" onclick="showReqDetail(${r.id})">
     <td style="color:#94a3b8">${i+1}</td>
     ${showEmp ? `<td><b>${r.name_ar}</b></td>` : ''}
     <td>${r.req_date}</td>
     <td>${r.requested_time||'—'}</td>
     <td style="max-width:180px;text-align:right">${r.reason}</td>
-    <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> ${r.attachment_name}</button>` : '—'}</td>
+    <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})">📎 ${r.attachment_name}</button>` : '—'}</td>
     <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
     ${showEmp
       ? `<td onclick="event.stopPropagation()">${r.status==='pending' ?
@@ -3377,7 +3379,7 @@ function showReqDetail(id) {
       <div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">السبب</div><div style="font-weight:600">${r.reason}</div></div>
       ${r.manager_note?`<div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">ملاحظة المدير</div><div style="font-weight:600">${r.manager_note}</div></div>`:''}
     </div>
-    ${r.attachment_name?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button></div>`:''}
+    ${r.attachment_name?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadReqFile(${r.id})">📎 تحميل المرفق</button></div>`:''}
   `;
   document.getElementById('lv-detail-body').innerHTML = content;
   _lvDetailModal.show();
@@ -3396,7 +3398,7 @@ async function loadMyRequests() {
     const tbAll = document.getElementById('myreq-tbody-all');
     if (tbAll) {
       if (!rows.length) {
-        tbAll.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد طلبات</p></div></td></tr>`;
+        tbAll.innerHTML = `<tr><td colspan="8"><div class="empty-state">📥<p>لا توجد طلبات</p></div></td></tr>`;
       } else {
         tbAll.innerHTML = rows.map((r,i) => `<tr style="cursor:pointer" onclick="showReqDetail(${r.id})">
           <td style="color:#94a3b8">${i+1}</td>
@@ -3404,7 +3406,7 @@ async function loadMyRequests() {
           <td>${r.req_date}</td>
           <td>${r.requested_time||'—'}</td>
           <td style="max-width:180px;text-align:right">${r.reason}</td>
-          <td onclick="event.stopPropagation()">${r.attachment_name?`<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i></button>`:'—'}</td>
+          <td onclick="event.stopPropagation()">${r.attachment_name?`<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})">📎</button>`:'—'}</td>
           <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
           <td style="color:#64748b;font-size:12px">${r.manager_note||'—'}</td>
         </tr>`).join('');
@@ -3419,8 +3421,9 @@ function openRequestModal(type) {
   const isHR = _currentUser?.role !== 'employee';
   const isLate = type === 'late_arrival';
   document.getElementById('req-type').value = type;
-  document.getElementById('req-modal-icon').className = isLate ? 'fas fa-clock' : 'fas fa-sign-out-alt';
-  document.getElementById('req-modal-icon').style.color = isLate ? 'var(--gold)' : '#d97706';
+  const _rmi = document.getElementById('req-modal-icon');
+  _rmi.textContent = isLate ? '🕐' : '🚪';
+  _rmi.style.color = isLate ? 'var(--gold)' : '#d97706';
   document.getElementById('req-modal-label').textContent = isLate ? 'طلب تأخير' : 'طلب خروج مبكر';
   document.getElementById('req-time-label').textContent  = isLate ? 'وقت الوصول المتوقع' : 'وقت المغادرة المطلوب';
   document.getElementById('req-hr-row').style.display = isHR ? 'block' : 'none';
@@ -3432,7 +3435,7 @@ function openRequestModal(type) {
   document.getElementById('req-file-name').textContent = '';
   document.getElementById('req-err').style.display = 'none';
   document.getElementById('req-submit-btn').disabled = false;
-  document.getElementById('req-submit-btn').innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
+  document.getElementById('req-submit-btn').innerHTML = '✉️ إرسال الطلب';
   document.getElementById('req-file').onchange = function() {
     document.getElementById('req-file-name').textContent = this.files[0]?.name || '';
   };
@@ -3467,7 +3470,7 @@ async function submitRequest() {
     loadPendingBadges();
   } else {
     err.textContent = r.error||'خطأ'; err.style.display='block';
-    btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> إرسال الطلب';
+    btn.disabled = false; btn.innerHTML = '✉️ إرسال الطلب';
   }
 }
 
@@ -3479,7 +3482,7 @@ let _allReqRows = [];
 async function openReqStatModal(filter, title) {
   document.getElementById('reqstat-label').textContent = title;
   const tb = document.getElementById('reqstat-tbody');
-  tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>';
+  tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr>';
   bootstrap.Modal.getOrCreateInstance(document.getElementById('reqStatModal')).show();
   let rows = _allReqRows.length ? _allReqRows : await GET('/api/requests');
   if (filter === 'late_arrival')  rows = rows.filter(r => r.req_type === 'late_arrival');
@@ -3488,14 +3491,14 @@ async function openReqStatModal(filter, title) {
   else if (filter === 'rejected') rows = rows.filter(r => r.status === 'rejected');
   const STATUS_AR = {pending:'معلق', approved:'مقبول', rejected:'مرفوض'};
   const STATUS_C  = {pending:'b-pending', approved:'b-approved', rejected:'b-rejected'};
-  if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا توجد بيانات</p></div></td></tr>'; return; }
+  if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state">📥<p>لا توجد بيانات</p></div></td></tr>'; return; }
   tb.innerHTML = rows.map((r,i) => `<tr>
     <td style="color:#94a3b8">${i+1}</td>
     <td><b>${r.name_ar||'—'}</b></td>
     <td>${r.req_date||'—'}</td>
     <td>${r.requested_time||'—'}</td>
     <td style="max-width:180px;white-space:normal">${r.reason||'—'}</td>
-    <td>${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+    <td>${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadReqFile(${r.id})">📎</button>` : '—'}</td>
     <td><span class="badge-s ${STATUS_C[r.status]||''}">${STATUS_AR[r.status]||r.status}</span></td>
     <td style="font-size:11px;color:#64748b">${r.manager_note||'—'}</td>
   </tr>`).join('');
@@ -3553,7 +3556,7 @@ async function loadExcuses() {
   // أعرض spinner في كل تبويب
   ['pending','approved','rejected'].forEach(s => {
     document.getElementById(`exc-tbody-${s}`).innerHTML =
-      `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
+      `<tr><td colspan="7"><div class="empty-state"><span class="css-spin">⏳</span></div></td></tr>`;
   });
 
   try {
@@ -3576,7 +3579,7 @@ async function loadExcuses() {
         <td>${r.att_date}</td>
         <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
         <td style="max-width:160px;text-align:right">${r.reason}</td>
-        <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+        <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})">📎</button>` : '—'}</td>
         ${r.status==='pending' && isHR
           ? `<td class="hr-only" onclick="event.stopPropagation()">
                <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
@@ -3590,7 +3593,7 @@ async function loadExcuses() {
     const tbP = document.getElementById('exc-tbody-pending');
     if (!byStatus.pending.length) {
       const pendingLabel = _currentUser?.role === 'employee' ? 'قيد التنفيذ' : 'قيد الإجراء';
-      tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-hourglass" style="color:#f59e0b"></i><p>لا توجد طلبات ${pendingLabel}</p></div></td></tr>`;
+      tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span style="color:#f59e0b">⏳</span><p>لا توجد طلبات ${pendingLabel}</p></div></td></tr>`;
     } else {
       tbP.innerHTML = byStatus.pending.map(_excRow).join('');
     }
@@ -3598,7 +3601,7 @@ async function loadExcuses() {
     // ارسم التبويب approved
     const tbA = document.getElementById('exc-tbody-approved');
     if (!byStatus.approved.length) {
-      tbA.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد طلبات موافق عليها</p></div></td></tr>`;
+      tbA.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span style="color:#16a34a">✅</span><p>لا توجد طلبات موافق عليها</p></div></td></tr>`;
     } else {
       tbA.innerHTML = byStatus.approved.map(_excRow).join('');
     }
@@ -3606,7 +3609,7 @@ async function loadExcuses() {
     // ارسم التبويب rejected
     const tbR = document.getElementById('exc-tbody-rejected');
     if (!byStatus.rejected.length) {
-      tbR.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد طلبات مرفوضة</p></div></td></tr>`;
+      tbR.innerHTML = `<tr><td colspan="7"><div class="empty-state"><span style="color:#dc2626">❌</span><p>لا توجد طلبات مرفوضة</p></div></td></tr>`;
     } else {
       tbR.innerHTML = byStatus.rejected.map(_excRow).join('');
     }
@@ -3678,7 +3681,7 @@ async function loadOvertime() {
     const isHR = _currentUser?.role !== 'employee';
     document.querySelectorAll('#page-overtime .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-clock"></i><p>لا توجد سجلات إضافي</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="9"><div class="empty-state">🕐<p>لا توجد سجلات إضافي</p></div></td></tr>`;
       return;
     }
     tb.innerHTML = rows.map((r, i) => {
@@ -3714,7 +3717,7 @@ function openOtModal() {
   document.getElementById('ot-err').style.display = 'none';
   const btn = document.getElementById('ot-save-btn');
   btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-save"></i> حفظ التكليف';
+  btn.innerHTML = '💾 حفظ التكليف';
   _otModal.show();
 }
 
@@ -3729,7 +3732,7 @@ async function submitOt() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> جاري الحفظ...';
   const r = await POST('/api/overtime', {employee_id: +emp_id, att_date: date, overtime_hours: +hours, notes});
   if (r.ok) { _otModal.hide(); toast(r.msg); loadOvertime(); }
-  else { err.textContent = r.error || 'خطأ'; err.style.display='block'; btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> حفظ التكليف'; }
+  else { err.textContent = r.error || 'خطأ'; err.style.display='block'; btn.disabled=false; btn.innerHTML='💾 حفظ التكليف'; }
 }
 
 function decideOT(id, status) {
@@ -3821,7 +3824,7 @@ function _renderLeaveTab(status) {
   const rows = status === 'all' ? (window._lvRows || []) : (window._lvRows || []).filter(r => r.status === status);
   const colSpan = status === 'all' ? 9 : 8;
   if (!rows.length) {
-    tb.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state"><i class="fas fa-umbrella-beach"></i><p>لا توجد إجازات</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="${colSpan}"><div class="empty-state">🏖️<p>لا توجد إجازات</p></div></td></tr>`;
     return;
   }
   const STATUS_LV = {pending:'<span class="badge-s b-pending">قيد الإجراء</span>', approved:'<span class="badge-s b-approved">موافق</span>', rejected:'<span class="badge-s b-rejected">مرفوض</span>'};
@@ -3833,7 +3836,7 @@ function _renderLeaveTab(status) {
     <td>${r.end_date}</td>
     <td><b>${r.days}</b></td>
     ${status === 'all' ? `<td>${STATUS_LV[r.status]||r.status}</td>` : ''}
-    <td onclick="event.stopPropagation()">${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+    <td onclick="event.stopPropagation()">${r.attachment ? `<button class="btn-sm btn-edit" onclick="downloadLeaveFile(${r.id})">📎</button>` : '—'}</td>
     ${status === 'pending' && isHR ? `
     <td onclick="event.stopPropagation()">
       <button class="btn-sm btn-approve" onclick="openDecideModal(${r.id},'approved','leave')" style="margin-left:4px">قبول</button>
@@ -3856,7 +3859,7 @@ function showLeaveDetail(id) {
       <div><div style="font-size:11px;color:#94a3b8">الحالة</div><div style="font-weight:700">${STATUS_AR[r.status]||r.status}</div></div>
       ${r.notes?`<div style="grid-column:1/-1"><div style="font-size:11px;color:#94a3b8">الملاحظات</div><div style="font-weight:600">${r.notes}</div></div>`:''}
     </div>
-    ${r.attachment?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadLeaveFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button></div>`:''}
+    ${r.attachment?`<div style="margin-top:14px"><button class="btn-main" onclick="downloadLeaveFile(${r.id})">📎 تحميل المرفق</button></div>`:''}
   `;
   document.getElementById('lv-detail-body').innerHTML = content;
   _lvDetailModal.show();
@@ -3979,7 +3982,7 @@ async function loadHolidays() {
   try {
     const rows = await GET('/api/holidays');
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="4"><div class="empty-state">⭐<p>لا توجد إجازات رسمية</p></div></td></tr>`;
       return;
     }
     window._holidayRows = rows;
@@ -3988,7 +3991,7 @@ async function loadHolidays() {
         <td style="color:#94a3b8">${i+1}</td>
         <td>${r.h_date}</td>
         <td><b>${r.name}</b></td>
-        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteHoliday(${r.id})"><i class="fas fa-trash"></i></button></td>
+        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteHoliday(${r.id})">🗑️</button></td>
       </tr>`).join('');
   } catch(e) { toast('خطأ', 'err'); }
 }
@@ -4024,7 +4027,7 @@ async function loadUsers() {
   try {
     const rows = await GET('/api/users');
     if (!rows.length) {
-      tb.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-user-slash"></i><p>لا توجد مستخدمون</p></div></td></tr>`;
+      tb.innerHTML = `<tr><td colspan="5"><div class="empty-state">🚫<p>لا توجد مستخدمون</p></div></td></tr>`;
       return;
     }
     const roleAR = {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'};
@@ -4035,7 +4038,7 @@ async function loadUsers() {
         <td><b>${r.username}</b></td>
         <td><span class="badge-s ${r.role==='employee'?'b-present':r.role==='hr'?'b-late':'b-ontime'}">${roleAR[r.role]||r.role}</span></td>
         <td>${r.name_ar || '—'}</td>
-        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteUser(${r.id})"><i class="fas fa-trash"></i></button></td>
+        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteUser(${r.id})">🗑️</button></td>
       </tr>`).join('');
   } catch(e) { toast('خطأ', 'err'); }
 }
@@ -4169,12 +4172,12 @@ async function loadLeaveTimeline() {
   const y = document.getElementById('cal-year').value;
   const m = document.getElementById('cal-month').value;
   const box = document.getElementById('cal-timeline-grid');
-  box.innerHTML = '<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i></div>';
+  box.innerHTML = '<div style="padding:20px;text-align:center"><span class="css-spin">⏳</span></div>';
   try {
     const d = await GET(`/api/leaves/timeline?year=${y}&month=${m}`);
     const LEAVE_AR = {annual:'سنوية', sick:'مرضية', emergency:'اضطرارية', official:'رسمية'};
     if (!d.rows.length) {
-      box.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-check" style="color:#16a34a"></i><p>لا توجد إجازات معتمدة هذا الشهر</p></div>';
+      box.innerHTML = '<div class="empty-state"><span style="color:#16a34a">📋</span><p>لا توجد إجازات معتمدة هذا الشهر</p></div>';
       return;
     }
     const days = Array.from({length: d.days_in_month}, (_, i) => i+1);
@@ -4224,10 +4227,10 @@ async function loadCalendar() {
   if (role !== 'employee') await _fillCalEmpDropdown();
   const empId = document.getElementById('cal-emp')?.value || '';
   if (role !== 'employee' && !empId) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8"><i class="fas fa-user" style="font-size:28px;margin-bottom:8px;display:block"></i>اختر موظفاً لعرض تقويمه</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8"><span style="font-size:28px;margin-bottom:8px;display:block">👤</span>اختر موظفاً لعرض تقويمه</div>';
     return;
   }
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><i class="fas fa-spinner fa-spin"></i></div>';
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px"><span class="css-spin">⏳</span></div>';
   try {
     let records = [];
     if (role === 'employee') {
@@ -4297,11 +4300,11 @@ const AUDIT_LABELS = {
 };
 async function loadAudit() {
   const tb = document.getElementById('audit-tbody');
-  tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>';
+  tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>';
   try {
     const rows = await GET('/api/audit-logs?limit=100');
     window._auditRows = rows;
-    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-shield-alt"></i><p>لا توجد أحداث مسجلة</p></div></td></tr>'; return; }
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state">🔒<p>لا توجد أحداث مسجلة</p></div></td></tr>'; return; }
     tb.innerHTML = rows.map((r, i) => {
       const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '—';
       const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
@@ -4332,7 +4335,7 @@ function filterEmps(q) {
     (e.emp_code||'').toLowerCase().includes(q)) : allEmps;
   document.getElementById('emp-count-lbl').textContent = `${filtered.length} موظف`;
   if (!filtered.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-search"></i><p>لا توجد نتائج</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state">🔍<p>لا توجد نتائج</p></div></td></tr>`;
     return;
   }
   const saved = allEmps;
@@ -4365,10 +4368,10 @@ async function loadNotifications() {
       badge.style.display = 'none';
     }
     const pages = [
-      {key:'excuses', label:'عذر معلق', page:'excuses', icon:'fa-file-alt'},
-      {key:'leaves', label:'إجازة معلقة', page:'leaves', icon:'fa-umbrella-beach'},
-      {key:'overtime', label:'إضافي معلق', page:'overtime', icon:'fa-clock'},
-      {key:'att_requests', label:'طلب حضور معلق', page:'att-requests', icon:'fa-paper-plane'},
+      {key:'excuses', label:'عذر معلق', page:'excuses', icon:'📄'},
+      {key:'leaves', label:'إجازة معلقة', page:'leaves', icon:'🏖️'},
+      {key:'overtime', label:'إضافي معلق', page:'overtime', icon:'🕐'},
+      {key:'att_requests', label:'طلب حضور معلق', page:'att-requests', icon:'✉️'},
     ];
     const list = document.getElementById('notif-list');
     const items = pages.filter(p => d[p.key] > 0);
@@ -4377,7 +4380,7 @@ async function loadNotifications() {
     } else {
       list.innerHTML = items.map(p => `
         <div onclick="showPage('${p.page}');closeNotifDropdown()" style="padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:8px;margin:2px 6px" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-          <span style="background:rgba(239,68,68,0.1);color:#ef4444;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas ${p.icon}"></i></span>
+          <span style="background:rgba(239,68,68,0.1);color:#ef4444;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">${p.icon}</span>
           <div>
             <div style="font-size:13px;font-weight:600;color:#1e293b">${d[p.key]} ${p.label}</div>
           </div>
