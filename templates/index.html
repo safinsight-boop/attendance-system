@@ -2140,7 +2140,10 @@ function showPage(page) {
   });
   document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
 
-  if (page === 'attendance') loadAttendance();
+  if (page === 'attendance') {
+    if (_currentUser?.role === 'employee') { showPage('my-attendance'); return; }
+    loadAttendance();
+  }
   if (page === 'employees')  loadEmployees();
   if (page === 'payroll')    loadPayroll();
   if (page === 'excuses')        loadExcuses();
