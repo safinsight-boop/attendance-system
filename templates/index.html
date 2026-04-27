@@ -2250,8 +2250,9 @@ async function loadDashboard() {
       tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">
         <i class="fas fa-inbox"></i><p>لا توجد سجلات اليوم</p></div></td></tr>`;
     } else {
-      tb.innerHTML = recent.map(r => `
-        <tr>
+      window._recentRows = recent;
+      tb.innerHTML = recent.map((r, i) => `
+        <tr style="cursor:pointer" onclick="showRecentDetail(${i})">
           <td><b>${r.name_ar}</b></td>
           <td>${r.att_date}</td>
           <td>${r.check_in || '—'}</td>
@@ -2516,7 +2517,7 @@ function renderEmps() {
         </div>
       </div>`;
     return `
-    <tr>
+    <tr style="cursor:pointer" onclick="editEmp(${e.id})">
       <td style="color:#94a3b8">${i+1}</td>
       <td>
         ${e.emp_code ? `<span style="background:rgba(26,60,64,0.08);color:var(--primary);font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;font-family:monospace">${e.emp_code}</span>` : '<span style="color:#94a3b8;font-size:12px">—</span>'}
@@ -2532,7 +2533,7 @@ function renderEmps() {
       </td>
       <td>${balHtml}</td>
       <td style="font-size:12.5px;color:#64748b">${e.email || '—'}</td>
-      <td>
+      <td onclick="event.stopPropagation()">
         <button class="btn-sm btn-edit" onclick="editEmp(${e.id})" style="margin-left:6px">
           <i class="fas fa-edit"></i> تعديل
         </button>
@@ -3027,6 +3028,38 @@ function showAuditDetail(idx) {
     ['الحالة', r.status==='success'?'<span class="badge bg-success">نجح</span>':'<span class="badge bg-danger">فشل</span>'],
     ['عنوان IP', r.ip_address],
     ...(r.details ? [['التفاصيل', r.details, true]] : []),
+  ]);
+}
+
+function showRecentDetail(idx) {
+  const r = (window._recentRows||[])[idx]; if (!r) return;
+  const stAr = {present:'حاضر', late:'متأخر', absent:'غائب', early_leave:'خروج مبكر', excused:'معذور'};
+  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+    ['الموظف', `<b>${r.name_ar}</b>`],
+    ['التاريخ', r.att_date],
+    ['الحالة', `<span class="badge-s b-${r.status}">${stAr[r.status]||r.status}</span>`],
+    ['وقت الحضور', r.check_in],
+    ['وقت الانصراف', r.check_out],
+    ['تأخر (دقيقة)', r.late_min ? `<b style="color:#dc2626">${r.late_min}</b>` : '—'],
+  ]);
+}
+
+function showHolidayDetail(idx) {
+  const r = (window._holidayRows||[])[idx]; if (!r) return;
+  showRowDetail('<i class="fas fa-star" style="color:var(--gold)"></i>', 'تفاصيل الإجازة الرسمية', [
+    ['الاسم', `<b>${r.name}</b>`, true],
+    ['التاريخ', r.h_date],
+  ]);
+}
+
+function showUserDetail(idx) {
+  const r = (window._userRows||[])[idx]; if (!r) return;
+  const roleAR = {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'};
+  const roleColor = r.role==='hr'?'b-late':r.role==='manager'?'b-ontime':'b-present';
+  showRowDetail('<i class="fas fa-user" style="color:var(--gold)"></i>', 'تفاصيل المستخدم', [
+    ['اسم المستخدم', `<b>${r.username}</b>`],
+    ['الدور', `<span class="badge-s ${roleColor}">${roleAR[r.role]||r.role}</span>`],
+    ['الموظف المرتبط', r.name_ar || '—'],
   ]);
 }
 
@@ -3785,12 +3818,13 @@ async function loadHolidays() {
       tb.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-star"></i><p>لا توجد إجازات رسمية</p></div></td></tr>`;
       return;
     }
+    window._holidayRows = rows;
     tb.innerHTML = rows.map((r, i) => `
-      <tr>
+      <tr style="cursor:pointer" onclick="showHolidayDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td>${r.h_date}</td>
         <td><b>${r.name}</b></td>
-        <td><button class="btn-sm btn-del" onclick="deleteHoliday(${r.id})"><i class="fas fa-trash"></i></button></td>
+        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteHoliday(${r.id})"><i class="fas fa-trash"></i></button></td>
       </tr>`).join('');
   } catch(e) { toast('خطأ', 'err'); }
 }
@@ -3830,13 +3864,14 @@ async function loadUsers() {
       return;
     }
     const roleAR = {hr:'مدير HR', manager:'مدير القسم', employee:'موظف'};
+    window._userRows = rows;
     tb.innerHTML = rows.map((r, i) => `
-      <tr>
+      <tr style="cursor:pointer" onclick="showUserDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td><b>${r.username}</b></td>
         <td><span class="badge-s ${r.role==='employee'?'b-present':r.role==='hr'?'b-late':'b-ontime'}">${roleAR[r.role]||r.role}</span></td>
         <td>${r.name_ar || '—'}</td>
-        <td><button class="btn-sm btn-del" onclick="deleteUser(${r.id})"><i class="fas fa-trash"></i></button></td>
+        <td onclick="event.stopPropagation()"><button class="btn-sm btn-del" onclick="deleteUser(${r.id})"><i class="fas fa-trash"></i></button></td>
       </tr>`).join('');
   } catch(e) { toast('خطأ', 'err'); }
 }
