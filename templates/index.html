@@ -1898,6 +1898,18 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 </div>
 
 <!-- MODAL: LEAVE DETAIL -->
+<div class="modal fade" id="rowDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="row-detail-title">التفاصيل</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="row-detail-body"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="vioDetailModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
     <div class="modal-content">
@@ -1965,7 +1977,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal, _decideModal, _lvDetailModal, _vioDetailModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal, _decideModal, _lvDetailModal, _vioDetailModal, _rowDetailModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1989,6 +2001,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _decideModal       = new bootstrap.Modal(document.getElementById('decideModal'));
   _lvDetailModal     = new bootstrap.Modal(document.getElementById('lvDetailModal'));
   _vioDetailModal    = new bootstrap.Modal(document.getElementById('vioDetailModal'));
+  _rowDetailModal    = new bootstrap.Modal(document.getElementById('rowDetailModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -2431,6 +2444,7 @@ async function loadAttendanceDetail(empId) {
 
   try {
     const rows = await GET(`/api/attendance?year=${y}&month=${m}&emp_id=${empId}`);
+    window._attDetailRows = rows;
     document.getElementById('att-count').textContent = `${rows.length} سجل`;
 
     if (!rows.length) {
@@ -2439,7 +2453,7 @@ async function loadAttendanceDetail(empId) {
       return;
     }
     tb.innerHTML = rows.map((r, i) => `
-      <tr>
+      <tr style="cursor:pointer" onclick="showAttDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td>${r.att_date}</td>
         <td>${r.check_in || '—'}</td>
@@ -2840,6 +2854,7 @@ async function loadMyAttendance() {
       lbCard.style.display = 'none';
     }
 
+    window._myAttRows = rows;
     document.getElementById('myatt-count').textContent = `${rows.length} سجل`;
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-calendar"></i><p>لا توجد سجلات</p></div></td></tr>`;
@@ -2848,11 +2863,11 @@ async function loadMyAttendance() {
     tb.innerHTML = rows.map((r, i) => {
       let excuseBtn = '';
       if ((r.status === 'late' || r.status === 'early_leave' || r.status === 'absent') && !r.excuse_status) {
-        excuseBtn = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="openExcuseFromRow('${r.att_date}','${r.status}')">رفع عذر</button>`;
+        excuseBtn = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openExcuseFromRow('${r.att_date}','${r.status}')">رفع عذر</button>`;
       } else if (r.excuse_status) {
         excuseBtn = `<span class="badge-s ${STATUS_CLS[r.excuse_status] || 'b-pending'}">${STATUS_LABELS[r.excuse_status]}</span>`;
       }
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="showMyAttDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td>${r.att_date}</td>
         <td>${r.check_in || '—'}</td>
@@ -2860,7 +2875,7 @@ async function loadMyAttendance() {
         <td>${r.late_min  ? `<b style="color:#dc2626">${r.late_min} د</b>` : '—'}</td>
         <td>${r.early_min ? `<b style="color:#d97706">${r.early_min} د</b>` : '—'}</td>
         <td>${badge(r.status)}</td>
-        <td>${excuseBtn}</td>
+        <td onclick="event.stopPropagation()">${excuseBtn}</td>
       </tr>`;
     }).join('');
   } catch(e) { toast('خطأ في تحميل الحضور', 'err'); }
@@ -2929,6 +2944,102 @@ function showVioDetail(idx) {
       ${excuseSection}
     </div>`;
   _vioDetailModal.show();
+}
+
+function showAttDetail(idx) {
+  const r = (window._attDetailRows||[])[idx]; if (!r) return;
+  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+    ['التاريخ', r.att_date],
+    ['الحالة', `<span class="badge-s b-${r.status}">${r.status==='present'?'حاضر':r.status==='late'?'متأخر':r.status==='absent'?'غائب':r.status==='early_leave'?'خروج مبكر':r.status}</span>`, false],
+    ['وقت الحضور', r.check_in],
+    ['وقت الانصراف', r.check_out],
+    ['تأخر (دقيقة)', r.late_min ? `<b style="color:#dc2626">${r.late_min}</b>` : '—'],
+    ['خروج مبكر (دقيقة)', r.early_min ? `<b style="color:#d97706">${r.early_min}</b>` : '—'],
+  ]);
+}
+
+function showMyAttDetail(idx) {
+  const r = (window._myAttRows||[])[idx]; if (!r) return;
+  const excusePart = r.excuse_status
+    ? `<span class="badge-s ${STATUS_CLS[r.excuse_status]||'b-pending'}">${STATUS_LABELS[r.excuse_status]}</span>`
+    : ((['late','early_leave','absent'].includes(r.status)) ? `<button class="btn-main" style="font-size:12px" onclick="_rowDetailModal.hide();openExcuseFromRow('${r.att_date}','${r.status}')"><i class="fas fa-upload"></i> رفع عذر</button>` : '—');
+  showRowDetail('<i class="fas fa-calendar-check" style="color:var(--gold)"></i>', 'تفاصيل الحضور', [
+    ['التاريخ', r.att_date],
+    ['الحالة', `<span class="badge-s b-${r.status}">${r.status==='present'?'حاضر':r.status==='late'?'متأخر':r.status==='absent'?'غائب':r.status==='early_leave'?'خروج مبكر':r.status}</span>`, false],
+    ['وقت الحضور', r.check_in],
+    ['وقت الانصراف', r.check_out],
+    ['تأخر (دقيقة)', r.late_min ? `<b style="color:#dc2626">${r.late_min}</b>` : '—'],
+    ['خروج مبكر (دقيقة)', r.early_min ? `<b style="color:#d97706">${r.early_min}</b>` : '—'],
+    ['العذر', excusePart, true],
+  ]);
+}
+
+function showExcuseDetail(id) {
+  const r = (window._excuseRows||[]).find(x=>x.id===id); if (!r) return;
+  const isHR = _currentUser?.role !== 'employee';
+  const statusStyle = r.status==='approved'?'#16a34a':r.status==='rejected'?'#dc2626':'#f59e0b';
+  const statusAr = {pending:'قيد الانتظار',approved:'مقبول',rejected:'مرفوض'}[r.status]||r.status;
+  const footer = (isHR && r.status==='pending')
+    ? `<button class="btn-sm btn-approve" onclick="_rowDetailModal.hide();decideExcuse(${r.id},'approved')" style="margin-left:8px">قبول</button>
+       <button class="btn-sm btn-reject" onclick="_rowDetailModal.hide();decideExcuse(${r.id},'rejected')">رفض</button>`
+    : (r.attachment_name ? `<button class="btn-main" style="font-size:12px" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i> تحميل المرفق</button>` : '');
+  showRowDetail('<i class="fas fa-file-alt" style="color:var(--gold)"></i>', 'تفاصيل العذر', [
+    ['الموظف', `<b>${r.name_ar}</b>`],
+    ['التاريخ', r.att_date],
+    ['النوع', VTYPE_AR[r.vtype]||r.vtype],
+    ['الحالة', `<span style="color:${statusStyle};font-weight:700">${statusAr}</span>`],
+    ['السبب', r.reason, true],
+    ...(r.manager_note ? [['ملاحظة المدير', r.manager_note, true]] : []),
+  ], footer);
+}
+
+function showOtDetail(idx) {
+  const r = (window._otRows||[])[idx]; if (!r) return;
+  const isHR = _currentUser?.role !== 'employee';
+  const srcAr = r.source==='manual' ? 'تكليف يدوي' : 'تلقائي';
+  const footer = (isHR && r.status==='pending')
+    ? `<button class="btn-sm btn-approve" onclick="_rowDetailModal.hide();decideOT(${r.id},'approved')" style="margin-left:8px">تكليف ✅</button>
+       <button class="btn-sm btn-reject" onclick="_rowDetailModal.hide();decideOT(${r.id},'rejected')">لا ❌</button>`
+    : '';
+  showRowDetail('<i class="fas fa-clock" style="color:var(--gold)"></i>', 'تفاصيل الإضافي', [
+    ['الموظف', `<b>${r.name_ar}</b>`],
+    ['التاريخ', r.att_date],
+    ['ساعات الإضافي', `<b style="color:#d97706">${r.overtime_hours} ساعة</b>`],
+    ['الحالة', `<span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span>`],
+    ['وقت الانصراف', r.check_out_time],
+    ['نهاية الدوام', r.work_end],
+    ['المصدر', srcAr],
+    ...(r.notes ? [['ملاحظات', r.notes, true]] : []),
+  ], footer);
+}
+
+function showAuditDetail(idx) {
+  const r = (window._auditRows||[])[idx]; if (!r) return;
+  const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '—';
+  const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
+  showRowDetail('<i class="fas fa-shield-alt" style="color:var(--gold)"></i>', 'تفاصيل الحدث', [
+    ['التاريخ والوقت', dt, true],
+    ['المستخدم', r.username],
+    ['الدور', r.role],
+    ['الحدث', evLabel],
+    ['الهدف', r.target_name],
+    ['الحالة', r.status==='success'?'<span class="badge bg-success">نجح</span>':'<span class="badge bg-danger">فشل</span>'],
+    ['عنوان IP', r.ip_address],
+    ...(r.details ? [['التفاصيل', r.details, true]] : []),
+  ]);
+}
+
+function showRowDetail(iconHtml, title, fields, footerHtml) {
+  document.getElementById('row-detail-title').innerHTML = `${iconHtml}<span style="margin-right:8px">${title}</span>`;
+  const grid = fields.map(([label, value, full]) =>
+    `<div${full?' style="grid-column:1/-1"':''}>
+      <div style="font-size:11px;color:#94a3b8">${label}</div>
+      <div style="font-weight:700;margin-top:2px">${value ?? '—'}</div>
+    </div>`).join('');
+  document.getElementById('row-detail-body').innerHTML =
+    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">${grid}</div>` +
+    (footerHtml ? `<div style="margin-top:16px">${footerHtml}</div>` : '');
+  _rowDetailModal.show();
 }
 
 function openExcuseFromRow(date, vtype) {
@@ -3249,6 +3360,7 @@ async function loadExcuses() {
 
   try {
     const rows = await GET(`/api/excuses?year=${y}&month=${m}`);
+    window._excuseRows = rows;
 
     // قسّم حسب الحالة
     const byStatus = {pending:[], approved:[], rejected:[]};
@@ -3259,59 +3371,46 @@ async function loadExcuses() {
     document.getElementById('exc-badge-approved').textContent = byStatus.approved.length || '';
     document.getElementById('exc-badge-rejected').textContent = byStatus.rejected.length || '';
 
-    // ارسم التبويب pending (قيد الإجراء)
+    function _excRow(r, i) {
+      return `<tr style="cursor:pointer" onclick="showExcuseDetail(${r.id})">
+        <td style="color:#94a3b8">${i+1}</td>
+        <td><b>${r.name_ar}</b></td>
+        <td>${r.att_date}</td>
+        <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
+        <td style="max-width:160px;text-align:right">${r.reason}</td>
+        <td onclick="event.stopPropagation()">${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
+        ${r.status==='pending' && isHR
+          ? `<td class="hr-only" onclick="event.stopPropagation()">
+               <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
+               <button class="btn-sm btn-reject"  onclick="decideExcuse(${r.id},'rejected')">رفض</button>
+             </td>`
+          : `<td style="${r.status!=='pending'?'':'display:none'};color:${r.status==='approved'?'#16a34a':'#dc2626'};font-size:12px">${r.manager_note||'—'}</td>`}
+      </tr>`;
+    }
+
+    // ارسم التبويب pending
     const tbP = document.getElementById('exc-tbody-pending');
     if (!byStatus.pending.length) {
       const pendingLabel = _currentUser?.role === 'employee' ? 'قيد التنفيذ' : 'قيد الإجراء';
       tbP.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-hourglass" style="color:#f59e0b"></i><p>لا توجد طلبات ${pendingLabel}</p></div></td></tr>`;
     } else {
-      tbP.innerHTML = byStatus.pending.map((r,i) => `
-        <tr>
-          <td style="color:#94a3b8">${i+1}</td>
-          <td><b>${r.name_ar}</b></td>
-          <td>${r.att_date}</td>
-          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
-          <td style="max-width:180px;text-align:right">${r.reason}</td>
-          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
-          ${isHR ? `<td class="hr-only">
-            <button class="btn-sm btn-approve" onclick="decideExcuse(${r.id},'approved')" style="margin-left:4px">قبول</button>
-            <button class="btn-sm btn-reject"  onclick="decideExcuse(${r.id},'rejected')">رفض</button>
-          </td>` : '<td style="display:none"></td>'}
-        </tr>`).join('');
+      tbP.innerHTML = byStatus.pending.map(_excRow).join('');
     }
 
-    // ارسم التبويب approved (تمت الموافقة)
+    // ارسم التبويب approved
     const tbA = document.getElementById('exc-tbody-approved');
     if (!byStatus.approved.length) {
       tbA.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-check-circle" style="color:#16a34a"></i><p>لا توجد طلبات موافق عليها</p></div></td></tr>`;
     } else {
-      tbA.innerHTML = byStatus.approved.map((r,i) => `
-        <tr>
-          <td style="color:#94a3b8">${i+1}</td>
-          <td><b>${r.name_ar}</b></td>
-          <td>${r.att_date}</td>
-          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
-          <td style="max-width:180px;text-align:right">${r.reason}</td>
-          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
-          <td style="color:#16a34a;font-size:12px">${r.manager_note || '—'}</td>
-        </tr>`).join('');
+      tbA.innerHTML = byStatus.approved.map(_excRow).join('');
     }
 
-    // ارسم التبويب rejected (تم الرفض)
+    // ارسم التبويب rejected
     const tbR = document.getElementById('exc-tbody-rejected');
     if (!byStatus.rejected.length) {
       tbR.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-times-circle" style="color:#dc2626"></i><p>لا توجد طلبات مرفوضة</p></div></td></tr>`;
     } else {
-      tbR.innerHTML = byStatus.rejected.map((r,i) => `
-        <tr>
-          <td style="color:#94a3b8">${i+1}</td>
-          <td><b>${r.name_ar}</b></td>
-          <td>${r.att_date}</td>
-          <td>${VTYPE_AR[r.vtype] || r.vtype}</td>
-          <td style="max-width:180px;text-align:right">${r.reason}</td>
-          <td>${r.attachment_name ? `<button class="btn-sm btn-edit" onclick="downloadExcuseFile(${r.id})"><i class="fas fa-paperclip"></i></button>` : '—'}</td>
-          <td style="color:#dc2626;font-size:12px">${r.manager_note || '—'}</td>
-        </tr>`).join('');
+      tbR.innerHTML = byStatus.rejected.map(_excRow).join('');
     }
 
     // أظهر التبويب الحالي
@@ -3380,6 +3479,7 @@ async function loadOvertime() {
   const tb = document.getElementById('overtime-tbody');
   try {
     const rows = await GET('/api/overtime');
+    window._otRows = rows;
     const isHR = _currentUser?.role !== 'employee';
     document.querySelectorAll('#page-overtime .hr-only').forEach(el => el.style.display = isHR ? '' : 'none');
     if (!rows.length) {
@@ -3391,7 +3491,7 @@ async function loadOvertime() {
       const srcBadge = isManual
         ? `<span class="badge-s" style="background:#e0f2fe;color:#0369a1">تكليف يدوي</span>`
         : `<span class="badge-s" style="background:#fef9c3;color:#854d0e">تلقائي</span>`;
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="showOtDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td><b>${r.name_ar}</b></td>
         <td>${r.att_date}</td>
@@ -3401,7 +3501,7 @@ async function loadOvertime() {
         <td>${srcBadge}${r.notes ? `<br><span style="font-size:11px;color:#64748b">${r.notes}</span>` : ''}</td>
         <td><span class="badge-s ${STATUS_CLS[r.status]}">${STATUS_LABELS[r.status]}</span></td>
         ${isHR && r.status === 'pending' ? `
-        <td>
+        <td onclick="event.stopPropagation()">
           <button class="btn-sm btn-approve" onclick="decideOT(${r.id},'approved')" style="margin-left:4px">تكليف ✅</button>
           <button class="btn-sm btn-reject"  onclick="decideOT(${r.id},'rejected')">لا ❌</button>
         </td>` : `<td class="hr-only" style="display:none">—</td>`}
@@ -3913,14 +4013,15 @@ async function loadAudit() {
   tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>جاري التحميل...</p></div></td></tr>';
   try {
     const rows = await GET('/api/audit-logs?limit=100');
+    window._auditRows = rows;
     if (!rows.length) { tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-shield-alt"></i><p>لا توجد أحداث مسجلة</p></div></td></tr>'; return; }
-    tb.innerHTML = rows.map(r => {
+    tb.innerHTML = rows.map((r, i) => {
       const dt = r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '—';
       const evLabel = AUDIT_LABELS[r.event_type] || r.event_type;
       const statusBadge = r.status === 'success'
         ? '<span class="badge bg-success">نجح</span>'
         : '<span class="badge bg-danger">فشل</span>';
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="showAuditDetail(${i})">
         <td style="font-size:11px;white-space:nowrap">${dt}</td>
         <td><b>${r.username||'—'}</b></td>
         <td>${r.role||'—'}</td>
