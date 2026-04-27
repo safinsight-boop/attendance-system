@@ -3072,9 +3072,15 @@ async function loadMyPayroll() {
   box.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>`;
   try {
     const d = await GET(`/api/my/payroll?year=${y}&month=${m}`);
+    window._myPayrollData = {d, y, m};
     const e = d.employee;
     const isTrainee = (e.emp_code || '').trim().toLowerCase().startsWith('in');
     box.innerHTML = `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;gap:8px">
+        <button class="btn-main" onclick="printPayslip()" style="background:#1e293b">
+          <i class="fas fa-print"></i> طباعة / تحميل PDF
+        </button>
+      </div>
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
         <div class="stat-card c-blue">
           <div class="stat-icon-wrap" style="background:rgba(37,99,235,0.12)"><i class="fas fa-coins" style="color:#2563eb"></i></div>
@@ -3125,6 +3131,103 @@ async function loadMyPayroll() {
         </table>
       </div>` : ''}`;
   } catch(e) { box.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>خطأ في تحميل الراتب</p></div>`; }
+}
+
+function printPayslip() {
+  const pd = window._myPayrollData;
+  if (!pd) return;
+  const {d, y, m} = pd;
+  const e = d.employee;
+  const isTrainee = (e.emp_code||'').trim().toLowerCase().startsWith('in');
+  const monthName = MONTHS[m-1];
+  const BRACKET_AR_P = {late_1_15:'تأخر 1-15د',late_15_30:'تأخر 16-30د',late_30_60:'تأخر 31-60د',late_60plus:'تأخر +60د',early_u15:'خروج مبكر <15د',early_o15:'خروج مبكر >15د',flex_hours:'ساعات مرنة',absent_1:'غياب'};
+  const vioRows = d.violations.map(v => `
+    <tr><td>${v.vio_date}</td><td>${BRACKET_AR_P[v.bracket]||v.bracket}</td>
+    <td>${v.ptype==='warning'?'إنذار':v.ptype==='percent'?`${v.pvalue}%`:`${v.pvalue} يوم`}</td>
+    <td style="color:#dc2626;font-weight:700">${v.deduction>0?v.deduction.toFixed(2)+' ر.س':'—'}</td></tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>قسيمة راتب — ${e.name_ar} — ${monthName} ${y}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Tahoma, Arial, sans-serif; font-size: 13px; color: #1e293b; background: #fff; padding: 30px; direction: rtl; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1a3c40; padding-bottom: 16px; margin-bottom: 20px; }
+  .company { font-size: 20px; font-weight: 800; color: #1a3c40; }
+  .slip-title { font-size: 14px; color: #64748b; margin-top: 4px; }
+  .emp-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border-radius: 8px; padding: 14px; margin-bottom: 20px; }
+  .emp-info div span:first-child { color: #94a3b8; font-size: 11px; display: block; margin-bottom: 2px; }
+  .emp-info div span:last-child { font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th { background: #1a3c40; color: #fff; padding: 8px 12px; text-align: right; font-size: 12px; }
+  td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+  tr:last-child td { border-bottom: none; }
+  .total-row td { font-weight: 800; font-size: 15px; background: #dcfce7; color: #16a34a; }
+  .deduct-row td { background: #fff7ed; color: #dc2626; font-weight: 700; }
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-box { text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+  .stat-box .num { font-size: 22px; font-weight: 800; }
+  .stat-box .lbl { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .footer { text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 10px; }
+  @media print { body { padding: 15px; } button { display: none; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="company">نظام إدارة الحضور</div>
+    <div class="slip-title">قسيمة راتب — ${monthName} ${y}</div>
+  </div>
+  <div style="text-align:left">
+    <div style="font-weight:700;font-size:15px">${e.name_ar}</div>
+    <div style="color:#64748b;font-size:12px">${e.name_en||''}</div>
+    ${e.emp_code?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${e.emp_code}</div>`:''}
+  </div>
+</div>
+
+<div class="emp-info">
+  <div><span>نوع الدوام</span><span>${e.work_type==='fixed'?'دوام ثابت':'دوام مرن'}</span></div>
+  <div><span>وقت الدوام</span><span>${e.work_start||'—'} — ${e.work_end||'—'}</span></div>
+  <div><span>أيام الحضور</span><span>${d.attendance_days} يوم</span></div>
+  <div><span>أيام الغياب</span><span>${d.absent_days} يوم</span></div>
+</div>
+
+<table>
+  <thead><tr><th>البند</th><th>المبلغ (ر.س)</th></tr></thead>
+  <tbody>
+    <tr><td>الراتب الأساسي</td><td>${(e.salary||0).toFixed(2)}</td></tr>
+    <tr><td>بدل السكن</td><td>${(e.housing||0).toFixed(2)}</td></tr>
+    <tr><td>بدل المواصلات</td><td>${(e.transport||0).toFixed(2)}</td></tr>
+    ${e.commission!=null?`<tr><td>العمولة</td><td>${(e.commission||0).toFixed(2)}</td></tr>`:''}
+    <tr><td style="font-weight:700">إجمالي المستحقات</td><td style="font-weight:700">${d.gross.toFixed(2)}</td></tr>
+    <tr class="deduct-row"><td>خصومات المخالفات</td><td>${d.deductions.toFixed(2)}</td></tr>
+    ${!isTrainee?`<tr class="deduct-row"><td>تأمينات GOSI (10.75%)</td><td>${d.other_ded.toFixed(2)}</td></tr>`:''}
+    <tr class="total-row"><td>الراتب الصافي</td><td>${d.net.toFixed(2)}</td></tr>
+  </tbody>
+</table>
+
+${d.violations.length?`
+<table>
+  <thead><tr><th>التاريخ</th><th>المخالفة</th><th>العقوبة</th><th>الخصم</th></tr></thead>
+  <tbody>${vioRows}</tbody>
+</table>`:''}
+
+<div class="footer">
+  صدرت هذه القسيمة بتاريخ ${new Date().toLocaleDateString('ar-SA')} — نظام إدارة الحضور
+</div>
+
+<div style="text-align:center;margin-top:16px">
+  <button onclick="window.print()" style="background:#1a3c40;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;cursor:pointer;font-family:Tahoma">
+    🖨️ طباعة / حفظ PDF
+  </button>
+</div>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=800,height=700');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ════════════════════════════════════════════
@@ -3890,34 +3993,47 @@ async function deleteUser(id) {
 // ════════════════════════════════════════════
 async function loadProfile() {
   try {
-    const d = await GET('/api/my/attendance?year=' + new Date().getFullYear() + '&month=' + (new Date().getMonth()+1));
-    const emp = d.records?.[0];
+    const e = _currentUser?.employee;
+    if (!e) { toast('خطأ في تحميل بيانات الموظف', 'err'); return; }
+
+    const initials = (e.name_ar || '?').trim().charAt(0);
+    document.getElementById('prof-avatar').textContent  = initials;
+    document.getElementById('prof-name-ar').textContent = e.name_ar || '—';
+    document.getElementById('prof-name-en').textContent = e.name_en || '—';
+    document.getElementById('prof-code').textContent    = e.emp_code ? `رقم الموظف: ${e.emp_code}` : '';
+
+    const now = new Date();
+    const d = await GET(`/api/my/attendance?year=${now.getFullYear()}&month=${now.getMonth()+1}`);
     const bal = d.leave_balance;
-    // نأخذ بيانات الموظف من الـ sidebar
-    document.getElementById('prof-name-ar').textContent = document.getElementById('emp-sidebar-name').textContent || '—';
-    document.getElementById('prof-name-en').textContent = document.getElementById('emp-sidebar-nameen').textContent || '—';
-    document.getElementById('prof-code').textContent    = 'رقم الموظف: ' + (document.getElementById('emp-sidebar-id').textContent || '—');
-    document.getElementById('prof-avatar').textContent  = document.getElementById('emp-avatar-initials').textContent || '؟';
+
     if (bal) {
       document.getElementById('prof-leave-remaining').textContent = bal.remaining;
       document.getElementById('prof-leave-detail').textContent    = `متبقي من أصل ${bal.entitlement} يوم`;
     }
-    const attended = d.records?.filter(r => r.status !== 'absent').length || 0;
+    const attended = (d.records || []).filter(r => r.status !== 'absent').length;
     document.getElementById('prof-att-days').textContent = attended;
-    // معلومات إضافية
-    const grid = document.getElementById('prof-info-grid');
-    grid.innerHTML = '';
-    const wtype = document.getElementById('emp-sidebar-wtype').textContent;
-    const hours = document.getElementById('emp-sidebar-hours').textContent;
-    const salary = document.getElementById('emp-sidebar-salary').textContent;
-    [['نوع الدوام', wtype], ['وقت الدوام', hours], ['الراتب الأساسي', salary],
-     ['سنة الرصيد', bal?.year || '—']].forEach(([k,v]) => {
-      grid.innerHTML += `<div style="background:#f8fafc;border-radius:8px;padding:12px">
+
+    const wtypeAr  = e.work_type === 'fixed' ? 'دوام ثابت' : 'دوام مرن';
+    const schedule = (e.work_start && e.work_end) ? `${e.work_start} — ${e.work_end}` : '—';
+    const total    = (e.salary||0) + (e.housing||0) + (e.transport||0);
+
+    const fields = [
+      ['نوع الدوام',        wtypeAr],
+      ['وقت الدوام',        schedule],
+      ['الراتب الأساسي',    fmtSAR(e.salary)],
+      ['بدل السكن',         fmtSAR(e.housing)],
+      ['بدل المواصلات',     fmtSAR(e.transport)],
+      ['إجمالي الراتب',     fmtSAR(total)],
+      ['البريد الإلكتروني', e.email || '—'],
+      ['رصيد الإجازة',      bal ? `${bal.remaining} من ${bal.entitlement} يوم` : '—'],
+    ];
+
+    document.getElementById('prof-info-grid').innerHTML = fields.map(([k,v]) => `
+      <div style="background:#f8fafc;border-radius:8px;padding:12px">
         <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">${k}</div>
         <div style="font-size:14px;font-weight:700;color:#1e293b">${v}</div>
-      </div>`;
-    });
-  } catch(e) { toast('خطأ في تحميل الملف الشخصي', 'err'); }
+      </div>`).join('');
+  } catch(err) { toast('خطأ في تحميل الملف الشخصي', 'err'); }
 }
 
 // ════════════════════════════════════════════
