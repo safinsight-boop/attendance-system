@@ -272,6 +272,7 @@ def _migrate_db(conn):
         "ALTER TABLE overtime_requests ADD COLUMN notes TEXT",
         "ALTER TABLE overtime_requests ADD COLUMN source TEXT DEFAULT 'auto'",
         "ALTER TABLE employees ADD COLUMN weekend_days TEXT DEFAULT '5,6'",
+        "ALTER TABLE overtime_requests ADD COLUMN manager_note TEXT",
     ]
     for sql in migrations:
         try:
@@ -2348,15 +2349,16 @@ def api_overtime_post():
 def api_overtime_decide(oid):
     d = request.get_json(silent=True) or {}
     status = d.get('status')
+    note   = d.get('note', '')
     if status not in ('approved', 'rejected'):
         return jsonify({'error': 'الحالة غير صحيحة'}), 400
     conn = get_db()
     try:
         conn.execute("""
             UPDATE overtime_requests
-            SET status=?, decided_by=?, decided_at=datetime('now')
+            SET status=?, decided_by=?, decided_at=datetime('now'), manager_note=?
             WHERE id=?
-        """, (status, session['user_id'], oid))
+        """, (status, session['user_id'], note, oid))
         conn.commit()
         audit_log('overtime_decide', 'overtime', str(oid), details=f"status={status}")
     finally:

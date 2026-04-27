@@ -3010,6 +3010,7 @@ function showOtDetail(idx) {
     ['نهاية الدوام', r.work_end],
     ['المصدر', srcAr],
     ...(r.notes ? [['ملاحظات', r.notes, true]] : []),
+    ...(r.manager_note ? [['ملاحظة المدير', `<span style="color:#0369a1;font-weight:600">${r.manager_note}</span>`, true]] : []),
   ], footer);
 }
 
@@ -3465,11 +3466,8 @@ async function submitExcuse() {
   else { err.textContent = r.error || 'خطأ'; err.style.display = 'block'; }
 }
 
-async function decideExcuse(id, status) {
-  const note = status === 'rejected' ? prompt('ملاحظة للموظف (اختياري):') || '' : '';
-  const r = await PUT(`/api/excuses/${id}`, {status, note});
-  if (r.ok) { toast(status==='approved'?'تم القبول':'تم الرفض'); loadExcuses(); loadPendingBadges(); }
-  else toast(r.error || 'خطأ', 'err');
+function decideExcuse(id, status) {
+  openDecideModal(id, status, 'excuse');
 }
 
 // ════════════════════════════════════════════
@@ -3537,10 +3535,8 @@ async function submitOt() {
   else { err.textContent = r.error || 'خطأ'; err.style.display='block'; btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> حفظ التكليف'; }
 }
 
-async function decideOT(id, status) {
-  const r = await PUT(`/api/overtime/${id}`, {status});
-  if (r.ok) { toast(status==='approved'?'تم تأكيد التكليف':'لم يُسجَّل إضافي'); loadOvertime(); loadPendingBadges(); }
-  else toast(r.error || 'خطأ', 'err');
+function decideOT(id, status) {
+  openDecideModal(id, status, 'overtime');
 }
 
 // ════════════════════════════════════════════
@@ -3758,13 +3754,22 @@ async function confirmDecide() {
   const type   = document.getElementById('decide-type').value;
   const note   = document.getElementById('decide-note').value.trim();
   _decideModal.hide();
+  const okMsg  = status === 'approved' ? 'تمت الموافقة' : 'تم الرفض';
   if (type === 'leave') {
     const r = await PUT(`/api/leaves/${id}`, {status, notes: note});
-    if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadLeaves(); }
+    if (r.ok) { toast(okMsg); loadLeaves(); }
+    else toast(r.error||'خطأ','err');
+  } else if (type === 'excuse') {
+    const r = await PUT(`/api/excuses/${id}`, {status, note});
+    if (r.ok) { toast(okMsg); loadExcuses(); loadPendingBadges(); }
+    else toast(r.error||'خطأ','err');
+  } else if (type === 'overtime') {
+    const r = await PUT(`/api/overtime/${id}`, {status, note});
+    if (r.ok) { toast(okMsg); loadOvertime(); loadPendingBadges(); }
     else toast(r.error||'خطأ','err');
   } else {
     const r = await PUT(`/api/requests/${id}`, {status, note});
-    if (r.ok) { toast(status==='approved'?'تمت الموافقة':'تم الرفض'); loadAttRequests(); loadPendingBadges(); }
+    if (r.ok) { toast(okMsg); loadAttRequests(); loadPendingBadges(); }
     else toast(r.error||'خطأ','err');
   }
 }
