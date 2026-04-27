@@ -1898,6 +1898,18 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 </div>
 
 <!-- MODAL: LEAVE DETAIL -->
+<div class="modal fade" id="vioDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle" style="color:#ef4444;margin-left:8px"></i>تفاصيل المخالفة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="vio-detail-body"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="lvDetailModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered" style="max-width:480px">
     <div class="modal-content">
@@ -1953,7 +1965,7 @@ let allEmps = [];
 const now = new Date();
 
 // Modals
-let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal, _decideModal, _lvDetailModal;
+let _runModal, _empModal, _excuseModal, _leaveModal, _holidayModal, _userModal, _requestModal, _pdModal, _statDetailModal, _otModal, _reqStatModal, _decideModal, _lvDetailModal, _vioDetailModal;
 let _currentUser = null;
 
 // ════════════════════════════════════════════
@@ -1976,6 +1988,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _reqStatModal      = new bootstrap.Modal(document.getElementById('reqStatModal'));
   _decideModal       = new bootstrap.Modal(document.getElementById('decideModal'));
   _lvDetailModal     = new bootstrap.Modal(document.getElementById('lvDetailModal'));
+  _vioDetailModal    = new bootstrap.Modal(document.getElementById('vioDetailModal'));
 
   // Check login status
   const me = await GET('/api/auth/me');
@@ -2871,6 +2884,7 @@ async function loadMyViolations() {
   tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div></td></tr>`;
   try {
     const rows = await GET(`/api/my/violations?year=${y}&month=${m}`);
+    window._vioRows = rows;
     if (!rows.length) {
       tb.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle" style="color:#22c55e"></i><p>لا توجد مخالفات هذا الشهر ✅</p></div></td></tr>`;
       return;
@@ -2881,20 +2895,40 @@ async function loadMyViolations() {
                   r.ptype === 'day'     ? `خصم ${r.pvalue} يوم` : r.ptype;
       let excuseCell = '';
       if (!r.excuse_id) {
-        excuseCell = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="openExcuseFromRow('${r.vio_date}','${r.vtype}')">رفع عذر</button>`;
+        excuseCell = `<button class="btn-sm btn-main" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();openExcuseFromRow('${r.vio_date}','${r.vtype}')">رفع عذر</button>`;
       } else {
         excuseCell = `<span class="badge-s ${STATUS_CLS[r.excuse_status] || 'b-pending'}">${STATUS_LABELS[r.excuse_status] || '—'}</span>`;
       }
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="showVioDetail(${i})">
         <td style="color:#94a3b8">${i+1}</td>
         <td>${r.vio_date}</td>
         <td>${BRACKET_AR[r.bracket] || r.bracket}</td>
         <td>${pen}</td>
         <td style="color:${r.deduction>0?'#dc2626':'inherit'};font-weight:${r.deduction>0?700:400}">${r.deduction > 0 ? fmtSAR(r.deduction) : '—'}</td>
-        <td>${excuseCell}</td>
+        <td onclick="event.stopPropagation()">${excuseCell}</td>
       </tr>`;
     }).join('');
   } catch(e) { toast('خطأ في تحميل المخالفات', 'err'); }
+}
+
+function showVioDetail(idx) {
+  const r = (window._vioRows || [])[idx];
+  if (!r) return;
+  const pen = r.ptype === 'warning' ? 'إنذار' :
+              r.ptype === 'percent' ? `خصم ${r.pvalue}% من الأجر اليومي` :
+              r.ptype === 'day'     ? `خصم ${r.pvalue} يوم` : r.ptype;
+  const excuseSection = r.excuse_id
+    ? `<div><div style="font-size:11px;color:#94a3b8">حالة العذر</div><div><span class="badge-s ${STATUS_CLS[r.excuse_status]||'b-pending'}">${STATUS_LABELS[r.excuse_status]||'—'}</span></div></div>`
+    : `<div style="grid-column:1/-1"><button class="btn-main" style="font-size:12px" onclick="_vioDetailModal.hide();openExcuseFromRow('${r.vio_date}','${r.vtype}')"><i class="fas fa-upload"></i> رفع عذر</button></div>`;
+  document.getElementById('vio-detail-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 0">
+      <div><div style="font-size:11px;color:#94a3b8">التاريخ</div><div style="font-weight:700">${r.vio_date}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">النوع</div><div style="font-weight:700">${BRACKET_AR[r.bracket]||r.bracket}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">العقوبة</div><div style="font-weight:700">${pen}</div></div>
+      <div><div style="font-size:11px;color:#94a3b8">الخصم</div><div style="font-weight:700;color:${r.deduction>0?'#dc2626':'inherit'}">${r.deduction>0?fmtSAR(r.deduction):'—'}</div></div>
+      ${excuseSection}
+    </div>`;
+  _vioDetailModal.show();
 }
 
 function openExcuseFromRow(date, vtype) {
