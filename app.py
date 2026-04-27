@@ -273,6 +273,18 @@ def _migrate_db(conn):
         "ALTER TABLE overtime_requests ADD COLUMN source TEXT DEFAULT 'auto'",
         "ALTER TABLE employees ADD COLUMN weekend_days TEXT DEFAULT '5,6'",
         "ALTER TABLE overtime_requests ADD COLUMN manager_note TEXT",
+        """CREATE TABLE IF NOT EXISTS schedule_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id  INTEGER NOT NULL,
+            effective_date TEXT NOT NULL,
+            work_type    TEXT,
+            work_start   TEXT,
+            work_end     TEXT,
+            weekly_hours REAL,
+            weekend_days TEXT,
+            recorded_at  TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+        )""",
     ]
     for sql in migrations:
         try:
@@ -494,6 +506,25 @@ def calc_deduction(emp, ptype, pvalue):
     if ptype in ('day', 'warning_day'):  return round(daily * pvalue, 2)
     return 0.0
 
+def _get_emp_schedule(conn, emp, date_str):
+    """يرجع بيانات الجدول الفعّالة في تاريخ معين (يتحقق من التاريخ المؤثر)."""
+    row = conn.execute("""
+        SELECT * FROM schedule_history
+        WHERE employee_id=? AND effective_date<=?
+        ORDER BY effective_date DESC LIMIT 1
+    """, (emp['id'], date_str)).fetchone()
+    if row:
+        merged = dict(emp)
+        merged.update({
+            'work_type':    row['work_type']    or emp['work_type'],
+            'work_start':   row['work_start']   or emp['work_start'],
+            'work_end':     row['work_end']      or emp['work_end'],
+            'weekly_hours': row['weekly_hours']  or emp['weekly_hours'],
+            'weekend_days': row['weekend_days']  or emp.get('weekend_days','5,6'),
+        })
+        return merged
+    return emp
+
 def apply_violation(conn, emp, vio_date, vtype, bracket):
     """تطبيق المخالفة وحفظها، يرجع (ptype, pvalue, deduction)"""
     yr, mo = vio_date.year, vio_date.month
@@ -693,7 +724,7 @@ def process_day(target_date=None):
         employees = conn.execute("SELECT * FROM employees").fetchall()
 
         for emp_row in employees:
-            emp = dict(emp_row)
+            emp = _get_emp_schedule(conn, dict(emp_row), str(target_date))
             uname = emp['name_en'].strip().lower()
             times = raw.get(uname, [])
 
@@ -1723,10 +1754,26 @@ def api_emp_put(eid):
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
         return jsonify({'error': 'لا توجد حقول للتحديث'}), 400
+    schedule_fields = {'work_type','work_start','work_end','weekly_hours','weekend_days'}
+    effective_date  = d.get('schedule_effective_date', '')
     sql = f"UPDATE employees SET {', '.join(k+'=?' for k in updates)} WHERE id=?"
     conn = get_db()
     try:
         conn.execute(sql, list(updates.values()) + [eid])
+        # إذا تغيّر الجدول وحُدد تاريخ تطبيق — سجّله في التاريخ
+        if effective_date and any(k in schedule_fields for k in updates):
+            emp = conn.execute("SELECT * FROM employees WHERE id=?", (eid,)).fetchone()
+            if emp:
+                conn.execute("""
+                    INSERT INTO schedule_history
+                        (employee_id, effective_date, work_type, work_start, work_end, weekly_hours, weekend_days)
+                    VALUES (?,?,?,?,?,?,?)
+                """, (eid, effective_date,
+                      updates.get('work_type',    emp['work_type']),
+                      updates.get('work_start',   emp['work_start']),
+                      updates.get('work_end',     emp['work_end']),
+                      updates.get('weekly_hours', emp['weekly_hours']),
+                      updates.get('weekend_days', emp.get('weekend_days','5,6'))))
         conn.commit()
         audit_log('edit_employee', 'employee', str(eid), details=str(list(updates.keys())))
     finally:
@@ -2153,6 +2200,51 @@ def api_leaves_get():
     finally:
         conn.close()
     return jsonify([dict(r) for r in rows])
+
+@app.route('/api/leaves/timeline')
+@hr_required
+def api_leaves_timeline():
+    from calendar import monthrange
+    y = request.args.get('year',  date.today().year,  type=int)
+    m = request.args.get('month', date.today().month, type=int)
+    days_in_month = monthrange(y, m)[1]
+    month_start = str(date(y, m, 1))
+    month_end   = str(date(y, m, days_in_month))
+    conn = get_db()
+    try:
+        leaves = conn.execute("""
+            SELECT l.employee_id, l.leave_type, l.start_date, l.end_date, l.days,
+                   e.name_ar, e.emp_code
+            FROM leaves l JOIN employees e ON e.id=l.employee_id
+            WHERE l.status='approved' AND l.end_date>=? AND l.start_date<=?
+            ORDER BY e.name_ar
+        """, (month_start, month_end)).fetchall()
+        emps = conn.execute(
+            "SELECT id, name_ar, emp_code FROM employees ORDER BY name_ar").fetchall()
+    finally:
+        conn.close()
+
+    from datetime import timedelta
+    result = []
+    for emp in emps:
+        emp_leaves = [l for l in leaves if l['employee_id'] == emp['id']]
+        if not emp_leaves:
+            continue
+        days_set = set()
+        details  = []
+        for l in emp_leaves:
+            s = datetime.strptime(l['start_date'], '%Y-%m-%d').date()
+            e2 = datetime.strptime(l['end_date'],   '%Y-%m-%d').date()
+            cur = max(s, date(y, m, 1))
+            while cur <= min(e2, date(y, m, days_in_month)):
+                days_set.add(cur.day)
+                cur += timedelta(days=1)
+            details.append({'type': l['leave_type'], 'start': l['start_date'],
+                            'end': l['end_date'], 'days': l['days']})
+        result.append({'employee_id': emp['id'], 'name_ar': emp['name_ar'],
+                       'emp_code': emp['emp_code'], 'leave_days': sorted(days_set),
+                       'details': details})
+    return jsonify({'rows': result, 'days_in_month': days_in_month, 'year': y, 'month': m})
 
 @app.route('/api/leaves', methods=['POST'])
 @login_required

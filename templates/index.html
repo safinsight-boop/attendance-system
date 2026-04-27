@@ -781,7 +781,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <button class="btn-main" onclick="exportGosi()" style="background:#7c3aed">
           <i class="fas fa-file-excel"></i> تقرير GOSI
         </button>
-        <button class="btn-main" onclick="window.print()" style="background:#0f766e">
+        <button class="btn-main" onclick="printAdminPayroll()" style="background:#0f766e">
           <i class="fas fa-print"></i> طباعة PDF
         </button>
       </div>
@@ -1309,30 +1309,47 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     ══════════════════════════════════════ -->
     <div id="page-calendar" class="page">
       <div class="filters">
-        <div class="fg hr-only" style="display:none">
-          <label>الموظف</label>
-          <select id="cal-emp" onchange="loadCalendar()"><option value="">— اختر موظفاً —</option></select>
-        </div>
         <div class="fg">
           <label>الشهر</label>
-          <select id="cal-month" onchange="loadCalendar()"></select>
+          <select id="cal-month" onchange="onCalFilterChange()"></select>
         </div>
         <div class="fg">
           <label>السنة</label>
-          <select id="cal-year" onchange="loadCalendar()"></select>
+          <select id="cal-year" onchange="onCalFilterChange()"></select>
+        </div>
+        <div class="fg hr-only" style="display:none" id="cal-emp-wrap">
+          <label>الموظف (للتقويم الشخصي)</label>
+          <select id="cal-emp" onchange="loadCalendar()"><option value="">— اختر موظفاً —</option></select>
         </div>
       </div>
-      <div id="cal-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span>في الوقت</span>
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span>متأخر</span>
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#dc2626;display:inline-block"></span>غائب</span>
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#3b82f6;display:inline-block"></span>إجازة</span>
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span>معذور</span>
-        <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#94a3b8;display:inline-block"></span>إجازة رسمية / عطلة</span>
+      <!-- تبويبات: فقط للأدمن -->
+      <div class="hr-only" style="display:none;display:flex;gap:8px;margin-bottom:16px" id="cal-tabs">
+        <button class="excuse-tab active" id="cal-tab-timeline" onclick="switchCalTab('timeline')">
+          <i class="fas fa-calendar-week"></i> جدول إجازات الفريق
+        </button>
+        <button class="excuse-tab" id="cal-tab-personal" onclick="switchCalTab('personal')">
+          <i class="fas fa-user-clock"></i> تقويم موظف
+        </button>
       </div>
-      <div id="cal-emp-title" class="hr-only" style="display:none;font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px"></div>
-      <div class="card-wrap">
-        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+      <!-- لوحة الجدول الزمني -->
+      <div id="cal-panel-timeline">
+        <div class="card-wrap">
+          <div id="cal-timeline-grid" style="overflow-x:auto"></div>
+        </div>
+      </div>
+      <!-- لوحة التقويم الشخصي -->
+      <div id="cal-panel-personal" style="display:none">
+        <div id="cal-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span>في الوقت</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span>متأخر</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#dc2626;display:inline-block"></span>غائب</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#3b82f6;display:inline-block"></span>إجازة</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span>معذور</span>
+        </div>
+        <div id="cal-emp-title" style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px"></div>
+        <div class="card-wrap">
+          <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+        </div>
       </div>
     </div>
 
@@ -1480,6 +1497,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
         <div id="flex-block" style="margin-bottom:14px;display:none">
           <label class="fl">الساعات الأسبوعية المطلوبة</label>
           <input type="number" id="emp-whours" class="fc" value="40" min="1" max="80" style="max-width:200px">
+        </div>
+
+        <!-- تاريخ تطبيق تغيير الجدول -->
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:14px">
+          <label class="fl" style="color:#92400e"><i class="fas fa-calendar-day" style="margin-left:6px"></i>تاريخ تطبيق تغيير الجدول <span style="font-size:11px;color:#b45309">(اختياري — اتركه فارغاً لتطبيق فوري)</span></label>
+          <input type="date" id="emp-schedule-date" class="fc" style="max-width:220px">
+          <div style="font-size:11px;color:#92400e;margin-top:4px">إذا حددت تاريخاً، ستُحسب المخالفات بالجدول الجديد ابتداءً من هذا التاريخ</div>
         </div>
 
         <hr class="divider">
@@ -2126,7 +2150,10 @@ function showPage(page) {
   if (page === 'my-payroll')     loadMyPayroll();
   if (page === 'my-requests')    loadMyRequests();
   if (page === 'att-requests')   loadAttRequests();
-  if (page === 'calendar')       loadCalendar();
+  if (page === 'calendar') {
+    if (window._role === 'employee') loadCalendar();
+    else { document.getElementById('cal-tabs').style.display='flex'; switchCalTab('timeline'); }
+  }
   if (page === 'audit')          loadAudit();
   if (page === 'profile')        loadProfile();
   if (page === 'settings')       loadSettings();
@@ -2535,6 +2562,7 @@ function openEmpModal(emp = null) {
   document.getElementById('emp-wstart').value    = emp?.work_start  || '08:00';
   document.getElementById('emp-wend').value      = emp?.work_end    || '17:00';
   document.getElementById('emp-whours').value    = emp?.weekly_hours|| 40;
+  document.getElementById('emp-schedule-date').value = '';
   document.getElementById('emp-salary').value    = emp?.salary      || 0;
   document.getElementById('emp-housing').value   = emp?.housing     || 0;
   document.getElementById('emp-transport').value = emp?.transport   || 0;
@@ -2603,6 +2631,7 @@ async function saveEmployee() {
     other_ded:         0,
     annual_leave_days: +document.getElementById('emp-annual-days').value || 21,
     weekend_days:      [0,1,2,3,4,5,6].filter(d => document.getElementById(`emp-wd-${d}`).checked).join(',') || '5,6',
+    schedule_effective_date: document.getElementById('emp-schedule-date').value || '',
   };
 
   if (!data.name_ar || !data.name_en) {
@@ -2662,7 +2691,7 @@ async function loadPayroll() {
 
   try {
     const rows = await GET(`/api/payroll?year=${y}&month=${m}`);
-
+    window._adminPayData = {rows, y, m};
     let tgross = 0, tded = 0, tnet = 0;
     rows.forEach(r => {
       tgross += r.gross;
@@ -2723,6 +2752,64 @@ function exportGosi() {
   const y = document.getElementById('pay-year').value;
   const m = document.getElementById('pay-month').value;
   window.location = `/api/gosi/export?year=${y}&month=${m}`;
+}
+
+function printAdminPayroll() {
+  const pd = window._adminPayData;
+  if (!pd) { toast('حمّل البيانات أولاً', 'err'); return; }
+  const {rows, y, m} = pd;
+  const monthName = MONTHS[m-1];
+  let tgross=0, tded=0, tnet=0;
+  rows.forEach(r => { tgross+=r.gross; tded+=(r.total_ded||0)+(r.other_ded||0); tnet+=r.net; });
+  const tableRows = rows.map((r,i) => {
+    const gosi = (r.gosi_ded??r.other_ded)>0 ? (r.gosi_ded??r.other_ded).toFixed(2) : '—';
+    return `<tr>
+      <td>${i+1}</td><td>${r.name_ar}</td>
+      <td>${r.salary.toFixed(2)}</td>
+      <td>${(r.housing+r.transport).toFixed(2)}</td>
+      <td>${r.commission!=null?r.commission.toFixed(2):'—'}</td>
+      <td style="color:#dc2626">${(r.total_ded||0).toFixed(2)}</td>
+      <td style="color:#b45309">${gosi}</td>
+      <td style="font-weight:800;color:#16a34a">${r.net.toFixed(2)}</td>
+      <td>${r.days}</td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>مسيرة الرواتب — ${monthName} ${y}</title>
+<style>
+  body{font-family:Tahoma,Arial,sans-serif;font-size:12px;color:#1e293b;padding:20px;direction:rtl}
+  h2{color:#1a3c40;margin-bottom:4px}
+  .summary{display:flex;gap:20px;margin:14px 0;padding:12px;background:#f8fafc;border-radius:8px}
+  .summary div{text-align:center}.summary .n{font-size:18px;font-weight:800}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th{background:#1a3c40;color:#fff;padding:7px 8px;text-align:right;font-size:11px}
+  td{padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:11px}
+  tr:last-child td{font-weight:800;background:#dcfce7}
+  .footer{text-align:center;font-size:10px;color:#94a3b8;margin-top:14px}
+  @media print{button{display:none}}
+</style></head><body>
+<h2>مسيرة الرواتب — ${monthName} ${y}</h2>
+<div style="font-size:11px;color:#64748b">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')}</div>
+<div class="summary">
+  <div><div style="font-size:11px;color:#64748b">إجمالي المستحقات</div><div class="n">${tgross.toFixed(2)} ر.س</div></div>
+  <div><div style="font-size:11px;color:#64748b">إجمالي الخصومات</div><div class="n" style="color:#dc2626">${tded.toFixed(2)} ر.س</div></div>
+  <div><div style="font-size:11px;color:#64748b">إجمالي الصافي</div><div class="n" style="color:#16a34a">${tnet.toFixed(2)} ر.س</div></div>
+  <div><div style="font-size:11px;color:#64748b">عدد الموظفين</div><div class="n">${rows.length}</div></div>
+</div>
+<table>
+  <thead><tr><th>#</th><th>الموظف</th><th>الأساسي</th><th>بدلات</th><th>عمولة</th><th>خصومات</th><th>GOSI</th><th>الصافي</th><th>حضور</th></tr></thead>
+  <tbody>${tableRows}
+  <tr><td colspan="2" style="font-weight:800">الإجمالي</td><td></td><td></td><td></td><td style="color:#dc2626;font-weight:800">${tded.toFixed(2)}</td><td></td><td style="font-weight:800;color:#16a34a">${tnet.toFixed(2)}</td><td></td></tr>
+  </tbody>
+</table>
+<div class="footer">نظام إدارة الحضور</div>
+<div style="text-align:center;margin-top:12px">
+  <button onclick="window.print()" style="background:#1a3c40;color:#fff;border:none;padding:9px 24px;border-radius:7px;font-size:13px;cursor:pointer;font-family:Tahoma">🖨️ طباعة / حفظ PDF</button>
+</div>
+</body></html>`;
+  const w = window.open('', '_blank', 'width=900,height=700');
+  w.document.write(html); w.document.close();
 }
 
 function openPayrollDetail(r) {
@@ -4057,6 +4144,76 @@ async function _fillCalEmpDropdown() {
     const emps = await GET('/api/employees');
     emps.forEach(e => sel.add(new Option(e.name_ar, e.id)));
   } catch(err) {}
+}
+
+let _calTab = 'timeline';
+
+function switchCalTab(tab) {
+  _calTab = tab;
+  ['timeline','personal'].forEach(t => {
+    document.getElementById(`cal-tab-${t}`)?.classList.toggle('active', t===tab);
+    document.getElementById(`cal-panel-${t}`).style.display = t===tab ? '' : 'none';
+  });
+  document.getElementById('cal-emp-wrap').style.display = tab==='personal' ? '' : 'none';
+  if (tab === 'timeline') loadLeaveTimeline();
+  else loadCalendar();
+}
+
+function onCalFilterChange() {
+  if (window._role === 'employee') loadCalendar();
+  else if (_calTab === 'timeline') loadLeaveTimeline();
+  else loadCalendar();
+}
+
+async function loadLeaveTimeline() {
+  const y = document.getElementById('cal-year').value;
+  const m = document.getElementById('cal-month').value;
+  const box = document.getElementById('cal-timeline-grid');
+  box.innerHTML = '<div style="padding:20px;text-align:center"><i class="fas fa-spinner fa-spin"></i></div>';
+  try {
+    const d = await GET(`/api/leaves/timeline?year=${y}&month=${m}`);
+    const LEAVE_AR = {annual:'سنوية', sick:'مرضية', emergency:'اضطرارية', official:'رسمية'};
+    if (!d.rows.length) {
+      box.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-check" style="color:#16a34a"></i><p>لا توجد إجازات معتمدة هذا الشهر</p></div>';
+      return;
+    }
+    const days = Array.from({length: d.days_in_month}, (_, i) => i+1);
+    const colW = '28px';
+    let html = `<table style="border-collapse:collapse;min-width:100%;font-size:12px">
+      <thead><tr>
+        <th style="padding:6px 10px;background:#1a3c40;color:#fff;white-space:nowrap;position:sticky;right:0;z-index:2">الموظف</th>
+        ${days.map(d2 => {
+          const dow = new Date(y, m-1, d2).getDay();
+          const isWknd = dow===5||dow===6;
+          return `<th style="width:${colW};min-width:${colW};background:${isWknd?'#94a3b8':'#1a3c40'};color:#fff;text-align:center;padding:4px 2px">${d2}</th>`;
+        }).join('')}
+        <th style="padding:6px 10px;background:#1a3c40;color:#fff">تفاصيل</th>
+      </tr></thead>
+      <tbody>
+      ${d.rows.map((emp, ri) => `<tr style="background:${ri%2===0?'#f8fafc':'#fff'}">
+        <td style="padding:6px 10px;white-space:nowrap;font-weight:700;position:sticky;right:0;background:${ri%2===0?'#f8fafc':'#fff'};border-left:1px solid #e2e8f0">
+          ${emp.name_ar}${emp.emp_code?`<br><span style="font-size:10px;color:#94a3b8">${emp.emp_code}</span>`:''}
+        </td>
+        ${days.map(d2 => {
+          const on = emp.leave_days.includes(d2);
+          const dow = new Date(y, m-1, d2).getDay();
+          const isWknd = dow===5||dow===6;
+          return `<td style="text-align:center;padding:2px;background:${on?'#3b82f620':isWknd?'#f1f5f9':''}">
+            ${on?'<span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:#3b82f6"></span>':''}
+          </td>`;
+        }).join('')}
+        <td style="padding:6px 10px;font-size:11px;color:#64748b;white-space:nowrap">
+          ${emp.details.map(l => `${LEAVE_AR[l.type]||l.type}: ${l.start}←${l.end} (${l.days}د)`).join('<br>')}
+        </td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:12px">
+      <span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:#3b82f6"></span> إجازة معتمدة
+      <span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:#94a3b8;margin-right:8px"></span> عطلة أسبوعية
+    </div>`;
+    box.innerHTML = html;
+  } catch(e) { toast('خطأ في تحميل الجدول', 'err'); }
 }
 
 async function loadCalendar() {
