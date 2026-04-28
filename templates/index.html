@@ -1344,11 +1344,11 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- لوحة التقويم الشخصي -->
       <div id="cal-panel-personal" style="display:none">
         <div id="cal-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span>في الوقت</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span>متأخر</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#dc2626;display:inline-block"></span>غائب</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#3b82f6;display:inline-block"></span>إجازة</span>
-          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span>معذور</span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#16a34a;display:inline-block"></span><span data-i18n="st_on_time">في الوقت</span></span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#f59e0b;display:inline-block"></span><span data-i18n="st_late">متأخر</span></span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#dc2626;display:inline-block"></span><span data-i18n="st_absent">غائب</span></span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#3b82f6;display:inline-block"></span><span data-i18n="leave_annual_short">إجازة</span></span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:12px"><span style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;display:inline-block"></span><span data-i18n="st_excused">معذور</span></span>
         </div>
         <div id="cal-emp-title" style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:10px"></div>
         <div class="card-wrap">
@@ -2010,6 +2010,7 @@ const TRANSLATIONS = {
   st_early_leave:  { ar:'مغادرة مبكرة',              en:'Early Leave' },
   st_present:      { ar:'حاضر',                      en:'Present' },
   st_excused:      { ar:'معذور',                     en:'Excused' },
+  leave_annual_short:{ ar:'إجازة',                   en:'Leave' },
   // Dashboard labels
   on_time_today:   { ar:'في الوقت اليوم',            en:'On Time Today' },
   late_today:      { ar:'متأخر اليوم',               en:'Late Today' },
@@ -4467,9 +4468,9 @@ async function loadCalendar() {
       leave:'#3b82f6', official_holiday:'#94a3b8'
     };
     const labels = {
-      on_time:'في الوقت', late:'متأخر', absent:'غائب',
-      early_leave:'مبكر', excused:'معذور', present:'حاضر',
-      leave:'إجازة', official_holiday:'رسمية'
+      on_time: t('st_on_time'), late: t('st_late'), absent: t('st_absent'),
+      early_leave: t('st_early_leave'), excused: t('st_excused'), present: t('st_present'),
+      leave: t('leave_annual_short'), official_holiday: _lang==='ar' ? 'رسمية' : 'Official'
     };
     const titleEl = document.getElementById('cal-emp-title');
     if (titleEl) {
@@ -4672,9 +4673,9 @@ async function loadCharts(todayData) {
       data: {
         labels: trend.map(r => r.att_date.slice(5)),
         datasets: [
-          {label:'في الوقت', data: trend.map(r=>r.on_time),  backgroundColor:'#16a34a'},
-          {label:'متأخر',    data: trend.map(r=>r.late),     backgroundColor:'#f59e0b'},
-          {label:'غائب',     data: trend.map(r=>r.absent),   backgroundColor:'#dc2626'},
+          {label:t('st_on_time'),    data: trend.map(r=>r.on_time),  backgroundColor:'#16a34a'},
+          {label:t('st_late'),       data: trend.map(r=>r.late),     backgroundColor:'#f59e0b'},
+          {label:t('st_absent'),     data: trend.map(r=>r.absent),   backgroundColor:'#dc2626'},
         ]
       },
       options: {responsive:true, scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true}},
