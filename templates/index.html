@@ -584,48 +584,48 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <!-- Stats today -->
       <div class="stats-grid" id="stats-today-grid">
-        <div class="stat-card c-green" style="cursor:pointer" onclick="openStatDetail('on_time','في الوقت اليوم')">
+        <div class="stat-card c-green" style="cursor:pointer" onclick="openStatDetail('on_time', t('on_time_today'))">
           <div class="stat-icon-wrap" style="background:rgba(22,163,74,0.12)">
             <span style="color:#16a34a">✅</span>
           </div>
           <div class="stat-num" id="s-ontime">—</div>
-          <div class="stat-label">في الوقت اليوم</div>
+          <div class="stat-label" data-i18n="on_time_today">في الوقت اليوم</div>
         </div>
-        <div class="stat-card c-red" style="cursor:pointer" onclick="openStatDetail('late','متأخر اليوم')">
+        <div class="stat-card c-red" style="cursor:pointer" onclick="openStatDetail('late', t('late_today'))">
           <div class="stat-icon-wrap" style="background:rgba(220,38,38,0.12)">
             <span style="color:#dc2626">🕐</span>
           </div>
           <div class="stat-num" id="s-late">—</div>
-          <div class="stat-label">متأخر اليوم</div>
+          <div class="stat-label" data-i18n="late_today">متأخر اليوم</div>
         </div>
-        <div class="stat-card c-yellow" style="cursor:pointer" onclick="openStatDetail('early_leave','مغادرة مبكرة اليوم')">
+        <div class="stat-card c-yellow" style="cursor:pointer" onclick="openStatDetail('early_leave', t('early_leave_today'))">
           <div class="stat-icon-wrap" style="background:rgba(197,160,89,0.12)">
             <span style="color:var(--gold)">🚶</span>
           </div>
           <div class="stat-num" id="s-earlyleave">—</div>
-          <div class="stat-label">مغادرة مبكرة</div>
+          <div class="stat-label" data-i18n="early_leave_today">مغادرة مبكرة</div>
         </div>
-        <div class="stat-card c-blue" style="cursor:pointer" onclick="openStatDetail('absent','غياب اليوم')">
+        <div class="stat-card c-blue" style="cursor:pointer" onclick="openStatDetail('absent', t('absent_today'))">
           <div class="stat-icon-wrap" style="background:rgba(0,75,87,0.12)">
             <span style="color:var(--primary)">❌</span>
           </div>
           <div class="stat-num" id="s-absent">—</div>
-          <div class="stat-label">غياب اليوم</div>
+          <div class="stat-label" data-i18n="absent_today">غياب اليوم</div>
         </div>
       </div>
 
       <!-- Mini stats month -->
       <div class="mini-stats">
-        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('violations','مخالفات الشهر')">
-          <div class="mini-label">⚠️ مخالفات الشهر</div>
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('violations', t('month_violations'))">
+          <div class="mini-label">⚠️ <span data-i18n="month_violations">مخالفات الشهر</span></div>
           <div class="mini-num" style="color:#dc2626" id="s-mvio">—</div>
         </div>
-        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('deductions','إجمالي الخصومات')">
-          <div class="mini-label">💸 إجمالي الخصومات (<span class="sar-sym">S.R</span>)</div>
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('deductions', t('month_deductions'))">
+          <div class="mini-label">💸 <span data-i18n="month_deductions">إجمالي الخصومات</span> (<span class="sar-sym">S.R</span>)</div>
           <div class="mini-num" style="color:#d97706" id="s-mded">—</div>
         </div>
-        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('absent','غياب الشهر')">
-          <div class="mini-label">📅 غياب الشهر</div>
+        <div class="mini-card" style="cursor:pointer" onclick="openMonthStatDetail('absent', t('month_absent'))">
+          <div class="mini-label">📅 <span data-i18n="month_absent">غياب الشهر</span></div>
           <div class="mini-num" style="color:#64748b" id="s-mabsent">—</div>
         </div>
       </div>
@@ -633,11 +633,11 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- Charts -->
       <div id="charts-section" class="hr-only" style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:16px">
         <div class="card-wrap" style="padding:16px">
-          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">حضور اليوم</div>
+          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px" data-i18n="att_today">حضور اليوم</div>
           <canvas id="chart-today" height="200"></canvas>
         </div>
         <div class="card-wrap" style="padding:16px">
-          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px">مخطط الحضور (30 يوم)</div>
+          <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px" data-i18n="att_chart">مخطط الحضور (30 يوم)</div>
           <canvas id="chart-trend" height="200"></canvas>
         </div>
       </div>
@@ -645,18 +645,18 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <!-- Recent attendance -->
       <div class="card-wrap">
         <div class="card-head">
-          <h5><span style="color:var(--gold);margin-left:8px">📜</span>آخر سجلات الحضور</h5>
+          <h5><span style="color:var(--gold);margin-left:8px">📜</span><span data-i18n="recent_records">آخر سجلات الحضور</span></h5>
           <button class="btn-main" style="padding:6px 14px;font-size:13px" onclick="loadDashboard()">
-            🔄 تحديث
+            🔄 <span data-i18n="refresh">تحديث</span>
           </button>
         </div>
         <div class="table-responsive">
           <table class="tbl">
             <thead>
               <tr>
-                <th>الموظف</th><th>التاريخ</th>
-                <th>الحضور</th><th>الانصراف</th>
-                <th>التأخر</th><th>الحالة</th>
+                <th data-i18n="th_employee">الموظف</th><th data-i18n="th_date">التاريخ</th>
+                <th data-i18n="th_checkin">الحضور</th><th data-i18n="th_checkout">الانصراف</th>
+                <th data-i18n="th_late">التأخر</th><th data-i18n="th_status">الحالة</th>
               </tr>
             </thead>
             <tbody id="recent-tbody">
@@ -2472,7 +2472,7 @@ async function loadDashboard() {
     const tb = document.getElementById('recent-tbody');
     if (!recent.length) {
       tb.innerHTML = `<tr><td colspan="6"><div class="empty-state">
-        📥<p>لا توجد سجلات اليوم</p></div></td></tr>`;
+        📥<p>${t('no_records')}</p></div></td></tr>`;
     } else {
       window._recentRows = recent;
       tb.innerHTML = recent.map((r, i) => `
@@ -4655,7 +4655,7 @@ async function loadCharts(todayData) {
     _chartToday = new Chart(ctxD, {
       type: 'doughnut',
       data: {
-        labels: ['في الوقت','متأخر','مغادرة مبكرة','غائب'],
+        labels: [t('st_on_time'), t('st_late'), t('st_early_leave'), t('st_absent')],
         datasets: [{
           data: [todayData.on_time||0, todayData.late||0, todayData.early_leave||0, todayData.absent||0],
           backgroundColor: ['#16a34a','#f59e0b','#f97316','#dc2626'],
