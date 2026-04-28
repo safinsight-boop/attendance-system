@@ -113,6 +113,13 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 .topbar-title { font-size: 19px; font-weight: 800; color: var(--primary); }
 .topbar-sub   { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
 .topbar-actions { display: flex; gap: 10px; align-items: center; }
+.lang-btn {
+  background: transparent; border: 1.5px solid var(--primary);
+  color: var(--primary); border-radius: 8px; padding: 5px 13px;
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: all .18s;
+  font-family: inherit;
+}
+.lang-btn:hover { background: var(--primary); color: #fff; }
 
 .page-body { padding: 22px 26px; }
 .page { display: none; animation: fadeIn .22s ease; }
@@ -417,24 +424,27 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="login-box">
     <div class="login-logo">
       <div class="ico">🔐</div>
-      <h2>بوابة الموظف</h2>
-      <p>سجّل دخولك للمتابعة</p>
+      <h2 data-i18n="portal_title">بوابة الموظف</h2>
+      <p data-i18n="login_subtitle">سجّل دخولك للمتابعة</p>
     </div>
     <div class="login-err" id="login-err"></div>
     <div style="margin-bottom:14px">
-      <label class="fl">اسم المستخدم</label>
+      <label class="fl" data-i18n="username">اسم المستخدم</label>
       <input type="text" id="login-user" class="fc" placeholder="admin"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div style="margin-bottom:22px">
-      <label class="fl">كلمة المرور</label>
+      <label class="fl" data-i18n="password">كلمة المرور</label>
       <input type="password" id="login-pass" class="fc" placeholder="••••••"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="btn-main" style="width:100%;justify-content:center;padding:12px"
             id="login-btn" onclick="doLogin()">
-      🔑 دخول
+      🔑 <span data-i18n="login_btn">دخول</span>
     </button>
+    <div style="text-align:center;margin-top:12px">
+      <button class="lang-btn" onclick="toggleLang()" id="login-lang-btn" style="font-size:12px;padding:4px 10px">EN</button>
+    </div>
   </div>
 </div>
 
@@ -445,80 +455,80 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
   <div class="sidebar-logo">
     <div class="logo-icon">🔐</div>
     <div>
-      <div class="logo-name">بوابة الموظف</div>
-      <div class="logo-sub">نظام الحضور والرواتب</div>
+      <div class="logo-name" data-i18n="portal_title">بوابة الموظف</div>
+      <div class="logo-sub" data-i18n="portal_sub">نظام الحضور والرواتب</div>
     </div>
   </div>
 
   <div class="nav-group">
-    <div class="nav-label">الرئيسية</div>
+    <div class="nav-label" data-i18n="nav_main">الرئيسية</div>
     <button class="nav-btn active" id="nb-dashboard" onclick="showPage('dashboard')">
-      <span class="ni">📊</span> لوحة التحكم
+      <span class="ni">📊</span> <span data-i18n="nav_dashboard">لوحة التحكم</span>
     </button>
     <button class="nav-btn hr-only" id="nb-attendance" onclick="showPage('attendance')" style="display:none">
-      <span class="ni">📋</span> سجل الحضور
+      <span class="ni">📋</span> <span data-i18n="nav_attendance">سجل الحضور</span>
     </button>
   </div>
 
   <div class="nav-group hr-only" style="display:none">
-    <div class="nav-label">الإدارة</div>
+    <div class="nav-label" data-i18n="nav_admin">الإدارة</div>
     <button class="nav-btn" id="nb-employees" onclick="showPage('employees')">
-      <span class="ni">👥</span> الموظفون
+      <span class="ni">👥</span> <span data-i18n="nav_employees">الموظفون</span>
     </button>
     <button class="nav-btn" id="nb-payroll" onclick="showPage('payroll')">
-      <span class="ni">💵</span> مسيرة الرواتب
+      <span class="ni">💵</span> <span data-i18n="nav_payroll">مسيرة الرواتب</span>
     </button>
     <button class="nav-btn" id="nb-excuses" onclick="showPage('excuses')">
-      <span class="ni">📄</span> الأعذار
+      <span class="ni">📄</span> <span data-i18n="nav_excuses">الأعذار</span>
       <span id="excuse-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-overtime" onclick="showPage('overtime')">
-      <span class="ni">🕐</span> الإضافي
+      <span class="ni">🕐</span> <span data-i18n="nav_overtime">الإضافي</span>
       <span id="ot-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-att-requests" onclick="showPage('att-requests')">
-      <span class="ni">✉️</span> طلبات الحضور
+      <span class="ni">✉️</span> <span data-i18n="nav_att_requests">طلبات الحضور</span>
       <span id="req-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-right:auto;display:none"></span>
     </button>
     <button class="nav-btn" id="nb-leaves" onclick="showPage('leaves')">
-      <span class="ni">🏖️</span> الإجازات
+      <span class="ni">🏖️</span> <span data-i18n="nav_leaves">الإجازات</span>
     </button>
     <button class="nav-btn" id="nb-users" onclick="showPage('users')">
-      <span class="ni">🛡️</span> المستخدمون
+      <span class="ni">🛡️</span> <span data-i18n="nav_users">المستخدمون</span>
     </button>
     <button class="nav-btn hr-only" id="nb-calendar" onclick="showPage('calendar')">
-      <span class="ni">📅</span> تقويم الإجازات
+      <span class="ni">📅</span> <span data-i18n="nav_calendar">تقويم الإجازات</span>
     </button>
     <button class="nav-btn hr-only" id="nb-audit" onclick="showPage('audit')">
-      <span class="ni">🔒</span> سجل الأحداث
+      <span class="ni">🔒</span> <span data-i18n="nav_audit">سجل الأحداث</span>
     </button>
     <button class="nav-btn hr-only" id="nb-settings" onclick="showPage('settings')">
-      <span class="ni">⚙️</span> إعدادات النظام
+      <span class="ni">⚙️</span> <span data-i18n="nav_settings">إعدادات النظام</span>
     </button>
   </div>
 
   <div class="nav-group emp-only" style="display:none">
-    <div class="nav-label">حسابي</div>
+    <div class="nav-label" data-i18n="nav_my">حسابي</div>
     <button class="nav-btn" id="nb-my-attendance" onclick="showPage('my-attendance')">
-      <span class="ni">📋</span> حضوري وغيابي
+      <span class="ni">📋</span> <span data-i18n="nav_my_attendance">حضوري وغيابي</span>
     </button>
     <button class="nav-btn" id="nb-my-violations" onclick="showPage('my-violations')">
-      <span class="ni">⚠️</span> مخالفاتي
+      <span class="ni">⚠️</span> <span data-i18n="nav_my_violations">مخالفاتي</span>
     </button>
     <button class="nav-btn" id="nb-my-payroll" onclick="showPage('my-payroll')">
-      <span class="ni">👛</span> راتبي
+      <span class="ni">👛</span> <span data-i18n="nav_my_payroll">راتبي</span>
     </button>
     <button class="nav-btn" id="nb-my-requests" onclick="showPage('my-requests')">
-      <span class="ni">✉️</span> طلباتي
+      <span class="ni">✉️</span> <span data-i18n="nav_my_requests">طلباتي</span>
     </button>
     <button class="nav-btn" id="nb-excuses-emp" onclick="showPage('excuses')">
-      <span class="ni">📄</span> أعذاري
+      <span class="ni">📄</span> <span data-i18n="nav_my_excuses">أعذاري</span>
     </button>
     <button class="nav-btn" id="nb-leaves-emp" onclick="showPage('leaves')">
-      <span class="ni">🏖️</span> إجازاتي
+      <span class="ni">🏖️</span> <span data-i18n="nav_my_leaves">إجازاتي</span>
     </button>
     <button class="nav-btn" id="nb-profile" onclick="showPage('profile')">
-      <span class="ni">🪪</span> ملفي الشخصي
+      <span class="ni">🪪</span> <span data-i18n="nav_profile">ملفي الشخصي</span>
     </button>
   </div>
 
@@ -527,11 +537,11 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
     <button onclick="doLogout()" style="background:rgba(198,166,100,0.15);color:var(--gold);border:1px solid rgba(198,166,100,0.3);
       border-radius:7px;padding:6px 14px;font-family:Tajawal;font-size:12px;cursor:pointer;width:100%;transition:all .18s"
       onmouseover="this.style.background='rgba(198,166,100,0.25)'" onmouseout="this.style.background='rgba(198,166,100,0.15)'">
-      🚪 تسجيل الخروج
+      🚪 <span data-i18n="logout">تسجيل الخروج</span>
     </button>
     <div style="margin-top:8px;color:rgba(198,166,100,0.5);font-size:11px">
       <span style="margin-left:4px">🕐</span>
-      آخر تحديث: <span id="last-update">—</span>
+      <span data-i18n="last_update">آخر تحديث</span>: <span id="last-update">—</span>
     </div>
   </div>
 </nav>
@@ -548,18 +558,19 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div class="topbar-sub" id="today-str"></div>
     </div>
     <div class="topbar-actions" style="display:flex;align-items:center;gap:10px">
+      <button id="lang-btn" class="lang-btn" onclick="toggleLang()">EN</button>
       <div class="hr-only" style="position:relative;display:none">
         <button id="notif-btn" onclick="toggleNotifDropdown()" style="background:transparent;border:none;cursor:pointer;position:relative;padding:6px 10px;border-radius:8px;color:#1e293b;font-size:18px">
           🔔
           <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px"></span>
         </button>
         <div id="notif-dropdown" style="display:none;position:absolute;left:0;top:44px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);min-width:240px;z-index:999;padding:12px 0">
-          <div style="padding:8px 16px;font-size:11px;font-weight:700;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin-bottom:6px">الطلبات المعلقة</div>
+          <div data-i18n="pending_requests" style="padding:8px 16px;font-size:11px;font-weight:700;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin-bottom:6px">الطلبات المعلقة</div>
           <div id="notif-list"></div>
         </div>
       </div>
-      <button class="btn-main" onclick="openRunModal()">
-        ▶️ تشغيل يدوي
+      <button class="btn-main hr-only" style="display:none" onclick="openRunModal()">
+        ▶️ <span data-i18n="manual_run">تشغيل يدوي</span>
       </button>
     </div>
   </div>
@@ -1930,8 +1941,241 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 // ════════════════════════════════════════════
 //  CONSTANTS
 // ════════════════════════════════════════════
-const MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
-                'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+// ════════════════════════════════════════════
+//  LANGUAGE SYSTEM
+// ════════════════════════════════════════════
+const TRANSLATIONS = {
+  // Portal
+  portal_title:    { ar:'بوابة الموظف',            en:'Employee Portal' },
+  portal_sub:      { ar:'نظام الحضور والرواتب',     en:'Attendance & Payroll System' },
+  // Login
+  login_subtitle:  { ar:'سجّل دخولك للمتابعة',      en:'Sign in to continue' },
+  username:        { ar:'اسم المستخدم',              en:'Username' },
+  password:        { ar:'كلمة المرور',               en:'Password' },
+  login_btn:       { ar:'دخول',                      en:'Login' },
+  login_loading:   { ar:'جاري الدخول...',            en:'Signing in...' },
+  login_error:     { ar:'بيانات الدخول غير صحيحة',  en:'Invalid credentials' },
+  login_required:  { ar:'أدخل اسم المستخدم وكلمة المرور', en:'Enter username and password' },
+  conn_error:      { ar:'خطأ في الاتصال',            en:'Connection error' },
+  // Navigation
+  nav_main:        { ar:'الرئيسية',                  en:'Main' },
+  nav_dashboard:   { ar:'لوحة التحكم',               en:'Dashboard' },
+  nav_attendance:  { ar:'سجل الحضور',                en:'Attendance Log' },
+  nav_admin:       { ar:'الإدارة',                   en:'Administration' },
+  nav_employees:   { ar:'الموظفون',                  en:'Employees' },
+  nav_payroll:     { ar:'مسيرة الرواتب',             en:'Payroll' },
+  nav_excuses:     { ar:'الأعذار',                   en:'Excuses' },
+  nav_overtime:    { ar:'الإضافي',                   en:'Overtime' },
+  nav_att_requests:{ ar:'طلبات الحضور',              en:'Attendance Requests' },
+  nav_leaves:      { ar:'الإجازات',                  en:'Leaves' },
+  nav_users:       { ar:'المستخدمون',                en:'Users' },
+  nav_calendar:    { ar:'تقويم الإجازات',            en:'Leave Calendar' },
+  nav_audit:       { ar:'سجل الأحداث',               en:'Audit Log' },
+  nav_settings:    { ar:'إعدادات النظام',            en:'System Settings' },
+  nav_my:          { ar:'حسابي',                     en:'My Account' },
+  nav_my_attendance:{ ar:'حضوري وغيابي',             en:'My Attendance' },
+  nav_my_violations:{ ar:'مخالفاتي',                 en:'My Violations' },
+  nav_my_payroll:  { ar:'راتبي',                     en:'My Payroll' },
+  nav_my_requests: { ar:'طلباتي',                    en:'My Requests' },
+  nav_my_excuses:  { ar:'أعذاري',                    en:'My Excuses' },
+  nav_my_leaves:   { ar:'إجازاتي',                   en:'My Leaves' },
+  nav_profile:     { ar:'ملفي الشخصي',               en:'My Profile' },
+  logout:          { ar:'تسجيل الخروج',              en:'Logout' },
+  last_update:     { ar:'آخر تحديث',                 en:'Last update' },
+  // Topbar
+  manual_run:      { ar:'تشغيل يدوي',                en:'Manual Run' },
+  pending_requests:{ ar:'الطلبات المعلقة',           en:'Pending Requests' },
+  // Page titles
+  pt_dashboard:    { ar:'لوحة التحكم',               en:'Dashboard' },
+  pt_attendance:   { ar:'سجل الحضور والغياب',        en:'Attendance Log' },
+  pt_employees:    { ar:'إدارة الموظفين',            en:'Employee Management' },
+  pt_payroll:      { ar:'مسيرة الرواتب',             en:'Payroll' },
+  pt_excuses:      { ar:'الأعذار',                   en:'Excuses' },
+  pt_overtime:     { ar:'سجل الإضافي',               en:'Overtime Log' },
+  pt_leaves:       { ar:'الإجازات',                  en:'Leaves' },
+  pt_users:        { ar:'إدارة المستخدمين',          en:'User Management' },
+  pt_calendar:     { ar:'تقويم الإجازات والحضور',    en:'Leave & Attendance Calendar' },
+  pt_audit:        { ar:'سجل الأحداث',               en:'Audit Log' },
+  pt_settings:     { ar:'إعدادات النظام',            en:'System Settings' },
+  pt_profile:      { ar:'ملفي الشخصي',               en:'My Profile' },
+  'pt_my-attendance':{ ar:'حضوري وغيابي',            en:'My Attendance' },
+  'pt_my-violations':{ ar:'مخالفاتي',                en:'My Violations' },
+  'pt_my-payroll': { ar:'راتبي الشهري',              en:'My Monthly Payroll' },
+  'pt_my-requests':{ ar:'طلباتي',                    en:'My Requests' },
+  'pt_att-requests':{ ar:'طلبات الحضور',             en:'Attendance Requests' },
+  // Status labels
+  st_on_time:      { ar:'في الوقت',                  en:'On Time' },
+  st_late:         { ar:'متأخر',                     en:'Late' },
+  st_absent:       { ar:'غائب',                      en:'Absent' },
+  st_early_leave:  { ar:'مغادرة مبكرة',              en:'Early Leave' },
+  st_present:      { ar:'حاضر',                      en:'Present' },
+  st_excused:      { ar:'معذور',                     en:'Excused' },
+  // Dashboard labels
+  on_time_today:   { ar:'في الوقت اليوم',            en:'On Time Today' },
+  late_today:      { ar:'متأخر اليوم',               en:'Late Today' },
+  early_leave_today:{ ar:'مغادرة مبكرة',             en:'Early Leave' },
+  absent_today:    { ar:'غياب اليوم',                en:'Absent Today' },
+  month_violations:{ ar:'مخالفات الشهر',             en:'Month Violations' },
+  month_deductions:{ ar:'إجمالي الخصومات',           en:'Total Deductions' },
+  month_absent:    { ar:'غياب الشهر',                en:'Month Absences' },
+  att_today:       { ar:'حضور اليوم',                en:"Today's Attendance" },
+  att_chart:       { ar:'مخطط الحضور (30 يوم)',       en:'Attendance Chart (30 days)' },
+  recent_records:  { ar:'آخر سجلات الحضور',          en:'Recent Attendance Records' },
+  refresh:         { ar:'تحديث',                     en:'Refresh' },
+  // Table headers
+  th_name:         { ar:'الاسم',                     en:'Name' },
+  th_date:         { ar:'التاريخ',                   en:'Date' },
+  th_checkin:      { ar:'الدخول',                    en:'Check In' },
+  th_checkout:     { ar:'الخروج',                    en:'Check Out' },
+  th_late:         { ar:'تأخر',                      en:'Late' },
+  th_status:       { ar:'الحالة',                    en:'Status' },
+  th_employee:     { ar:'الموظف',                    en:'Employee' },
+  th_dept:         { ar:'القسم',                     en:'Department' },
+  th_role:         { ar:'الدور',                     en:'Role' },
+  th_actions:      { ar:'إجراءات',                   en:'Actions' },
+  th_salary:       { ar:'الراتب',                    en:'Salary' },
+  th_deductions:   { ar:'الخصومات',                  en:'Deductions' },
+  th_net:          { ar:'الصافي',                    en:'Net' },
+  th_type:         { ar:'النوع',                     en:'Type' },
+  th_reason:       { ar:'السبب',                     en:'Reason' },
+  th_hours:        { ar:'الساعات',                   en:'Hours' },
+  // Common
+  add:             { ar:'إضافة',                     en:'Add' },
+  edit:            { ar:'تعديل',                     en:'Edit' },
+  delete:          { ar:'حذف',                       en:'Delete' },
+  save:            { ar:'حفظ',                       en:'Save' },
+  cancel:          { ar:'إلغاء',                     en:'Cancel' },
+  close:           { ar:'إغلاق',                     en:'Close' },
+  confirm:         { ar:'تأكيد',                     en:'Confirm' },
+  approve:         { ar:'قبول',                      en:'Approve' },
+  reject:          { ar:'رفض',                       en:'Reject' },
+  search:          { ar:'بحث',                       en:'Search' },
+  export_excel:    { ar:'تحميل Excel',               en:'Export Excel' },
+  print_pdf:       { ar:'طباعة PDF',                 en:'Print PDF' },
+  loading:         { ar:'جاري التحميل...',           en:'Loading...' },
+  no_data:         { ar:'لا توجد بيانات',            en:'No data available' },
+  no_records:      { ar:'لا توجد سجلات اليوم',       en:'No records today' },
+  // Employee form
+  name_ar:         { ar:'الاسم بالعربي',             en:'Name (Arabic)' },
+  name_en:         { ar:'الاسم بالإنجليزي',          en:'Name (English)' },
+  email:           { ar:'البريد الإلكتروني',         en:'Email' },
+  emp_code:        { ar:'الرقم الوظيفي',             en:'Employee Code' },
+  work_type:       { ar:'نوع الدوام',                en:'Work Type' },
+  work_fixed:      { ar:'دوام ثابت',                 en:'Fixed Schedule' },
+  work_flex:       { ar:'دوام مرن',                  en:'Flexible Schedule' },
+  work_start:      { ar:'وقت الحضور',                en:'Start Time' },
+  work_end:        { ar:'وقت الانصراف',              en:'End Time' },
+  weekly_hours:    { ar:'الساعات الأسبوعية',         en:'Weekly Hours' },
+  salary:          { ar:'الراتب الأساسي',            en:'Basic Salary' },
+  housing:         { ar:'بدل السكن',                 en:'Housing Allowance' },
+  transport:       { ar:'بدل المواصلات',             en:'Transport Allowance' },
+  commission:      { ar:'العمولة',                   en:'Commission' },
+  gosi:            { ar:'تأمينات GOSI',              en:'GOSI Insurance' },
+  annual_leave:    { ar:'الحق السنوي (أيام)',         en:'Annual Leave (days)' },
+  // Leave & excuse types
+  leave_annual:    { ar:'إجازة سنوية',               en:'Annual Leave' },
+  leave_sick:      { ar:'إجازة مرضية',               en:'Sick Leave' },
+  leave_emergency: { ar:'إجازة اضطرارية',            en:'Emergency Leave' },
+  leave_official:  { ar:'إجازة رسمية',               en:'Official Leave' },
+  // Roles
+  role_hr:         { ar:'مدير HR',                   en:'HR Manager' },
+  role_manager:    { ar:'مدير القسم',                en:'Department Manager' },
+  role_employee:   { ar:'موظف',                      en:'Employee' },
+  // Request status
+  status_pending:  { ar:'معلق',                      en:'Pending' },
+  status_approved: { ar:'مقبول',                     en:'Approved' },
+  status_rejected: { ar:'مرفوض',                     en:'Rejected' },
+  // Toast messages
+  toast_saved:     { ar:'تم الحفظ',                  en:'Saved successfully' },
+  toast_deleted:   { ar:'تم الحذف',                  en:'Deleted successfully' },
+  toast_added:     { ar:'تمت الإضافة',               en:'Added successfully' },
+  toast_err_load:  { ar:'خطأ في التحميل',            en:'Loading error' },
+  toast_err_save:  { ar:'خطأ في الحفظ',             en:'Save error' },
+  toast_err_conn:  { ar:'خطأ في الاتصال بالخادم',    en:'Server connection error' },
+  toast_settings_saved: { ar:'تم حفظ الإعدادات',    en:'Settings saved' },
+  toast_user_created:   { ar:'تم إنشاء المستخدم',   en:'User created' },
+  // Months
+  month_1:  { ar:'يناير',   en:'January' },
+  month_2:  { ar:'فبراير',  en:'February' },
+  month_3:  { ar:'مارس',    en:'March' },
+  month_4:  { ar:'أبريل',   en:'April' },
+  month_5:  { ar:'مايو',    en:'May' },
+  month_6:  { ar:'يونيو',   en:'June' },
+  month_7:  { ar:'يوليو',   en:'July' },
+  month_8:  { ar:'أغسطس',   en:'August' },
+  month_9:  { ar:'سبتمبر',  en:'September' },
+  month_10: { ar:'أكتوبر',  en:'October' },
+  month_11: { ar:'نوفمبر',  en:'November' },
+  month_12: { ar:'ديسمبر',  en:'December' },
+  // Days
+  day_0: { ar:'الأحد',     en:'Sunday' },
+  day_1: { ar:'الاثنين',   en:'Monday' },
+  day_2: { ar:'الثلاثاء',  en:'Tuesday' },
+  day_3: { ar:'الأربعاء',  en:'Wednesday' },
+  day_4: { ar:'الخميس',    en:'Thursday' },
+  day_5: { ar:'الجمعة',    en:'Friday' },
+  day_6: { ar:'السبت',     en:'Saturday' },
+};
+
+let _lang = localStorage.getItem('lang') || 'ar';
+window._lang = _lang;
+
+function t(key) {
+  return TRANSLATIONS[key]?.[_lang] || TRANSLATIONS[key]?.ar || key;
+}
+
+function toggleLang() {
+  setLang(_lang === 'ar' ? 'en' : 'ar');
+}
+
+function setLang(lang) {
+  _lang = lang;
+  window._lang = lang;
+  localStorage.setItem('lang', lang);
+
+  // Direction & lang attribute
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang;
+
+  // Update lang button text (topbar + login)
+  document.querySelectorAll('#lang-btn, #login-lang-btn').forEach(btn => {
+    btn.textContent = lang === 'ar' ? 'EN' : 'عربي';
+  });
+
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (TRANSLATIONS[key]) el.textContent = TRANSLATIONS[key][lang] || TRANSLATIONS[key].ar;
+  });
+
+  // Update page title
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    const pid = activePage.id.replace('page-', '');
+    document.getElementById('page-title').textContent = PAGE_TITLES(pid);
+  }
+
+  // Update date string
+  _updateDateStr();
+
+  // Update STATUS labels used in dynamic tables
+  STATUS.on_time.label    = t('st_on_time');
+  STATUS.late.label       = t('st_late');
+  STATUS.absent.label     = t('st_absent');
+  STATUS.early_leave.label= t('st_early_leave');
+  STATUS.present.label    = t('st_present');
+}
+
+function _updateDateStr() {
+  const months = [1,2,3,4,5,6,7,8,9,10,11,12].map(i => t('month_'+i));
+  const days   = [0,1,2,3,4,5,6].map(i => t('day_'+i));
+  document.getElementById('today-str').textContent =
+    `${days[now.getDay()]}، ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                   'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const MONTHS = MONTHS_AR;
 const DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 
 const STATUS = {
@@ -1942,24 +2186,10 @@ const STATUS = {
   present:    { label:'حاضر',            cls:'b-present' },
 };
 
-const PAGE_TITLES = {
-  dashboard:  'لوحة التحكم',
-  attendance: 'سجل الحضور والغياب',
-  employees:  'إدارة الموظفين',
-  payroll:    'مسيرة الرواتب',
-  excuses:        'الأعذار',
-  overtime:       'سجل الإضافي',
-  leaves:         'الإجازات',
-  users:          'إدارة المستخدمين',
-  calendar:       'تقويم الإجازات والحضور',
-  audit:          'سجل الأحداث',
-  settings:       'إعدادات النظام',
-  profile:        'ملفي الشخصي',
-  'my-attendance':'حضوري وغيابي',
-  'my-violations':'مخالفاتي',
-  'my-payroll':   'راتبي الشهري',
-  'my-requests':  'طلباتي',
-};
+function PAGE_TITLES(pid) {
+  const key = 'pt_' + pid;
+  return TRANSLATIONS[key]?.[_lang] || TRANSLATIONS[key]?.ar || pid;
+}
 
 let allEmps = [];
 const now = new Date();
@@ -1972,8 +2202,8 @@ let _currentUser = null;
 //  INIT
 // ════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('today-str').textContent =
-    `${DAYS[now.getDay()]}، ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  // Apply saved language on load
+  setLang(_lang);
 
   _runModal     = new bootstrap.Modal(document.getElementById('runModal'));
   _empModal     = new bootstrap.Modal(document.getElementById('empModal'));
@@ -2060,24 +2290,24 @@ async function doLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   err.style.display = 'none';
-  if (!user || !pass) { err.textContent='أدخل اسم المستخدم وكلمة المرور'; err.style.display='block'; return; }
+  if (!user || !pass) { err.textContent=t('login_required'); err.style.display='block'; return; }
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> جاري الدخول...';
+  btn.innerHTML = `<span class="spin"></span> ${t('login_loading')}`;
   try {
     const r = await POST('/api/auth/login', {username: user, password: pass});
     if (r.ok) {
       _currentUser = r;
       initApp();
     } else {
-      err.textContent = r.error || 'بيانات غير صحيحة';
+      err.textContent = r.error || t('login_error');
       err.style.display = 'block';
     }
   } catch(e) {
-    err.textContent = 'خطأ في الاتصال';
+    err.textContent = t('conn_error');
     err.style.display = 'block';
   }
   btn.disabled = false;
-  btn.innerHTML = '🔑 دخول';
+  btn.innerHTML = `🔑 ${t('login_btn')}`;
 }
 
 async function doLogout() {
@@ -2126,7 +2356,7 @@ function showPage(page) {
     const el = document.getElementById(id);
     if (el) el.classList.add('active');
   });
-  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
+  document.getElementById('page-title').textContent = PAGE_TITLES(page);
 
   if (page === 'attendance') {
     if (_currentUser?.role === 'employee') { showPage('my-attendance'); return; }
