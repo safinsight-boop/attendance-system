@@ -4088,7 +4088,6 @@ async function loadProfile() {
     const bal = d.leave_balance;
 
     const attended = (d.records || []).filter(r => r.status !== 'absent').length;
-    const bal = d.leave_balance;
 
     const wtypeAr  = e.work_type === 'fixed' ? 'دوام ثابت' : 'دوام مرن';
     const schedule = (e.work_start && e.work_end) ? `${e.work_start} — ${e.work_end}` : '—';
