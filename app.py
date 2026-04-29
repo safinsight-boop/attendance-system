@@ -1,6 +1,6 @@
 ﻿#!/usr/bin/env python3
 """
-نظام إدارة الحضور والغياب — TTLock Integration
+Attendance Management System — TTLock Integration
 Flask + SQLite + APScheduler + Gmail SMTP
 """
 import os, sqlite3, hashlib, requests, smtplib, logging, io, secrets, threading
@@ -31,16 +31,33 @@ CID        = os.getenv('TTLOCK_CLIENT_ID', '')
 CSECRET    = os.getenv('TTLOCK_CLIENT_SECRET', '')
 TTUSR      = os.getenv('TTLOCK_USERNAME', '')
 TTPASS     = os.getenv('TTLOCK_PASSWORD', '')
+
+def _tt_creds():
+    """Return (cid, csecret, usr, pwd) — env vars take priority, then DB settings."""
+    if CID and CSECRET and TTUSR and TTPASS:
+        return CID, CSECRET, TTUSR, TTPASS
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT key, value FROM settings WHERE key IN "
+            "('tt_client_id','tt_client_secret','tt_username','tt_password')"
+        ).fetchall()
+        conn.close()
+        s = {r['key']: r['value'] for r in rows}
+        return (s.get('tt_client_id',''), s.get('tt_client_secret',''),
+                s.get('tt_username',''),  s.get('tt_password',''))
+    except Exception:
+        return CID, CSECRET, TTUSR, TTPASS
 EMAIL_FROM       = os.getenv('EMAIL_SENDER', '')
 EMAIL_PASS       = os.getenv('EMAIL_PASSWORD', '')
 SITE_URL         = os.getenv('SITE_URL', 'https://attendance-system-pd27.onrender.com')
-GRACE_MIN        = 5    # دقائق السماح قبل احتساب التأخر
+GRACE_MIN        = 5    # grace minutes before marking late
 
 # ═══════════════════════════════════════════════════════════
 #  SUPABASE AUDIT LOG
 # ═══════════════════════════════════════════════════════════
 def audit_log(event_type, target_type='', target_name='', details='', status='success'):
-    """تسجيل الأحداث في Supabase — يُرسل في خيط منفصل حتى لا يبطئ التطبيق"""
+    """Log events to Supabase — sent in a background thread to avoid slowing the app"""
     if not SUPABASE_KEY:
         return
     username = session.get('username', 'system')
@@ -72,28 +89,28 @@ def audit_log(event_type, target_type='', target_name='', details='', status='su
         except Exception as e:
             logger.warning(f"audit_log failed: {e}")
     threading.Thread(target=_send, daemon=True).start()
-AUTO_REJECT_DAYS = 3    # أيام الرفض التلقائي للعذر
+AUTO_REJECT_DAYS = 3    # days until automatic rejection of pending requests
 
-# جدول المخالفات: {bracket: [(ptype, pvalue), ...]}
+# Violations table: {bracket: [(ptype, pvalue), ...]}
 # ptype: 'warning' | 'percent' | 'day' | 'warning_day'
-# percent → % من الأجر اليومي | day → N × الأجر اليومي
+# percent → % of daily wage | day → N × daily wage
 PENALTIES = {
-    # تأخر الحضور — بدون تعطيل عمال آخرين (اللائحة التنفيذية لنظام العمل)
-    'late_1_15':   [('warning', 0),  ('percent', 5),  ('percent', 10), ('percent', 20)],  # ≤15 دق
-    'late_15_30':  [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # 15-30 دق
-    'late_30_60':  [('percent', 25), ('percent', 50), ('percent', 75), ('day', 1)],        # 30-60 دق
-    'late_60plus': [('warning', 0),  ('day', 1),      ('day', 2),      ('day', 3)],        # >60 دق
-    # الانصراف المبكر
-    'early_u15':   [('warning', 0),  ('percent', 10), ('percent', 25), ('day', 1)],        # ≤15 دق
-    'early_o15':   [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # >15 دق
-    # موظفون مرنون
+    # Late arrival — without disrupting other workers (Labor Regulations)
+    'late_1_15':   [('warning', 0),  ('percent', 5),  ('percent', 10), ('percent', 20)],  # ≤15 min
+    'late_15_30':  [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # 15-30 min
+    'late_30_60':  [('percent', 25), ('percent', 50), ('percent', 75), ('day', 1)],        # 30-60 min
+    'late_60plus': [('warning', 0),  ('day', 1),      ('day', 2),      ('day', 3)],        # >60 min
+    # Early departure
+    'early_u15':   [('warning', 0),  ('percent', 10), ('percent', 25), ('day', 1)],        # ≤15 min
+    'early_o15':   [('percent', 10), ('percent', 25), ('percent', 50), ('day', 1)],        # >15 min
+    # Flexible schedule employees
     'flex_hours':  [('hours', 0)],
-    # غياب بدون عذر
+    # Absence without excuse
     'absent_1':    [('percent', 50), ('day', 1), ('day', 2), ('day', 3)],
 }
 
-MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
-             'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']
+MONTHS_AR = ['January','February','March','April','May','June',
+             'July','August','September','October','November','December']
 
 _tt_cache = {'token': None, 'exp': 0}
 
@@ -249,7 +266,7 @@ def init_db():
             key   TEXT PRIMARY KEY,
             value TEXT
         );
-        INSERT OR IGNORE INTO settings VALUES ('company_name',    'بوابة الموظف');
+        INSERT OR IGNORE INTO settings VALUES ('company_name',    'Employee Portal');
         INSERT OR IGNORE INTO settings VALUES ('company_name_en', 'Employee Portal');
         INSERT OR IGNORE INTO settings VALUES ('weekend_days',    '5,6');
         """)
@@ -261,7 +278,7 @@ def init_db():
         conn.close()
 
 def _migrate_db(conn):
-    """إضافة أعمدة جديدة لجداول موجودة (آمن عند التكرار)"""
+    """Add new columns to existing tables (safe to run repeatedly)"""
     migrations = [
         "ALTER TABLE excuse_requests ADD COLUMN attachment TEXT",
         "ALTER TABLE excuse_requests ADD COLUMN attachment_name TEXT",
@@ -313,7 +330,7 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'غير مصرح', 'login_required': True}), 401
+            return jsonify({'error': 'Unauthorized', 'login_required': True}), 401
         return f(*args, **kwargs)
     return decorated
 
@@ -321,21 +338,21 @@ def hr_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
-            return jsonify({'error': 'غير مصرح', 'login_required': True}), 401
+            return jsonify({'error': 'Unauthorized', 'login_required': True}), 401
         if session.get('role') not in ('hr', 'manager'):
-            return jsonify({'error': 'صلاحيات غير كافية'}), 403
+            return jsonify({'error': 'Insufficient permissions'}), 403
         return f(*args, **kwargs)
     return decorated
 
 def _gosi(emp):
-    """احتساب تأمينات GOSI = 10.75% — المتدربون (emp_code يبدأ بـ IN) معفيون"""
+    """Calculate GOSI insurance = 10.75% — trainees (emp_code starting with IN) are exempt"""
     code = (emp.get('emp_code') or '').strip().lower()
     if code.startswith('in'):
         return 0.0
     return round(((emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0)) * 0.1075, 2)
 
 def _leave_balance(conn, emp_id, year=None):
-    """رصيد الإجازة السنوية: الحق - المستخدم = المتبقي"""
+    """Annual leave balance: entitlement - used = remaining"""
     if year is None:
         year = date.today().year
     emp = conn.execute("SELECT annual_leave_days FROM employees WHERE id=?", (emp_id,)).fetchone()
@@ -353,12 +370,12 @@ def _leave_balance(conn, emp_id, year=None):
     }
 
 def _is_on_leave(conn, emp_id, target_date):
-    """هل الموظف في إجازة معتمدة في هذا اليوم؟"""
+    """Is the employee on approved leave on this date?"""
     ds = str(target_date)
-    # إجازة رسمية
+    # public holiday
     if conn.execute("SELECT 1 FROM public_holidays WHERE h_date=?", (ds,)).fetchone():
         return 'official_holiday'
-    # إجازة شخصية معتمدة
+    # approved personal leave
     row = conn.execute("""
         SELECT leave_type FROM leaves
         WHERE employee_id=? AND status='approved'
@@ -377,13 +394,16 @@ def tt_get_token():
     now = datetime.now().timestamp()
     if _tt_cache['token'] and now < _tt_cache['exp'] - 120:
         return _tt_cache['token']
+    cid, csecret, usr, pwd = _tt_creds()
+    if not cid or not usr:
+        return None
     try:
         r = requests.post(f"{TTBASE}/oauth2/token", data={
-            'client_id':     CID,
-            'client_secret': CSECRET,
+            'client_id':     cid,
+            'client_secret': csecret,
             'grant_type':    'password',
-            'username':      TTUSR,
-            'password':      _md5(TTPASS),
+            'username':      usr,
+            'password':      _md5(pwd),
         }, timeout=15)
         d = r.json()
         if 'access_token' in d:
@@ -398,10 +418,11 @@ def tt_get_token():
 def tt_get_locks(token):
     locks, page = [], 1
     ts = int(datetime.now().timestamp() * 1000)
+    cid = _tt_creds()[0]
     while True:
         try:
             r = requests.get(f"{TTBASE}/v3/lock/list", params={
-                'clientId': CID, 'accessToken': token,
+                'clientId': cid, 'accessToken': token,
                 'pageNo': page, 'pageSize': 100, 'date': ts
             }, timeout=15).json()
             if r.get('errcode', -1) != 0:
@@ -418,10 +439,11 @@ def tt_get_locks(token):
 def tt_get_records(token, lock_id, start_ms, end_ms):
     recs, page = [], 1
     ts = int(datetime.now().timestamp() * 1000)
+    cid = _tt_creds()[0]
     while True:
         try:
             r = requests.get(f"{TTBASE}/v3/lockRecord/list", params={
-                'clientId': CID, 'accessToken': token,
+                'clientId': cid, 'accessToken': token,
                 'lockId': lock_id, 'startDate': start_ms,
                 'endDate': end_ms, 'pageNo': page,
                 'pageSize': 100, 'date': ts
@@ -437,8 +459,8 @@ def tt_get_records(token, lock_id, start_ms, end_ms):
 
 def fetch_daily_records(target_date):
     """
-    جلب سجلات TTLock ليوم محدد.
-    يرجع: {name_en_lower: [datetime, ...]} مرتبة زمنياً
+    Fetch TTLock records for a specific day.
+    Returns: {name_en_lower: [datetime, ...]} sorted chronologically
     """
     token = tt_get_token()
     if not token:
@@ -481,11 +503,11 @@ def late_bracket(mins):
 
 def early_bracket(mins):
     if mins <= 0:   return None
-    if mins <= 15:  return 'early_u15'   # ≤15 دقيقة (بما لا يتجاوز 15)
-    return 'early_o15'                   # >15 دقيقة
+    if mins <= 15:  return 'early_u15'   # ≤15 min (inclusive)
+    return 'early_o15'                   # >15 min
 
 def next_occurrence(conn, emp_id, yr, mo, bracket):
-    """زيادة عداد المخالفة وإرجاع الرقم الجديد"""
+    """Increment violation counter and return new count"""
     row = conn.execute(
         "SELECT cnt FROM vio_counts WHERE employee_id=? AND yr=? AND mo=? AND bracket=?",
         (emp_id, yr, mo, bracket)
@@ -499,7 +521,7 @@ def next_occurrence(conn, emp_id, yr, mo, bracket):
     return cnt
 
 def calc_deduction(emp, ptype, pvalue):
-    """حساب مبلغ الخصم النقدي"""
+    """Calculate monetary deduction amount"""
     daily = (emp['salary'] + emp['housing'] + emp['transport']) / 30
     if ptype == 'warning':               return 0.0
     if ptype == 'percent':               return round(daily * pvalue / 100, 2)
@@ -507,7 +529,7 @@ def calc_deduction(emp, ptype, pvalue):
     return 0.0
 
 def _get_emp_schedule(conn, emp, date_str):
-    """يرجع بيانات الجدول الفعّالة في تاريخ معين (يتحقق من التاريخ المؤثر)."""
+    """Returns effective schedule data for a given date (checks effective date)."""
     row = conn.execute("""
         SELECT * FROM schedule_history
         WHERE employee_id=? AND effective_date<=?
@@ -526,7 +548,7 @@ def _get_emp_schedule(conn, emp, date_str):
     return emp
 
 def apply_violation(conn, emp, vio_date, vtype, bracket):
-    """تطبيق المخالفة وحفظها، يرجع (ptype, pvalue, deduction)"""
+    """Apply violation and save it, returns (ptype, pvalue, deduction)"""
     yr, mo = vio_date.year, vio_date.month
     occ = next_occurrence(conn, emp['id'], yr, mo, bracket)
     idx = min(occ, 4) - 1
@@ -558,7 +580,7 @@ def send_email(to, subject, html_body):
     except Exception as e:
         logger.error(f"Email error: {e}")
 
-_STYLE = "font-family:Tahoma,Arial;direction:rtl;padding:28px;max-width:620px;margin:0 auto;color:#1e293b"
+_STYLE = "font-family:Tahoma,Arial;direction:ltr;padding:28px;max-width:620px;margin:0 auto;color:#1e293b"
 _TABLE = "border-collapse:collapse;width:100%;margin-top:14px"
 _TD    = "padding:10px 14px;border:1px solid #e2e8f0;font-size:14px"
 
@@ -571,89 +593,89 @@ def notify_attendance(emp, att_date, status, check_in, check_out,
     co   = check_out.strftime('%I:%M %p') if check_out else '—'
 
     def penalty_text():
-        if not ptype or ptype == 'warning': return 'إنذار كتابي'
-        if ptype == 'percent': return f"خصم {pvalue}% من الأجر اليومي"
-        if ptype in ('day', 'warning_day'): return f"خصم {pvalue} يوم من الراتب"
+        if not ptype or ptype == 'warning': return 'Written Warning'
+        if ptype == 'percent': return f"Deduction: {pvalue}% of daily wage"
+        if ptype in ('day', 'warning_day'): return f"Deduction: {pvalue} day(s) from salary"
         return '—'
 
     if status == 'on_time':
-        subj = f"✅ شكر وتقدير على الالتزام — {ds}"
+        subj = f"✅ Attendance Commendation — {ds}"
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#16a34a;margin-bottom:6px">✅ شكر وتقدير</h2>
-          <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-          <p>نشكرك على التزامك بمواعيد العمل اليوم <b>{ds}</b>.</p>
+          <h2 style="color:#16a34a;margin-bottom:6px">✅ Commendation</h2>
+          <p>Dear <b>{name}</b>,</p>
+          <p>Thank you for your punctuality today <b>{ds}</b>.</p>
           <table style="{_TABLE}">
-            <tr><td style="{_TD};background:#f8fafc">وقت الحضور</td><td style="{_TD}"><b>{ci}</b></td></tr>
-            <tr><td style="{_TD};background:#f8fafc">وقت الانصراف</td><td style="{_TD}"><b>{co}</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Check-in</td><td style="{_TD}"><b>{ci}</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Check-out</td><td style="{_TD}"><b>{co}</b></td></tr>
           </table>
-          <p style="color:#64748b;margin-top:16px;font-size:13px">نقدر جهدك وانضباطك.</p></div>"""
+          <p style="color:#64748b;margin-top:16px;font-size:13px">We appreciate your dedication and discipline.</p></div>"""
 
     elif status == 'late':
-        subj = f"⚠️ إشعار تأخر — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
+        subj = f"⚠️ Late Arrival Notice — {ds}"
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">Deduction Amount</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#d97706;margin-bottom:6px">⚠️ إشعار مخالفة — تأخر</h2>
-          <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-          <p>تم رصد تأخر في حضورك بتاريخ <b>{ds}</b>.</p>
+          <h2 style="color:#d97706;margin-bottom:6px">⚠️ Violation Notice — Late Arrival</h2>
+          <p>Dear <b>{name}</b>,</p>
+          <p>A late arrival was recorded on <b>{ds}</b>.</p>
           <table style="{_TABLE}">
-            <tr><td style="{_TD};background:#f8fafc">وقت الحضور</td><td style="{_TD}"><b>{ci}</b></td></tr>
-            <tr><td style="{_TD};background:#fff7ed">مدة التأخر</td><td style="{_TD};color:#dc2626"><b>{late_min} دقيقة</b></td></tr>
-            <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Check-in Time</td><td style="{_TD}"><b>{ci}</b></td></tr>
+            <tr><td style="{_TD};background:#fff7ed">Late Duration</td><td style="{_TD};color:#dc2626"><b>{late_min} min</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Penalty</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
             {ded_row}
           </table>
-          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <p style="margin-top:16px">If you have a valid excuse, you can submit it directly:</p>
           <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
-            رفع العذر
+            Submit Excuse
           </a>
-          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">The excuse will be automatically rejected if not submitted within {AUTO_REJECT_DAYS} days.</p>
         </div>"""
 
     elif status == 'early_leave':
-        subj = f"⚠️ إشعار مغادرة مبكرة — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
+        subj = f"⚠️ Early Departure Notice — {ds}"
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">Deduction Amount</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#d97706;margin-bottom:6px">⚠️ إشعار مخالفة — مغادرة مبكرة</h2>
-          <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-          <p>تم رصد مغادرة مبكرة بتاريخ <b>{ds}</b>.</p>
+          <h2 style="color:#d97706;margin-bottom:6px">⚠️ Violation Notice — Early Departure</h2>
+          <p>Dear <b>{name}</b>,</p>
+          <p>An early departure was recorded on <b>{ds}</b>.</p>
           <table style="{_TABLE}">
-            <tr><td style="{_TD};background:#f8fafc">وقت الانصراف</td><td style="{_TD}"><b>{co}</b></td></tr>
-            <tr><td style="{_TD};background:#fff7ed">المغادرة المبكرة</td><td style="{_TD};color:#dc2626"><b>{early_min} دقيقة</b></td></tr>
-            <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Check-out Time</td><td style="{_TD}"><b>{co}</b></td></tr>
+            <tr><td style="{_TD};background:#fff7ed">Early Departure</td><td style="{_TD};color:#dc2626"><b>{early_min} min</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Penalty</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
             {ded_row}
           </table>
-          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <p style="margin-top:16px">If you have a valid excuse, you can submit it directly:</p>
           <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
-            رفع العذر
+            Submit Excuse
           </a>
-          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">The excuse will be automatically rejected if not submitted within {AUTO_REJECT_DAYS} days.</p>
         </div>"""
 
     elif status == 'absent':
-        subj = f"🔴 إشعار غياب — {ds}"
-        ded_row = f'<tr><td style="{_TD};background:#fff1f2">مبلغ الخصم</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
+        subj = f"🔴 Absence Notice — {ds}"
+        ded_row = f'<tr><td style="{_TD};background:#fff1f2">Deduction Amount</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#dc2626;margin-bottom:6px">🔴 إشعار غياب</h2>
-          <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-          <p>لم يتم تسجيل حضورك بتاريخ <b>{ds}</b>.</p>
+          <h2 style="color:#dc2626;margin-bottom:6px">🔴 Absence Notice</h2>
+          <p>Dear <b>{name}</b>,</p>
+          <p>No attendance was recorded for you on <b>{ds}</b>.</p>
           <table style="{_TABLE}">
-            <tr><td style="{_TD};background:#f8fafc">العقوبة</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
+            <tr><td style="{_TD};background:#f8fafc">Penalty</td><td style="{_TD}"><b>{penalty_text()}</b></td></tr>
             {ded_row}
           </table>
-          <p style="margin-top:16px">إذا كان لديك عذر يمكنك رفعه مباشرة:</p>
+          <p style="margin-top:16px">If you have a valid excuse, you can submit it directly:</p>
           <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:6px">
-            رفع العذر
+            Submit Excuse
           </a>
-          <p style="color:#94a3b8;font-size:12px;margin-top:12px">سيتم رفض العذر تلقائياً إذا لم يُقدَّم خلال {AUTO_REJECT_DAYS} أيام.</p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:12px">The excuse will be automatically rejected if not submitted within {AUTO_REJECT_DAYS} days.</p>
         </div>"""
     elif status.startswith('leave_'):
-        return  # لا إشعار للإجازات المعتمدة
+        return  # no notification for approved leaves
     else:
         return
 
     send_email(emp['email'], subj, body)
 
 def _notify_overtime(emp, att_date, ot_hours, checkout_time, conn):
-    """إشعار مدراء HR و القسم بوجود إضافي غير مؤكد"""
+    """Notify HR managers and department of unconfirmed overtime"""
     managers = conn.execute(
         "SELECT u.*, e.email AS emp_email FROM users u "
         "LEFT JOIN employees e ON e.id=u.employee_id "
@@ -664,18 +686,18 @@ def _notify_overtime(emp, att_date, ot_hours, checkout_time, conn):
         to = mgr['emp_email'] or EMAIL_FROM
         if not to:
             continue
-        subj = f"🕐 إضافي غير مؤكد — {name} — {att_date}"
+        subj = f"🕐 Unconfirmed Overtime — {name} — {att_date}"
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#d97706;margin-bottom:6px">🕐 إشعار إضافي</h2>
-          <p>الموظف <b>{name}</b> بقي <b>{ot_hours:.1f} ساعة</b> بعد انتهاء دوامه بتاريخ <b>{att_date}</b>.</p>
-          <p>وقت الانصراف: <b>{checkout_time}</b></p>
-          <p>هل يوجد <b>تكليف رسمي</b> لهذا الإضافي؟</p>
+          <h2 style="color:#d97706;margin-bottom:6px">🕐 Overtime Notice</h2>
+          <p>Employee <b>{name}</b> stayed <b>{ot_hours:.1f} hr</b> beyond their shift on <b>{att_date}</b>.</p>
+          <p>Check-out time: <b>{checkout_time}</b></p>
+          <p>Is there an <b>official assignment</b> for this overtime?</p>
           <p>
             <a href="{SITE_URL}" style="background:#3b82f6;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:700">
-              الرد من الموقع
+              Review on Website
             </a>
           </p>
-          <p style="color:#94a3b8;font-size:12px;margin-top:14px">إذا لم يتم التأكيد خلال 24 ساعة لن يُحتسب الإضافي.</p>
+          <p style="color:#94a3b8;font-size:12px;margin-top:14px">If not confirmed within 24 hours, the overtime will not be counted.</p>
         </div>"""
         send_email(to, subj, body)
 
@@ -685,16 +707,16 @@ def notify_flex_weekly(emp, friday, actual_h, required_h, ded):
     monday = friday - timedelta(days=4)
     missing = max(0.0, required_h - actual_h)
     color = "#dc2626" if missing > 0 else "#16a34a"
-    subj = f"📊 تقرير ساعاتك الأسبوعي — {monday} إلى {friday}"
-    ded_row = f'<tr><td style="{_TD};background:#fff1f2;color:#dc2626">الخصم المقدر</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
+    subj = f"📊 Weekly Hours Report — {monday} to {friday}"
+    ded_row = f'<tr><td style="{_TD};background:#fff1f2;color:#dc2626">Estimated Deduction</td><td style="{_TD};color:#dc2626"><b>{ded:.2f} SR</b></td></tr>' if ded > 0 else ''
     body = f"""<div style="{_STYLE}">
-      <h2 style="margin-bottom:6px">📊 تقرير الساعات الأسبوعي</h2>
-      <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-      <p>أسبوع: <b>{monday}</b> — <b>{friday}</b></p>
+      <h2 style="margin-bottom:6px">📊 Weekly Hours Report</h2>
+      <p>Dear <b>{name}</b>,</p>
+      <p>Week: <b>{monday}</b> — <b>{friday}</b></p>
       <table style="{_TABLE}">
-        <tr><td style="{_TD};background:#f8fafc">الساعات المطلوبة</td><td style="{_TD}"><b>{required_h:.1f} ساعة</b></td></tr>
-        <tr><td style="{_TD};background:#f8fafc">الساعات الفعلية</td><td style="{_TD}"><b>{actual_h:.1f} ساعة</b></td></tr>
-        <tr><td style="{_TD};background:#f8fafc;color:{color}">الساعات الناقصة</td><td style="{_TD};color:{color}"><b>{missing:.1f} ساعة</b></td></tr>
+        <tr><td style="{_TD};background:#f8fafc">Required Hours</td><td style="{_TD}"><b>{required_h:.1f} hr</b></td></tr>
+        <tr><td style="{_TD};background:#f8fafc">Actual Hours</td><td style="{_TD}"><b>{actual_h:.1f} hr</b></td></tr>
+        <tr><td style="{_TD};background:#f8fafc;color:{color}">Missing Hours</td><td style="{_TD};color:{color}"><b>{missing:.1f} hr</b></td></tr>
         {ded_row}
       </table></div>"""
     send_email(emp['email'], subj, body)
@@ -706,18 +728,18 @@ def process_day(target_date=None):
     if target_date is None:
         target_date = date.today()
 
-    # لا تعالج الغياب إذا TTLock غير مربوط
+    # skip attendance processing if TTLock is not configured
     if not CID or not TTUSR:
         logger.warning("TTLock not configured — skipping attendance processing")
-        return {'ok': False, 'msg': 'TTLock غير مربوط — لا يمكن معالجة الحضور'}
+        return {'ok': False, 'msg': 'TTLock not connected — cannot process attendance'}
 
     logger.info(f"=== Processing attendance for {target_date} ===")
     raw = fetch_daily_records(target_date)
 
-    # إذا فشل جلب السجلات (token فشل) لا نسجل غياب تلقائي
+    # if fetching records failed (token failed) do not auto-record absence
     if raw is None:
         logger.warning(f"fetch_daily_records returned None for {target_date} — skipping")
-        return {'ok': False, 'msg': 'فشل الاتصال بـ TTLock'}
+        return {'ok': False, 'msg': 'Failed to connect to TTLock'}
 
     conn = get_db()
     try:
@@ -738,13 +760,13 @@ def process_day(target_date=None):
             ded = 0.0
 
             if not times:
-                # فحص الإجازة قبل تسجيل غياب
+                # check leave before recording absence
                 leave_type = _is_on_leave(conn, emp['id'], target_date)
                 if leave_type:
                     status = f'leave_{leave_type}'
                 else:
                     status = 'absent'
-                    # مخالفة غياب يوم واحد
+                    # single-day absence violation
                     ptype, pvalue, ded = apply_violation(
                         conn, emp, target_date, 'absent', 'absent_1')
 
@@ -759,7 +781,7 @@ def process_day(target_date=None):
 
                 if check_in and wstart:
                     raw_late = (check_in - wstart).total_seconds() / 60
-                    # فترة السماح 5 دقائق
+                    # 5-minute grace period
                     late_min = max(0, int(raw_late) - GRACE_MIN)
 
                 if check_out and wend:
@@ -770,7 +792,7 @@ def process_day(target_date=None):
                     total_hours = round(
                         (check_out - check_in).total_seconds() / 3600, 2)
 
-                # ── الأولوية: تأخر أولاً ثم مغادرة مبكرة ──
+                # -- priority: late first, then early departure --
                 if late_min > 0:
                     status = 'late'
                     br = late_bracket(late_min)
@@ -787,7 +809,7 @@ def process_day(target_date=None):
                 else:
                     status = 'on_time'
 
-                # ── كشف الإضافي (بعد وقت الانصراف بأكثر من 30 دقيقة) ──
+                # -- detect overtime (>30 min after scheduled end) --
                 if check_out and wend:
                     ot_min = (check_out - wend).total_seconds() / 60
                     if ot_min > 30:
@@ -807,7 +829,7 @@ def process_day(target_date=None):
                         (check_out - check_in).total_seconds() / 3600, 2)
                 status = 'present'
 
-            # حفظ سجل الحضور
+            # save attendance record
             conn.execute("""
                 INSERT INTO attendance
                     (employee_id, att_date, check_in, check_out,
@@ -827,11 +849,11 @@ def process_day(target_date=None):
                 late_min, early_min, total_hours, status
             ))
 
-            # إرسال إيميل الإشعار
+            # send notification email
             notify_attendance(emp, target_date, status, check_in, check_out,
                               late_min, early_min, ptype, pvalue, ded)
 
-        # ── فحص الموظفين المرنين (كل جمعة) ──
+        # -- check flex employees (every Friday) --
         if target_date.weekday() == 4:
             monday = target_date - timedelta(days=4)
             week_dates = [str(monday + timedelta(days=i)) for i in range(5)]
@@ -903,14 +925,14 @@ def _cell(ws, row, col, val, bold=False, bg=None, fg='000000',
 #  EXCEL — ATTENDANCE EXPORT
 # ═══════════════════════════════════════════════════════════
 STATUS_AR = {
-    'on_time': 'في الوقت', 'late': 'متأخر',
-    'absent': 'غائب', 'early_leave': 'مغادرة مبكرة', 'present': 'حاضر'
+    'on_time': 'On Time', 'late': 'Late',
+    'absent': 'Absent', 'early_leave': 'Early Departure', 'present': 'Present'
 }
 
 def export_attendance_excel(year, month, emp_id=None):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "سجل الحضور"
+    ws.title = "Attendance Log"
     ws.sheet_view.rightToLeft = True
     ws.sheet_view.showGridLines = False
 
@@ -923,12 +945,12 @@ def export_attendance_excel(year, month, emp_id=None):
     # Title
     ws.merge_cells('A1:G1')
     _cell(ws, 1, 1,
-          f"سجل الحضور والغياب — {MONTHS_AR[month-1]} {year}",
+          f"Attendance Log — {MONTHS_AR[month-1]} {year}",
           bold=True, size=15, bg='1F4E79', fg='FFFFFF')
 
     # Headers
-    hdrs = ['اسم الموظف', 'التاريخ', 'الحضور', 'الانصراف',
-            'تأخر (دق)', 'خروج مبكر (دق)', 'الحالة']
+    hdrs = ['Employee Name', 'Date', 'Check-in', 'Check-out',
+            'Late (min)', 'Early Exit (min)', 'Status']
     for i, h in enumerate(hdrs, 1):
         _cell(ws, 2, i, h, bold=True, bg='2E74B5', fg='FFFFFF')
 
@@ -968,27 +990,27 @@ def export_attendance_excel(year, month, emp_id=None):
     return out
 
 # ═══════════════════════════════════════════════════════════
-#  EXCEL — PAYROLL EXPORT  (نسخة محسّنة)
+#  EXCEL — PAYROLL EXPORT  (enhanced version)
 # ═══════════════════════════════════════════════════════════
 
-# ── الألوان ─────────────────────────────────────────────────
+# -- Colors --
 _XC = {
-    'navy':    '1B2A4A',  # header داكن
+    'navy':    '1B2A4A',  # dark header
     'blue':    '1D6FAF',  # sub-header
-    'lblue':   'D6E8F7',  # خلفية معلومات
-    'green':   '197A3E',  # نص في الوقت
-    'lgreen':  'D1FAE5',  # خلفية في الوقت
-    'orange':  'B45309',  # نص تأخر
-    'lorange': 'FEF3C7',  # خلفية تأخر
-    'red':     'B91C1C',  # نص غياب / خصم
-    'lred':    'FEE2E2',  # خلفية غياب
-    'gray':    'F1F5F9',  # صف بديل
-    'dgray':   'CBD5E1',  # حدود
-    'gold':    'D97706',  # إجازة
-    'lgold':   'FFFBEB',  # خلفية إجازة
+    'lblue':   'D6E8F7',  # info background
+    'green':   '197A3E',  # on-time text
+    'lgreen':  'D1FAE5',  # on-time background
+    'orange':  'B45309',  # late text
+    'lorange': 'FEF3C7',  # late background
+    'red':     'B91C1C',  # absent / deduction text
+    'lred':    'FEE2E2',  # absent background
+    'gray':    'F1F5F9',  # alternating row
+    'dgray':   'CBD5E1',  # borders
+    'gold':    'D97706',  # leave
+    'lgold':   'FFFBEB',  # leave background
     'white':   'FFFFFF',
-    'teal':    '0F766E',  # ملخص
-    'lteal':   'CCFBF1',  # خلفية ملخص
+    'teal':    '0F766E',  # summary
+    'lteal':   'CCFBF1',  # summary background
 }
 
 def _xfont(bold=False, size=10, color='000000', name='Arial'):
@@ -1036,40 +1058,40 @@ def _xmerge(ws, r, c1, c2, val, bold=False, size=10, fg='000000', bg=None,
     c.border = Border(left=med, right=med, top=med, bottom=med)
     return c
 
-# map مسببات المخالفة → نص عربي مختصر
+# map violation causes → short label
 _VTYPE_AR = {
-    'late':       'تأخر دخول',
-    'early_leave':'خروج مبكر',
-    'flex_hours': 'نقص ساعات',
-    'absent_1':   'غياب',
+    'late':       'Late Arrival',
+    'early_leave':'Early Departure',
+    'flex_hours': 'Missing Hours',
+    'absent_1':   'Absent',
 }
 
-_OCC_WORDS = ['الأولى','الثانية','الثالثة','الرابعة','الخامسة',
-              'السادسة','السابعة','الثامنة','التاسعة','العاشرة']
+_OCC_WORDS = ['1st','2nd','3rd','4th','5th',
+              '6th','7th','8th','9th','10th']
 def _occ_ar(n):
-    """المرة الأولى / الثانية ... أو المرة 11+"""
+    """Return ordinal string for occurrence number"""
     if 1 <= n <= len(_OCC_WORDS):
-        return f'المرة {_OCC_WORDS[n-1]}'
-    return f'المرة {n}'
+        return f'Occurrence {_OCC_WORDS[n-1]}'
+    return f'Occurrence {n}'
 
 _STATUS_AR = {
-    'on_time':         ('في الوقت',       _XC['lgreen'],  _XC['green']),
-    'late':            ('متأخر',          _XC['lorange'], _XC['orange']),
-    'absent':          ('غائب',           _XC['lred'],    _XC['red']),
-    'early_leave':     ('خروج مبكر',      _XC['lorange'], _XC['orange']),
-    'leave_sick':      ('إجازة مرضية',    _XC['lgold'],   _XC['gold']),
-    'leave_emergency': ('إجازة طارئة',    _XC['lgold'],   _XC['gold']),
-    'leave_annual':    ('إجازة سنوية',    _XC['lgold'],   _XC['gold']),
-    'leave_official':  ('إجازة رسمية',    _XC['lgold'],   _XC['gold']),
+    'on_time':         ('On Time',       _XC['lgreen'],  _XC['green']),
+    'late':            ('Late',          _XC['lorange'], _XC['orange']),
+    'absent':          ('Absent',           _XC['lred'],    _XC['red']),
+    'early_leave':     ('Early Departure',      _XC['lorange'], _XC['orange']),
+    'leave_sick':      ('Sick Leave',    _XC['lgold'],   _XC['gold']),
+    'leave_emergency': ('Emergency Leave',    _XC['lgold'],   _XC['gold']),
+    'leave_annual':    ('Annual Leave',    _XC['lgold'],   _XC['gold']),
+    'leave_official':  ('Official Holiday',    _XC['lgold'],   _XC['gold']),
 }
 
 def _status_info(s):
     return _STATUS_AR.get(s, (s, _XC['white'], '000000'))
 
 def _ptype_ar(ptype, pvalue):
-    if ptype == 'warning': return 'إنذار'
-    if ptype == 'percent': return f'{pvalue}% من اليومي'
-    if ptype in ('day', 'warning_day'): return f'خصم {pvalue} يوم'
+    if ptype == 'warning': return 'Warning'
+    if ptype == 'percent': return f'{pvalue}% of daily'
+    if ptype in ('day', 'warning_day'): return f'Deduct {pvalue} day(s)'
     return f'{ptype} {pvalue}'
 
 def export_payroll_excel(year, month):
@@ -1083,7 +1105,7 @@ def export_payroll_excel(year, month):
         payroll_summary = []
 
         # ══════════════════════════════════════════════════════
-        # شيت لكل موظف
+        # sheet per employee
         # ══════════════════════════════════════════════════════
         for emp_row in emps:
             emp  = dict(emp_row)
@@ -1100,46 +1122,46 @@ def export_payroll_excel(year, month):
             net       = gross - total_ded - gosi_ded
 
             is_fixed = (emp['work_type'] == 'fixed')
-            wtype_ar = 'دوام ثابت' if is_fixed else 'دوام مرن'
+            wtype_ar = 'Fixed Schedule' if is_fixed else 'Flexible Schedule'
 
             ws = wb.create_sheet(emp['name_en'][:28])
             ws.sheet_view.rightToLeft    = True
             ws.sheet_view.showGridLines  = False
             ws.print_area = 'A1:I50'
 
-            # أعمدة: التاريخ | الدخول | الخروج | تأخر(دق) | خروج مبكر(دق) | ساعات | الحالة | المخالفة | الخصم
+            # columns: Date | Check-in | Check-out | Late(min) | Early Exit(min) | Hours | Status | Violation | Deduction
             _xcol(ws, [13, 9, 9, 9, 12, 8, 13, 30, 12])
 
             r = 1
-            # ── شريط العنوان ──────────────────────────────────
+            # -- title bar --
             _xrow(ws, r, 46)
             _xmerge(ws, r, 1, 9,
-                    f"سجل الحضور والانصراف  ◂  {emp['name_ar']}  ◂  {MONTHS_AR[month-1]} {year}",
+                    f"Attendance Record  ▸  {emp['name_ar']}  ▸  {MONTHS_AR[month-1]} {year}",
                     bold=True, size=15, fg=_XC['white'], bg=_XC['navy'], h='center')
             r += 1
 
-            # ── شريط معلومات الموظف ───────────────────────────
+            # -- employee info bar --
             _xrow(ws, r, 22)
             _xmerge(ws, r, 1, 5,
-                    f"نوع الدوام: {wtype_ar}   |   وقت الدوام: {emp['work_start']} — {emp['work_end']}",
+                    f"Schedule Type: {wtype_ar}   |   Work Hours: {emp['work_start']} — {emp['work_end']}",
                     size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
             _xmerge(ws, r, 6, 9,
-                    f"الأساسي: {emp['salary']:,.0f}   سكن: {emp['housing']:,.0f}   "
-                    f"نقل: {emp['transport']:,.0f}   عمولة: {emp['commission']:,.0f}   (SR)",
+                    f"Basic: {emp['salary']:,.0f}   Housing: {emp['housing']:,.0f}   "
+                    f"Transport: {emp['transport']:,.0f}   Commission: {emp['commission']:,.0f}   (SR)",
                     size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
             r += 1
 
-            # ── رؤوس الأعمدة ──────────────────────────────────
+            # -- column headers --────────────────────────────────
             _xrow(ws, r, 26)
-            hdrs = ['التاريخ', 'الدخول', 'الخروج', 'تأخر\n(دق)', 'خروج مبكر\n(دق)',
-                    'ساعات', 'الحالة', 'المخالفة', 'الخصم\n(SR)']
+            hdrs = ['Date', 'Check-in', 'Check-out', 'Late\n(min)', 'Early Exit\n(min)',
+                    'Hours', 'Status', 'Violation', 'Deduction\n(SR)']
             for ci, h in enumerate(hdrs, 1):
                 _xc(ws, r, ci, h, bold=True, size=10, fg=_XC['white'],
                     bg=_XC['blue'], wrap=True)
             r += 1
 
-            # ── صفوف الحضور ───────────────────────────────────
-            occ_count = {}   # {vtype: عدد تكرارات الشهر حتى الآن}
+            # -- attendance rows --
+            occ_count = {}   # {vtype: occurrence count this month}
             for att in atts:
                 att   = dict(att)
                 s     = att['status']
@@ -1185,12 +1207,12 @@ def export_payroll_excel(year, month):
                              num_fmt='#,##0.00' if is_ded and isinstance(val, float) else None)
                 r += 1
 
-            # ── فاصل ─────────────────────────────────────────
+            # -- spacer --
             r += 1
 
-            # ── ملخص الشهر (4 أعمدة × 2 صفوف + صافي) ─────────
+            # -- monthly summary (4 cols x 2 rows + net) --
             _xrow(ws, r, 26)
-            _xmerge(ws, r, 1, 9, 'ملخص الشهر',
+            _xmerge(ws, r, 1, 9, 'Monthly Summary',
                     bold=True, size=12, fg=_XC['white'], bg=_XC['teal'], h='center')
             r += 1
 
@@ -1201,16 +1223,16 @@ def export_payroll_excel(year, month):
             total_late  = sum(a['late_min']  or 0 for a in atts)
             total_early = sum(a['early_min'] or 0 for a in atts)
 
-            # صفان للإحصائيات
+            # two rows of stats
             stat_rows = [
-                [('أيام الحضور',    present_cnt, _XC['lgreen']),
-                 ('أيام الغياب',    absent_cnt,  _XC['lred']),
-                 ('أيام التأخر',    late_cnt,    _XC['lorange']),
-                 ('خروج مبكر',      early_cnt,   _XC['lorange'])],
-                [('دقائق تأخر إجمالية', total_late,  _XC['lorange']),
-                 ('دقائق خروج مبكر',   total_early, _XC['lorange']),
-                 ('إجمالي الخصومات',   round(total_ded, 2), _XC['lred']),
-                 ('تأمينات GOSI',       round(gosi_ded, 2), _XC['gray'])],
+                [('Attendance Days', present_cnt, _XC['lgreen']),
+                  ('Absent Days',     absent_cnt,  _XC['lred']),
+                  ('Late Days',      late_cnt,    _XC['lorange']),
+                  ('Early Exits',    early_cnt,   _XC['lorange'])],
+                [('Total Late (min)',    total_late,  _XC['lorange']),
+                  ('Early Exit (min)',   total_early, _XC['lorange']),
+                  ('Total Deductions',   round(total_ded, 2), _XC['lred']),
+                  ('GOSI Insurance',     round(gosi_ded, 2), _XC['gray'])],
             ]
             col_map = [(1,2), (3,4), (5,6), (7,9)]
             for stat_row in stat_rows:
@@ -1220,26 +1242,26 @@ def export_payroll_excel(year, month):
                     _xmerge(ws, r, c1, c2, txt, size=9, bg=bg, h='center', wrap=True)
                 r += 1
 
-            # صف الراتب الإجمالي
+            # gross salary row
             _xrow(ws, r, 22)
-            _xmerge(ws, r, 1, 4, f"الراتب الإجمالي:  {gross:,.2f} SR",
+            _xmerge(ws, r, 1, 4, f"Gross Salary:  {gross:,.2f} SR",
                     bold=True, size=11, fg=_XC['navy'], bg=_XC['lblue'], h='right')
-            _xmerge(ws, r, 5, 9, f"— خصومات {total_ded:,.2f}  — تأمينات {gosi_ded:,.2f}",
+            _xmerge(ws, r, 5, 9, f"— Deductions {total_ded:,.2f}  — Insurance {gosi_ded:,.2f}",
                     size=10, fg=_XC['red'], bg=_XC['lred'], h='center')
             r += 1
 
-            # صف الصافي
+            # net salary row
             _xrow(ws, r, 30)
             net_bg = _XC['lgreen'] if net >= gross * 0.85 else (_XC['lorange'] if net >= gross * 0.7 else _XC['lred'])
             net_fg = _XC['green']  if net >= gross * 0.85 else (_XC['orange']  if net >= gross * 0.7 else _XC['red'])
-            _xmerge(ws, r, 1, 9, f"صافي الراتب:   {net:,.2f} SR",
+            _xmerge(ws, r, 1, 9, f"Net Salary:   {net:,.2f} SR",
                     bold=True, size=14, fg=net_fg, bg=net_bg, h='center')
             r += 1
 
-            # منطقة التوقيعات
+            # signature area
             r += 2
             _xrow(ws, r, 20)
-            for c1, c2, lbl in [(1, 3, 'توقيع الموظف'), (4, 6, 'توقيع المشرف'), (7, 9, 'اعتماد الإدارة')]:
+            for c1, c2, lbl in [(1, 3, 'Employee Signature'), (4, 6, 'Supervisor Signature'), (7, 9, 'Management Approval')]:
                 _xmerge(ws, r, c1, c2, lbl, bold=True, size=10, fg=_XC['navy'], bg=_XC['gray'], h='center')
             r += 2
             _xrow(ws, r, 20)
@@ -1260,40 +1282,40 @@ def export_payroll_excel(year, month):
             })
 
         # ══════════════════════════════════════════════════════
-        # شيت مسيرة الرواتب الرئيسي (الشيت الأول)
+        # main payroll sheet (first sheet)
         # ══════════════════════════════════════════════════════
-        ws2 = wb.create_sheet('مسيرة الرواتب', 0)
+        ws2 = wb.create_sheet('Payroll', 0)
         ws2.sheet_view.rightToLeft   = True
         ws2.sheet_view.showGridLines = False
 
-        # أعمدة: م | الموظف | نوع الدوام | أساسي | سكن | نقل | عمولة | إجمالي | خصومات | تأمينات | صافي | ملاحظات
+        # columns: # | Employee | Schedule | Basic | Housing | Transport | Commission | Gross | Deductions | Insurance | Net | Notes
         _xcol(ws2, [5, 22, 11, 12, 11, 11, 10, 13, 11, 12, 14, 14])
-        N = 12  # عدد الأعمدة
+        N = 12  # number of columns
 
-        # ── عنوان رئيسي ──
+        # -- main title --
         _xrow(ws2, 1, 52)
         _xmerge(ws2, 1, 1, N,
-                f"مسيرة الرواتب  ◂  {MONTHS_AR[month-1]} {year}",
+                f"Payroll  ▸  {MONTHS_AR[month-1]} {year}",
                 bold=True, size=20, fg=_XC['white'], bg=_XC['navy'], h='center')
 
-        # ── شريط المعلومات ──
+        # -- info bar --
         _xrow(ws2, 2, 24)
         _xmerge(ws2, 2, 1, 6,
-                f"تاريخ الإعداد: {date.today().strftime('%Y/%m/%d')}",
+                f"Prepared: {date.today().strftime('%Y/%m/%d')}",
                 size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
         _xmerge(ws2, 2, 7, N,
-                f"إجمالي الموظفين: {len(payroll_summary)}",
+                f"Total Employees: {len(payroll_summary)}",
                 size=10, fg=_XC['navy'], bg=_XC['lblue'], h='right')
 
-        # ── رؤوس الأعمدة ──
+        # -- column headers --
         _xrow(ws2, 3, 30)
-        pay_hdrs = ['م', 'اسم الموظف', 'نوع الدوام',
-                    'الراتب الأساسي', 'بدل السكن', 'بدل المواصلات', 'العمولة',
-                    'الإجمالي', 'خصومات المخالفات', 'تأمينات (10.75%)', 'صافي الراتب', 'ملاحظات']
+        pay_hdrs = ['#', 'Employee Name', 'Schedule Type',
+                    'Basic Salary', 'Housing', 'Transport', 'Commission',
+                    'Gross', 'Violation Deductions', 'GOSI (10.75%)', 'Net Salary', 'Notes']
         for ci, h in enumerate(pay_hdrs, 1):
             _xc(ws2, 3, ci, h, bold=True, size=10, fg=_XC['white'], bg=_XC['blue'], wrap=True)
 
-        # ── صفوف الموظفين ──
+        # -- employee rows --
         tgross = tnet = tded = tgosi = 0.0
         for idx, pd in enumerate(payroll_summary, 1):
             row_r  = idx + 3
@@ -1301,7 +1323,7 @@ def export_payroll_excel(year, month):
             net_bg = _XC['lgreen'] if pd['net'] >= pd['gross'] * 0.85 else (
                      _XC['lorange'] if pd['net'] >= pd['gross'] * 0.7 else _XC['lred'])
 
-            wtype_ar = 'ثابت' if pd['work_type'] == 'fixed' else 'مرن'
+            wtype_ar = 'Fixed' if pd['work_type'] == 'fixed' else 'Flex'
             _xrow(ws2, row_r, 22)
 
             vals = [
@@ -1327,10 +1349,10 @@ def export_payroll_excel(year, month):
             tded   += pd['total_ded']
             tgosi  += pd['gosi_ded']
 
-        # ── صف الإجمالي ──
+        # -- totals row --
         tot = len(payroll_summary) + 4
         _xrow(ws2, tot, 30)
-        _xmerge(ws2, tot, 1, 3, 'الإجمالي الكلي',
+        _xmerge(ws2, tot, 1, 3, 'Grand Total',
                 bold=True, size=12, fg=_XC['white'], bg=_XC['navy'], h='center')
         for ci in range(4, N + 1):
             _xc(ws2, tot, ci, '', bold=True, bg=_XC['navy'])
@@ -1338,19 +1360,19 @@ def export_payroll_excel(year, month):
             _xc(ws2, tot, ci, val, bold=True, size=11, fg=_XC['white'],
                 bg=_XC['navy'], num_fmt='#,##0.00')
 
-        # ── صف التوفير (صافي vs إجمالي) ──
+        # -- savings row (net vs gross) --
         _xrow(ws2, tot + 1, 16)
         pct = round((1 - tded / tgross) * 100, 1) if tgross else 100
         _xmerge(ws2, tot + 1, 1, N,
-                f"نسبة الخصومات من الإجمالي:  {pct}%   |   صافي المسيرة:  {tnet:,.2f} SR",
+                f"Deduction rate from gross:  {pct}%   |   Net payroll:  {tnet:,.2f} SR",
                 size=10, fg=_XC['navy'], bg=_XC['lteal'], h='center')
 
-        # ── منطقة التوقيعات ──
+        # -- signature area --
         sig = tot + 4
         _xrow(ws2, sig, 22)
-        for c1, c2, lbl in [(1, 4, 'إعداد:   _________________________'),
-                             (5, 8, 'مراجعة:   _________________________'),
-                             (9, N, 'اعتماد:   _________________________')]:
+        for c1, c2, lbl in [(1, 4, 'Prepared by:   _________________________'),
+                             (5, 8, 'Reviewed by:   _________________________'),
+                             (9, N, 'Approved by:   _________________________')]:
             _xmerge(ws2, sig, c1, c2, lbl, bold=True, size=11, fg=_XC['navy'], h='center')
 
     finally:
@@ -1371,17 +1393,17 @@ def export_gosi_excel(year, month):
 
     _xcol(ws, [6, 30, 20, 18, 18, 18, 18])
 
-    # عنوان
+    # title
     _xrow(ws, 1, 44)
     _xmerge(ws, 1, 1, 7,
-            f"تقرير التأمينات الاجتماعية (GOSI)  —  {month_ar} {year}",
+            f"Social Insurance Report (GOSI)  —  {month_ar} {year}",
             bold=True, size=14, fg=_XC['white'], bg=_XC['navy'], h='center')
 
-    # رؤوس الأعمدة
+    # column headers
     _xrow(ws, 2, 26)
-    for ci, h in enumerate(['#', 'اسم الموظف', 'رقم الموظف',
-                             'الراتب الأساسي', 'السكن', 'النقل',
-                             'نسبة GOSI (10.75%)'], 1):
+    for ci, h in enumerate(['#', 'Employee Name', 'Employee Code',
+                             'Basic Salary', 'Housing', 'Transport',
+                             'GOSI (10.75%)'], 1):
         _xc(ws, 2, ci, h, bold=True, size=10,
             fg=_XC['white'], bg=_XC['blue'])
 
@@ -1402,10 +1424,10 @@ def export_gosi_excel(year, month):
                 _xc(ws, i + 2, ci, v, size=10, bg=bg,
                     fg=_XC['red'] if ci == 7 and gosi_ded == 0 else _XC['dark'])
 
-        # سطر المجموع
+        # total row
         r = len(emps) + 3
         _xrow(ws, r, 26)
-        _xmerge(ws, r, 1, 6, 'الإجمالي',
+        _xmerge(ws, r, 1, 6, 'Total',
                 bold=True, size=11, fg=_XC['white'], bg=_XC['navy'], h='right')
         _xc(ws, r, 7, round(total_gosi, 2),
             bold=True, size=11, fg=_XC['white'], bg=_XC['navy'])
@@ -1459,7 +1481,7 @@ def api_stats_today_detail():
     conn   = get_db()
     try:
         if status == 'absent':
-            # الغائبون = موظفون ليس لهم سجل اليوم أو حالتهم absent
+            # absent = employees with no record today or status=absent
             rows = conn.execute("""
                 SELECT e.name_ar, e.emp_code, a.check_in, a.check_out, a.late_min, a.status
                 FROM employees e
@@ -1601,8 +1623,27 @@ def api_settings_put():
         conn.commit()
     finally:
         conn.close()
+    # invalidate TTLock token cache when credentials change
+    tt_keys = {'tt_client_id','tt_client_secret','tt_username','tt_password'}
+    if any(k in tt_keys for k in data):
+        global _tt_cache
+        _tt_cache = {'token': None, 'exp': 0}
     audit_log('edit_settings', 'settings', str(list(data.keys())))
     return jsonify({'ok': True})
+
+@app.route('/api/ttlock/test', methods=['POST'])
+@hr_required
+def api_ttlock_test():
+    """Test TTLock connection — returns token status and lock count."""
+    _tt_cache['token'] = None  # force fresh token
+    token = tt_get_token()
+    if not token:
+        cid, _, usr, _ = _tt_creds()
+        if not cid or not usr:
+            return jsonify({'ok': False, 'msg': 'Credentials not configured — enter Client ID, Username, and Password first.'})
+        return jsonify({'ok': False, 'msg': 'Authentication failed — check your credentials and try again.'})
+    locks = tt_get_locks(token)
+    return jsonify({'ok': True, 'msg': f'Connected successfully! Found {len(locks)} lock(s).', 'locks': len(locks)})
 
 @app.route('/api/attendance/recent')
 def api_attendance_recent():
@@ -1622,14 +1663,14 @@ def api_attendance_recent():
 @app.route('/api/clear-fake-data', methods=['POST'])
 @hr_required
 def api_clear_fake_data():
-    """مسح جميع سجلات الحضور والمخالفات الناتجة عن عدم ربط TTLock"""
+    """Clear all attendance records and violations generated without TTLock connection"""
     conn = get_db()
     try:
         a = conn.execute("DELETE FROM attendance").rowcount
         v = conn.execute("DELETE FROM violations").rowcount
         conn.execute("DELETE FROM vio_counts")
         conn.commit()
-        return jsonify({'ok': True, 'msg': f'تم مسح {a} سجل حضور و {v} مخالفة'})
+        return jsonify({'ok': True, 'msg': f'Cleared {a} attendance records and {v} violations'})
     finally:
         conn.close()
 
@@ -1641,7 +1682,7 @@ def api_run():
         target = datetime.strptime(d_str, '%Y-%m-%d').date() if d_str else None
         process_day(target)
         audit_log('manual_run', 'attendance', d_str or str(date.today()))
-        return jsonify({'ok': True, 'msg': 'تمت معالجة الحضور بنجاح'})
+        return jsonify({'ok': True, 'msg': 'Attendance processed successfully'})
     except Exception as e:
         logger.error(f"Manual run error: {e}", exc_info=True)
         return jsonify({'ok': False, 'msg': str(e)}), 500
@@ -1710,7 +1751,7 @@ def api_leave_balance(eid):
 def api_emps_post():
     d = request.get_json(silent=True) or {}
     if not d.get('name_ar') or not d.get('name_en'):
-        return jsonify({'error': 'name_ar و name_en مطلوبان'}), 400
+        return jsonify({'error': 'name_ar and name_en are required'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -1727,9 +1768,9 @@ def api_emps_post():
              d.get('weekend_days', '5,6')))
         conn.commit()
         audit_log('create_employee', 'employee', d['name_ar'])
-        return jsonify({'ok': True, 'msg': 'تم إضافة الموظف بنجاح'})
+        return jsonify({'ok': True, 'msg': 'Employee added successfully'})
     except sqlite3.IntegrityError:
-        return jsonify({'error': 'الاسم الإنجليزي مستخدم بالفعل'}), 400
+        return jsonify({'error': 'English name already in use'}), 400
     finally:
         conn.close()
 
@@ -1742,7 +1783,7 @@ def api_emp_get(eid):
     finally:
         conn.close()
     if not row:
-        return jsonify({'error': 'الموظف غير موجود'}), 404
+        return jsonify({'error': 'Employee not found'}), 404
     return jsonify(dict(row))
 
 @app.route('/api/employees/<int:eid>', methods=['PUT'])
@@ -1753,14 +1794,14 @@ def api_emp_put(eid):
                'weekly_hours','annual_leave_days','emp_code','weekend_days']
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
-        return jsonify({'error': 'لا توجد حقول للتحديث'}), 400
+        return jsonify({'error': 'No fields to update'}), 400
     schedule_fields = {'work_type','work_start','work_end','weekly_hours','weekend_days'}
     effective_date  = d.get('schedule_effective_date', '')
     sql = f"UPDATE employees SET {', '.join(k+'=?' for k in updates)} WHERE id=?"
     conn = get_db()
     try:
         conn.execute(sql, list(updates.values()) + [eid])
-        # إذا تغيّر الجدول وحُدد تاريخ تطبيق — سجّله في التاريخ
+        # if schedule changed and effective date specified — log it in history
         if effective_date and any(k in schedule_fields for k in updates):
             emp = conn.execute("SELECT * FROM employees WHERE id=?", (eid,)).fetchone()
             if emp:
@@ -1778,7 +1819,7 @@ def api_emp_put(eid):
         audit_log('edit_employee', 'employee', str(eid), details=str(list(updates.keys())))
     finally:
         conn.close()
-    return jsonify({'ok': True, 'msg': 'تم تحديث بيانات الموظف'})
+    return jsonify({'ok': True, 'msg': 'Employee data updated'})
 
 @app.route('/api/employees/<int:eid>', methods=['DELETE'])
 def api_emp_delete(eid):
@@ -1789,7 +1830,7 @@ def api_emp_delete(eid):
         audit_log('delete_employee', 'employee', str(eid))
     finally:
         conn.close()
-    return jsonify({'ok': True, 'msg': 'تم حذف الموظف'})
+    return jsonify({'ok': True, 'msg': 'Employee deleted'})
 
 # ── Payroll ───────────────────────────────────────────────
 @app.route('/api/payroll')
@@ -1899,7 +1940,7 @@ def api_login():
     un = (d.get('username') or '').strip()
     pw = d.get('password', '')
     if not un or not pw:
-        return jsonify({'error': 'اسم المستخدم وكلمة المرور مطلوبان'}), 400
+        return jsonify({'error': 'Username and password are required'}), 400
     conn = get_db()
     try:
         row = conn.execute(
@@ -1907,7 +1948,7 @@ def api_login():
             (un, _hash(pw))).fetchone()
         if not row:
             audit_log('login_failed', target_name=un, status='failed')
-            return jsonify({'error': 'بيانات الدخول غير صحيحة'}), 401
+            return jsonify({'error': 'Invalid login credentials'}), 401
         session['user_id']   = row['id']
         session['username']  = row['username']
         session['role']      = row['role']
@@ -1967,9 +2008,9 @@ def api_users_post():
     role = d.get('role', 'employee')
     emp_id = d.get('employee_id') or None
     if not un or not pw:
-        return jsonify({'error': 'اسم المستخدم وكلمة المرور مطلوبان'}), 400
+        return jsonify({'error': 'Username and password are required'}), 400
     if role not in ('hr', 'manager', 'employee'):
-        return jsonify({'error': 'دور غير صحيح'}), 400
+        return jsonify({'error': 'Invalid role'}), 400
     conn = get_db()
     try:
         conn.execute(
@@ -1977,9 +2018,9 @@ def api_users_post():
             (un, _hash(pw), role, emp_id))
         conn.commit()
         audit_log('create_user', 'user', un, details=f"role={role}")
-        return jsonify({'ok': True, 'msg': 'تم إنشاء المستخدم'})
+        return jsonify({'ok': True, 'msg': 'User created'})
     except sqlite3.IntegrityError:
-        return jsonify({'error': 'اسم المستخدم مستخدم بالفعل'}), 400
+        return jsonify({'error': 'Username already in use'}), 400
     finally:
         conn.close()
 
@@ -1987,7 +2028,7 @@ def api_users_post():
 @hr_required
 def api_user_delete(uid):
     if uid == session.get('user_id'):
-        return jsonify({'error': 'لا يمكنك حذف حسابك الحالي'}), 400
+        return jsonify({'error': 'Cannot delete your own account'}), 400
     conn = get_db()
     try:
         conn.execute("DELETE FROM users WHERE id=?", (uid,))
@@ -2003,7 +2044,7 @@ def api_user_password(uid):
     d = request.get_json(silent=True) or {}
     pw = d.get('password', '').strip()
     if not pw or len(pw) < 4:
-        return jsonify({'error': 'كلمة المرور يجب أن تكون 4 أحرف على الأقل'}), 400
+        return jsonify({'error': 'Password must be at least 4 characters'}), 400
     conn = get_db()
     try:
         conn.execute("UPDATE users SET password_hash=? WHERE id=?", (_hash(pw), uid))
@@ -2053,32 +2094,32 @@ def api_excuses_post():
     d       = request.get_json(silent=True) or {}
     emp_id  = session.get('employee_id')
     role    = session.get('role')
-    # HR يقدر يرسل لأي موظف
+    # HR can submit for any employee
     if role in ('hr', 'manager'):
         emp_id = d.get('employee_id', emp_id)
     if not emp_id:
-        return jsonify({'error': 'لم يتم ربط المستخدم بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     att_date   = d.get('att_date', '')
     vtype      = d.get('vtype', 'late')
     reason     = (d.get('reason') or '').strip()
     attachment = d.get('attachment', '')
     att_name   = d.get('attachment_name', '')
     if not att_date or not reason:
-        return jsonify({'error': 'التاريخ والسبب مطلوبان'}), 400
+        return jsonify({'error': 'Date and reason are required'}), 400
     conn = get_db()
     try:
         exists = conn.execute(
             "SELECT 1 FROM excuse_requests WHERE employee_id=? AND att_date=? AND vtype=? AND status='pending'",
             (emp_id, att_date, vtype)).fetchone()
         if exists:
-            return jsonify({'error': 'يوجد طلب معلق بالفعل لهذا اليوم'}), 400
+            return jsonify({'error': 'A pending request already exists for this day'}), 400
         conn.execute(
             "INSERT INTO excuse_requests (employee_id, att_date, vtype, reason, attachment, attachment_name) VALUES (?,?,?,?,?,?)",
             (emp_id, att_date, vtype, reason, attachment, att_name))
         conn.commit()
-        # إشعار المدراء
+        # notify managers
         _notify_excuse_submitted(emp_id, att_date, vtype, reason, conn)
-        return jsonify({'ok': True, 'msg': 'تم إرسال العذر بنجاح'})
+        return jsonify({'ok': True, 'msg': 'Excuse submitted successfully'})
     finally:
         conn.close()
 
@@ -2089,7 +2130,7 @@ def api_excuse_decide(eid):
     status = d.get('status')
     note   = d.get('note', '')
     if status not in ('approved', 'rejected'):
-        return jsonify({'error': 'الحالة يجب أن تكون approved أو rejected'}), 400
+        return jsonify({'error': 'Status must be approved or rejected'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2097,7 +2138,7 @@ def api_excuse_decide(eid):
             SET status=?, decided_by=?, decided_at=datetime('now'), manager_note=?
             WHERE id=?
         """, (status, session['user_id'], note, eid))
-        # إذا وافق المدير: احذف المخالفة المرتبطة
+        # if manager approved: delete associated violation
         if status == 'approved':
             ex = conn.execute(
                 "SELECT * FROM excuse_requests WHERE id=?", (eid,)).fetchone()
@@ -2106,7 +2147,7 @@ def api_excuse_decide(eid):
                     DELETE FROM violations
                     WHERE employee_id=? AND vio_date=? AND vtype=?
                 """, (ex['employee_id'], ex['att_date'], ex['vtype']))
-                # إذا كان غياب وتمت الموافقة → حدّث الحضور
+                # if absence and approved → update attendance status
                 if ex['vtype'] == 'absent':
                     conn.execute("""
                         UPDATE attendance SET status='excused'
@@ -2123,20 +2164,20 @@ def _notify_excuse_submitted(emp_id, att_date, vtype, reason, conn):
     emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
     if not emp: return
     name = emp['name_ar']
-    vtype_ar = {'late': 'تأخر', 'early_leave': 'مغادرة مبكرة', 'absent': 'غياب'}.get(vtype, vtype)
+    vtype_ar = {'late': 'Late Arrival', 'early_leave': 'Early Departure', 'absent': 'Absence'}.get(vtype, vtype)
     managers = conn.execute(
         "SELECT u.*, e.email AS memail FROM users u LEFT JOIN employees e ON e.id=u.employee_id "
         "WHERE u.role IN ('hr','manager')").fetchall()
     for mgr in managers:
         to = mgr['memail'] or EMAIL_FROM
         if not to: continue
-        subj = f"📋 طلب عذر جديد — {name} — {att_date}"
+        subj = f"📋 New Excuse Request — {name} — {att_date}"
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#3b82f6;margin-bottom:6px">📋 طلب عذر جديد</h2>
-          <p>قدّم الموظف <b>{name}</b> عذراً عن <b>{vtype_ar}</b> بتاريخ <b>{att_date}</b>.</p>
-          <p><b>السبب:</b> {reason}</p>
+          <h2 style="color:#3b82f6;margin-bottom:6px">📋 New Excuse Request</h2>
+          <p>Employee <b>{name}</b> submitted an excuse for <b>{vtype_ar}</b> on <b>{att_date}</b>.</p>
+          <p><b>Reason:</b> {reason}</p>
           <a href="{SITE_URL}" style="display:inline-block;background:#3b82f6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:10px">
-            مراجعة الطلب
+            Review Request
           </a>
         </div>"""
         send_email(to, subj, body)
@@ -2147,15 +2188,15 @@ def _notify_excuse_decision(excuse_id, status, note, conn):
     emp = conn.execute("SELECT * FROM employees WHERE id=?", (ex['employee_id'],)).fetchone()
     if not emp or not emp['email']: return
     name = emp['name_ar']
-    status_ar = 'مقبول ✅' if status == 'approved' else 'مرفوض ❌'
+    status_ar = 'Approved ✅' if status == 'approved' else 'Rejected ❌'
     color = '#16a34a' if status == 'approved' else '#dc2626'
-    vtype_ar = {'late': 'تأخر', 'early_leave': 'مغادرة مبكرة', 'absent': 'غياب'}.get(ex['vtype'], ex['vtype'])
-    note_row = f"<p><b>ملاحظة المدير:</b> {note}</p>" if note else ''
-    subj = f"{'✅' if status=='approved' else '❌'} قرار العذر — {ex['att_date']}"
+    vtype_ar = {'late': 'Late Arrival', 'early_leave': 'Early Departure', 'absent': 'Absence'}.get(ex['vtype'], ex['vtype'])
+    note_row = f"<p><b>Manager Note:</b> {note}</p>" if note else ''
+    subj = f"{'✅' if status=='approved' else '❌'} Excuse Decision — {ex['att_date']}"
     body = f"""<div style="{_STYLE}">
-      <h2 style="color:{color};margin-bottom:6px">{status_ar} — عذر {vtype_ar}</h2>
-      <p>عزيزي/عزيزتي <b>{name}</b>،</p>
-      <p>تم <b style="color:{color}">{status_ar}</b> عذرك عن <b>{vtype_ar}</b> بتاريخ <b>{ex['att_date']}</b>.</p>
+      <h2 style="color:{color};margin-bottom:6px">{status_ar} — {vtype_ar} Excuse</h2>
+      <p>Dear <b>{name}</b>,</p>
+      <p>Your excuse for <b>{vtype_ar}</b> on <b>{ex['att_date']}</b> has been <b style="color:{color}">{status_ar}</b>.</p>
       {note_row}
     </div>"""
     send_email(emp['email'], subj, body)
@@ -2164,10 +2205,10 @@ def _notify_excuse_decision(excuse_id, status, note, conn):
 #  LEAVES ROUTES
 # ═══════════════════════════════════════════════════════════
 LEAVE_NAMES = {
-    'annual':   'إجازة سنوية',
-    'sick':     'إجازة مرضية',
-    'emergency':'إجازة اضطرارية',
-    'official': 'إجازة رسمية',
+    'annual':   'Annual Leave',
+    'sick':     'Sick Leave',
+    'emergency':'Emergency Leave',
+    'official': 'Official Holiday',
 }
 
 @app.route('/api/leaves', methods=['GET'])
@@ -2255,27 +2296,27 @@ def api_leaves_post():
     if role in ('hr', 'manager'):
         emp_id = d.get('employee_id', emp_id)
     if not emp_id:
-        return jsonify({'error': 'لم يتم ربط المستخدم بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     leave_type = d.get('leave_type', '')
     start_date = d.get('start_date', '')
     end_date   = d.get('end_date', '')
     notes      = d.get('notes', '')
     if not leave_type or not start_date or not end_date:
-        return jsonify({'error': 'نوع الإجازة والتاريخ مطلوبان'}), 400
+        return jsonify({'error': 'Leave type and dates are required'}), 400
     try:
         s = date.fromisoformat(start_date)
         e_d = date.fromisoformat(end_date)
         days = (e_d - s).days + 1
         if days <= 0:
-            return jsonify({'error': 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية'}), 400
+            return jsonify({'error': 'End date must be after start date'}), 400
     except ValueError:
-        return jsonify({'error': 'تنسيق التاريخ غير صحيح'}), 400
+        return jsonify({'error': 'Invalid date format'}), 400
 
-    # إجازة مرضية: تحتاج وثيقة — نقبل الطلب لكن نضع ملاحظة
+    # sick leave: requires document — accept request but note it
     sick_doc   = d.get('sick_doc', '')
     attachment = d.get('attachment', '')
     att_name   = d.get('attachment_name', '')
-    # HR يوافق مباشرة، الموظف ينتظر موافقة
+    # HR approves directly, employee waits for approval
     init_status = 'approved' if role in ('hr', 'manager') else 'pending'
     approved_by = session['user_id'] if init_status == 'approved' else None
 
@@ -2289,7 +2330,7 @@ def api_leaves_post():
         """, (emp_id, leave_type, start_date, end_date, days,
               init_status, approved_by, sick_doc, notes, attachment, att_name))
         conn.commit()
-        return jsonify({'ok': True, 'msg': 'تم تسجيل الإجازة', 'days': days})
+        return jsonify({'ok': True, 'msg': 'Leave registered', 'days': days})
     finally:
         conn.close()
 
@@ -2299,7 +2340,7 @@ def api_leave_decide(lid):
     d = request.get_json(silent=True) or {}
     status = d.get('status')
     if status not in ('approved', 'rejected'):
-        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+        return jsonify({'error': 'Invalid status'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2323,7 +2364,7 @@ def api_leave_attachment(lid):
     finally:
         conn.close()
     if not row or not row['attachment']:
-        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+        return jsonify({'error': 'No attachment found'}), 404
     return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
 
 @app.route('/api/leaves/<int:lid>', methods=['DELETE'])
@@ -2358,7 +2399,7 @@ def api_holidays_post():
     hd   = d.get('h_date', '').strip()
     name = d.get('name', '').strip()
     if not hd or not name:
-        return jsonify({'error': 'التاريخ والاسم مطلوبان'}), 400
+        return jsonify({'error': 'Date and name are required'}), 400
     conn = get_db()
     try:
         conn.execute(
@@ -2367,7 +2408,7 @@ def api_holidays_post():
         conn.commit()
         return jsonify({'ok': True})
     except sqlite3.IntegrityError:
-        return jsonify({'error': 'هذا التاريخ مضاف بالفعل'}), 400
+        return jsonify({'error': 'This date already exists'}), 400
     finally:
         conn.close()
 
@@ -2418,7 +2459,7 @@ def api_overtime_post():
     ot_hours   = d.get('overtime_hours')
     notes      = (d.get('notes') or '').strip()
     if not emp_id or not att_date or not ot_hours:
-        return jsonify({'error': 'الموظف والتاريخ وعدد الساعات مطلوبة'}), 400
+        return jsonify({'error': 'Employee, date, and hours are required'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2430,7 +2471,7 @@ def api_overtime_post():
         emp_row = conn.execute("SELECT name_ar FROM employees WHERE id=?", (emp_id,)).fetchone()
         emp_name = emp_row['name_ar'] if emp_row else str(emp_id)
         audit_log('create_overtime', 'overtime', emp_name, details=f"date={att_date} hours={ot_hours} source=manual")
-        return jsonify({'ok': True, 'msg': 'تم رفع التكليف بنجاح'})
+        return jsonify({'ok': True, 'msg': 'Assignment submitted successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -2443,7 +2484,7 @@ def api_overtime_decide(oid):
     status = d.get('status')
     note   = d.get('note', '')
     if status not in ('approved', 'rejected'):
-        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+        return jsonify({'error': 'Invalid status'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2465,7 +2506,7 @@ def api_overtime_decide(oid):
 def api_my_attendance():
     emp_id = session.get('employee_id')
     if not emp_id:
-        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     y = request.args.get('year',  date.today().year,  type=int)
     m = request.args.get('month', date.today().month, type=int)
     prefix = f"{y}-{m:02d}-%"
@@ -2477,7 +2518,7 @@ def api_my_attendance():
             WHERE a.employee_id=? AND a.att_date LIKE ?
             ORDER BY a.att_date DESC
         """, (emp_id, prefix)).fetchall()
-        # إضافة معلومة وجود عذر مقدم لكل سجل
+        # add excuse status to each attendance record
         result = []
         for r in rows:
             d = dict(r)
@@ -2496,7 +2537,7 @@ def api_my_attendance():
 def api_my_violations():
     emp_id = session.get('employee_id')
     if not emp_id:
-        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     y = request.args.get('year',  date.today().year,  type=int)
     m = request.args.get('month', date.today().month, type=int)
     prefix = f"{y}-{m:02d}-%"
@@ -2526,7 +2567,7 @@ def api_my_violations():
 def api_my_payroll():
     emp_id = session.get('employee_id')
     if not emp_id:
-        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     y = request.args.get('year',  date.today().year,  type=int)
     m = request.args.get('month', date.today().month, type=int)
     prefix = f"{y}-{m:02d}-%"
@@ -2534,7 +2575,7 @@ def api_my_payroll():
     try:
         emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
         if not emp:
-            return jsonify({'error': 'الموظف غير موجود'}), 404
+            return jsonify({'error': 'Employee not found'}), 404
         emp = dict(emp)
         vios = conn.execute(
             "SELECT * FROM violations WHERE employee_id=? AND vio_date LIKE ? ORDER BY vio_date",
@@ -2566,7 +2607,7 @@ def api_my_payroll():
         conn.close()
 
 # ═══════════════════════════════════════════════════════════
-#  ATTENDANCE REQUESTS (طلبات التأخر / الخروج المبكر)
+#  ATTENDANCE REQUESTS (late arrival / early departure requests)
 # ═══════════════════════════════════════════════════════════
 @app.route('/api/requests', methods=['GET'])
 @login_required
@@ -2601,7 +2642,7 @@ def api_requests_post():
     if role in ('hr', 'manager'):
         emp_id = d.get('employee_id', emp_id)
     if not emp_id:
-        return jsonify({'error': 'المستخدم غير مرتبط بموظف'}), 400
+        return jsonify({'error': 'User is not linked to an employee'}), 400
     req_date       = d.get('req_date', '')
     req_type       = d.get('req_type', '')
     reason         = (d.get('reason') or '').strip()
@@ -2609,9 +2650,9 @@ def api_requests_post():
     attachment     = d.get('attachment', '')
     att_name       = d.get('attachment_name', '')
     if not req_date or not req_type or not reason:
-        return jsonify({'error': 'التاريخ والنوع والسبب مطلوبة'}), 400
+        return jsonify({'error': 'Date, type, and reason are required'}), 400
     if req_type not in ('late_arrival', 'early_leave'):
-        return jsonify({'error': 'نوع الطلب غير صحيح'}), 400
+        return jsonify({'error': 'Invalid request type'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2622,7 +2663,7 @@ def api_requests_post():
         """, (emp_id, req_date, req_type, reason, requested_time, attachment, att_name))
         conn.commit()
         _notify_request_submitted(emp_id, req_date, req_type, reason, conn)
-        return jsonify({'ok': True, 'msg': 'تم إرسال الطلب بنجاح'})
+        return jsonify({'ok': True, 'msg': 'Request submitted successfully'})
     finally:
         conn.close()
 
@@ -2633,7 +2674,7 @@ def api_request_decide(rid):
     status = d.get('status')
     note   = d.get('note', '')
     if status not in ('approved', 'rejected'):
-        return jsonify({'error': 'الحالة غير صحيحة'}), 400
+        return jsonify({'error': 'Invalid status'}), 400
     conn = get_db()
     try:
         conn.execute("""
@@ -2658,7 +2699,7 @@ def api_request_attachment(rid):
     finally:
         conn.close()
     if not row or not row['attachment']:
-        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+        return jsonify({'error': 'No attachment found'}), 404
     return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
 
 @app.route('/api/excuses/<int:eid>/attachment')
@@ -2672,27 +2713,27 @@ def api_excuse_attachment(eid):
     finally:
         conn.close()
     if not row or not row['attachment']:
-        return jsonify({'error': 'لا يوجد ملف مرفق'}), 404
+        return jsonify({'error': 'No attachment found'}), 404
     return jsonify({'data': row['attachment'], 'name': row['attachment_name']})
 
 def _notify_request_submitted(emp_id, req_date, req_type, reason, conn):
     emp = conn.execute("SELECT * FROM employees WHERE id=?", (emp_id,)).fetchone()
     if not emp: return
     name = emp['name_ar']
-    type_ar = 'تأخر في الحضور' if req_type == 'late_arrival' else 'خروج مبكر'
+    type_ar = 'Late Arrival' if req_type == 'late_arrival' else 'Early Departure'
     managers = conn.execute(
         "SELECT u.*, e.email AS memail FROM users u LEFT JOIN employees e ON e.id=u.employee_id "
         "WHERE u.role IN ('hr','manager')").fetchall()
     for mgr in managers:
         to = mgr['memail'] or EMAIL_FROM
         if not to: continue
-        subj = f"📨 طلب {type_ar} — {name} — {req_date}"
+        subj = f"📨 {type_ar} Request — {name} — {req_date}"
         body = f"""<div style="{_STYLE}">
-          <h2 style="color:#8b5cf6;margin-bottom:6px">📨 طلب {type_ar}</h2>
-          <p>قدّم الموظف <b>{name}</b> طلباً بتاريخ <b>{req_date}</b>.</p>
-          <p><b>السبب:</b> {reason}</p>
+          <h2 style="color:#8b5cf6;margin-bottom:6px">📨 {type_ar} Request</h2>
+          <p>Employee <b>{name}</b> submitted a request on <b>{req_date}</b>.</p>
+          <p><b>Reason:</b> {reason}</p>
           <a href="{SITE_URL}" style="display:inline-block;background:#8b5cf6;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:10px">
-            مراجعة الطلب
+            Review Request
           </a>
         </div>"""
         send_email(to, subj, body)
@@ -2702,15 +2743,15 @@ def _notify_request_decision(req_id, status, note, conn):
     if not req: return
     emp = conn.execute("SELECT * FROM employees WHERE id=?", (req['employee_id'],)).fetchone()
     if not emp or not emp['email']: return
-    type_ar  = 'تأخر في الحضور' if req['req_type'] == 'late_arrival' else 'خروج مبكر'
-    status_ar = 'مقبول ✅' if status == 'approved' else 'مرفوض ❌'
+    type_ar  = 'Late Arrival' if req['req_type'] == 'late_arrival' else 'Early Departure'
+    status_ar = 'Approved ✅' if status == 'approved' else 'Rejected ❌'
     color = '#16a34a' if status == 'approved' else '#dc2626'
-    note_row = f"<p><b>ملاحظة:</b> {note}</p>" if note else ''
-    subj = f"{'✅' if status=='approved' else '❌'} قرار طلب {type_ar} — {req['req_date']}"
+    note_row = f"<p><b>Note:</b> {note}</p>" if note else ''
+    subj = f"{'✅' if status=='approved' else '❌'} {type_ar} Request Decision — {req['req_date']}"
     body = f"""<div style="{_STYLE}">
-      <h2 style="color:{color};margin-bottom:6px">{status_ar} — طلب {type_ar}</h2>
-      <p>عزيزي/عزيزتي <b>{emp['name_ar']}</b>،</p>
-      <p>تم <b style="color:{color}">{status_ar}</b> طلبك بتاريخ <b>{req['req_date']}</b>.</p>
+      <h2 style="color:{color};margin-bottom:6px">{status_ar} — {type_ar} Request</h2>
+      <p>Dear <b>{emp['name_ar']}</b>,</p>
+      <p>Your request on <b>{req['req_date']}</b> has been <b style="color:{color}">{status_ar}</b>.</p>
       {note_row}
     </div>"""
     send_email(emp['email'], subj, body)
@@ -2719,13 +2760,13 @@ def _notify_request_decision(req_id, status, note, conn):
 #  AUTO-REJECT EXCUSES JOB
 # ═══════════════════════════════════════════════════════════
 def auto_reject_excuses():
-    """رفض تلقائي للعذر والطلبات بعد AUTO_REJECT_DAYS أيام"""
+    """Auto-reject pending excuses and requests after AUTO_REJECT_DAYS days"""
     conn = get_db()
     try:
         cutoff = str(datetime.now() - timedelta(days=AUTO_REJECT_DAYS))
-        note   = f'رفض تلقائي — لم يتم الرد خلال {AUTO_REJECT_DAYS} أيام'
+        note   = f'Auto-rejected — no response within {AUTO_REJECT_DAYS} days'
 
-        # أعذار
+        # excuses
         excuses = conn.execute(
             "SELECT * FROM excuse_requests WHERE status='pending' AND submitted_at<?",
             (cutoff,)).fetchall()
@@ -2735,7 +2776,7 @@ def auto_reject_excuses():
                 (note, ex['id']))
             _notify_excuse_decision(ex['id'], 'rejected', note, conn)
 
-        # طلبات الحضور
+        # attendance requests
         reqs = conn.execute(
             "SELECT * FROM attendance_requests WHERE status='pending' AND submitted_at<?",
             (cutoff,)).fetchall()
@@ -2745,7 +2786,7 @@ def auto_reject_excuses():
                 (note, rq['id']))
             _notify_request_decision(rq['id'], 'rejected', note, conn)
 
-        # الإجازات
+        # leaves
         leaves = conn.execute(
             "SELECT * FROM leaves WHERE status='pending' AND created_at<?",
             (cutoff,)).fetchall()
