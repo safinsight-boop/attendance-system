@@ -1392,6 +1392,34 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           </div>
           <button class="btn-main" style="margin-top:10px" onclick="saveSettings()">💾 حفظ الإعدادات</button>
         </div>
+
+        <div class="card-wrap" style="margin-top:16px">
+          <h5 style="font-weight:800;margin-bottom:20px"><span style="color:var(--gold);margin-left:8px">🔒</span>TTLock Connection</h5>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div class="fg" style="margin:0">
+              <label>Client ID</label>
+              <input type="text" id="set-tt-cid" class="fc" placeholder="Client ID">
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Client Secret</label>
+              <input type="password" id="set-tt-secret" class="fc" placeholder="Client Secret">
+            </div>
+            <div class="fg" style="margin:0">
+              <label>TTLock Account Email</label>
+              <input type="text" id="set-tt-user" class="fc" placeholder="TTLock account email">
+            </div>
+            <div class="fg" style="margin:0">
+              <label>TTLock Account Password</label>
+              <input type="password" id="set-tt-pass" class="fc" placeholder="TTLock account password">
+            </div>
+          </div>
+          <div id="tt-test-result" style="margin-bottom:10px"></div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-main" onclick="saveTTLock()">💾 Save Credentials</button>
+            <button class="btn-main" id="tt-test-btn" onclick="testTTLock()" style="background:var(--teal)">🔌 Test Connection</button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -4627,6 +4655,10 @@ async function loadSettings() {
     const s = await GET('/api/settings');
     document.getElementById('set-company-ar').value = s.company_name || '';
     document.getElementById('set-company-en').value = s.company_name_en || '';
+    if (s.tt_client_id)     document.getElementById('set-tt-cid').placeholder  = '••• saved •••';
+    if (s.tt_client_secret) document.getElementById('set-tt-secret').placeholder = '••• saved •••';
+    if (s.tt_username)      document.getElementById('set-tt-user').placeholder  = s.tt_username;
+    if (s.tt_password)      document.getElementById('set-tt-pass').placeholder  = '••• saved •••';
   } catch(e) { toast('خطأ في تحميل الإعدادات', 'err'); }
 }
 async function saveSettings() {
@@ -4639,6 +4671,37 @@ async function saveSettings() {
     });
     toast('تم حفظ الإعدادات');
   } catch(e) { toast('خطأ في الحفظ', 'err'); }
+}
+async function saveTTLock() {
+  const body = {};
+  const cid = document.getElementById('set-tt-cid').value.trim();
+  const sec = document.getElementById('set-tt-secret').value.trim();
+  const usr = document.getElementById('set-tt-user').value.trim();
+  const pwd = document.getElementById('set-tt-pass').value.trim();
+  if (cid) body.tt_client_id = cid;
+  if (sec) body.tt_client_secret = sec;
+  if (usr) body.tt_username = usr;
+  if (pwd) body.tt_password = pwd;
+  if (!Object.keys(body).length) { toast('Enter at least one field', 'err'); return; }
+  try {
+    await fetch('/api/settings', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    toast('TTLock credentials saved');
+    loadSettings();
+  } catch(e) { toast('Save failed', 'err'); }
+}
+async function testTTLock() {
+  const btn = document.getElementById('tt-test-btn');
+  const res = document.getElementById('tt-test-result');
+  btn.disabled = true; btn.textContent = '⏳ Testing…';
+  res.innerHTML = '';
+  try {
+    const r = await fetch('/api/ttlock/test', {method:'POST'});
+    const d = await r.json();
+    res.innerHTML = `<div style="padding:8px 12px;border-radius:6px;background:${d.ok?'#d1fae5':'#fee2e2'};color:${d.ok?'#065f46':'#991b1b'}">${d.ok?'✅':'❌'} ${d.msg}</div>`;
+  } catch(e) {
+    res.innerHTML = '<div style="padding:8px 12px;border-radius:6px;background:#fee2e2;color:#991b1b">❌ Request failed</div>';
+  }
+  btn.disabled = false; btn.textContent = '🔌 Test Connection';
 }
 
 // ════════════════════════════════════════════
