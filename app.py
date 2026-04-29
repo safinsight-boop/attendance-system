@@ -425,7 +425,7 @@ def tt_get_locks(token):
                 'clientId': cid, 'accessToken': token,
                 'pageNo': page, 'pageSize': 100, 'date': ts
             }, timeout=15).json()
-            if r.get('errcode', -1) != 0:
+            if r.get('errcode', 0) != 0:
                 logger.warning(f"tt_get_locks err: {r}")
                 break
             batch = r.get('list', [])
@@ -448,7 +448,7 @@ def tt_get_records(token, lock_id, start_ms, end_ms):
                 'endDate': end_ms, 'pageNo': page,
                 'pageSize': 100, 'date': ts
             }, timeout=15).json()
-            if r.get('errcode', -1) != 0: break
+            if r.get('errcode', 0) != 0: break
             batch = r.get('list', [])
             recs.extend(batch)
             if len(batch) < 100: break
