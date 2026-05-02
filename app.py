@@ -439,14 +439,14 @@ def _is_on_leave(conn, emp_id, target_date):
 def _md5(s):
     return hashlib.md5(s.encode()).hexdigest()
 
-def tt_get_token():
+def tt_get_token(return_error=False):
     global _tt_cache
     now = datetime.now().timestamp()
-    if _tt_cache['token'] and now < _tt_cache['exp'] - 120:
+    if not return_error and _tt_cache['token'] and now < _tt_cache['exp'] - 120:
         return _tt_cache['token']
     cid, csecret, usr, pwd = _tt_creds()
     if not cid or not usr:
-        return None
+        return (None, 'missing_credentials') if return_error else None
     try:
         r = requests.post(f"{TTBASE}/oauth2/token", data={
             'client_id':     cid,
@@ -459,11 +459,12 @@ def tt_get_token():
         if 'access_token' in d:
             _tt_cache = {'token': d['access_token'], 'exp': now + d.get('expires_in', 7200)}
             logger.info("TTLock token refreshed")
-            return _tt_cache['token']
+            return (d['access_token'], None) if return_error else d['access_token']
         logger.error(f"TTLock auth failed: {d}")
+        return (None, d) if return_error else None
     except Exception as e:
         logger.error(f"TTLock auth error: {e}")
-    return None
+        return (None, str(e)) if return_error else None
 
 def tt_get_locks(token):
     locks, page = [], 1
@@ -1686,12 +1687,13 @@ def api_settings_put():
 def api_ttlock_test():
     """Test TTLock connection — returns token status and lock count."""
     _tt_cache['token'] = None  # force fresh token
-    token = tt_get_token()
+    cid, _, usr, _ = _tt_creds()
+    if not cid or not usr:
+        return jsonify({'ok': False, 'msg': 'Credentials not configured — enter Client ID, Username, and Password first.'})
+    token, err = tt_get_token(return_error=True)
     if not token:
-        cid, _, usr, _ = _tt_creds()
-        if not cid or not usr:
-            return jsonify({'ok': False, 'msg': 'Credentials not configured — enter Client ID, Username, and Password first.'})
-        return jsonify({'ok': False, 'msg': 'Authentication failed — check your credentials and try again.'})
+        detail = f' — {err}' if err and err != 'missing_credentials' else ''
+        return jsonify({'ok': False, 'msg': f'Authentication failed{detail}', 'server': TTBASE})
     locks = tt_get_locks(token)
     return jsonify({'ok': True, 'msg': f'Connected successfully! Found {len(locks)} lock(s).', 'locks': len(locks)})
 
