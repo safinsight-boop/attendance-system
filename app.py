@@ -1697,6 +1697,28 @@ def api_ttlock_test():
     locks = tt_get_locks(token)
     return jsonify({'ok': True, 'msg': f'Connected successfully! Found {len(locks)} lock(s).', 'locks': len(locks)})
 
+@app.route('/api/ttlock/debug-records')
+@hr_required
+def api_ttlock_debug():
+    """Show raw TTLock usernames for today — helps diagnose name mismatch."""
+    token, err = tt_get_token(return_error=True)
+    if not token:
+        return jsonify({'ok': False, 'msg': f'Auth failed: {err}'})
+    target = date.today()
+    start_ms = int(datetime(target.year, target.month, target.day, 0, 0, 0).timestamp() * 1000)
+    end_ms   = int(datetime(target.year, target.month, target.day, 23, 59, 59).timestamp() * 1000)
+    by_user = {}
+    for lock in tt_get_locks(token):
+        lid = lock.get('lockId')
+        if not lid: continue
+        for rec in tt_get_records(token, lid, start_ms, end_ms):
+            uname = (rec.get('username') or '').strip()
+            ts_ms = rec.get('successDate', 0)
+            if uname and ts_ms:
+                by_user.setdefault(uname, []).append(
+                    datetime.fromtimestamp(ts_ms / 1000).strftime('%H:%M:%S'))
+    return jsonify({'date': str(target), 'users_found': list(by_user.keys()), 'records': by_user})
+
 @app.route('/api/attendance/recent')
 def api_attendance_recent():
     limit = request.args.get('limit', 15, type=int)
