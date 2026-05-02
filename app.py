@@ -276,6 +276,7 @@ def init_db():
         conn.commit()
         _migrate_db(conn)
         _seed_default_user(conn)
+        _seed_ttlock_from_env(conn)
         logger.info("Database initialized OK")
     finally:
         conn.close()
@@ -329,6 +330,21 @@ def _migrate_db(conn):
         except Exception:
             pass
     conn.commit()
+
+def _seed_ttlock_from_env(conn):
+    """Seed TTLock credentials from env vars into DB if DB is empty — env vars win on fresh DB."""
+    if not CID or not TTUSR or not TTPASS:
+        return
+    existing = conn.execute(
+        "SELECT value FROM settings WHERE key='tt_client_id'"
+    ).fetchone()
+    if existing and existing['value']:
+        return  # DB already has credentials — don't overwrite
+    for key, val in [('tt_client_id', CID), ('tt_client_secret', CSECRET),
+                     ('tt_username', TTUSR), ('tt_password', TTPASS)]:
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)", (key, val))
+    conn.commit()
+    logger.info("TTLock credentials seeded from environment variables")
 
 def _seed_default_user(conn):
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
@@ -1697,6 +1713,23 @@ def api_ttlock_test():
         return jsonify({'ok': False, 'msg': f'Authentication failed{detail}', 'server': TTBASE})
     locks = tt_get_locks(token)
     return jsonify({'ok': True, 'msg': f'Connected successfully! Found {len(locks)} lock(s).', 'locks': len(locks)})
+
+@app.route('/api/system/info')
+@hr_required
+def api_system_info():
+    import os
+    db_path = DB_PATH
+    db_exists = os.path.exists(db_path)
+    db_size = os.path.getsize(db_path) if db_exists else 0
+    cid, _, usr, _ = _tt_creds()
+    return jsonify({
+        'db_path': db_path,
+        'db_exists': db_exists,
+        'db_size_kb': round(db_size / 1024, 1),
+        'ttlock_cid_set': bool(cid),
+        'ttlock_usr': usr,
+        'ttlock_server': TTBASE,
+    })
 
 @app.route('/api/ttlock/debug-records')
 @hr_required
