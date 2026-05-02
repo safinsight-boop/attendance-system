@@ -1592,8 +1592,9 @@ def api_stats_month_detail():
                        COUNT(v.id) AS cnt
                 FROM employees e
                 LEFT JOIN violations v ON v.employee_id=e.id AND v.vio_date LIKE ?
-                WHERE total_ded > 0
-                GROUP BY e.id ORDER BY total_ded DESC
+                GROUP BY e.id
+                HAVING total_ded > 0
+                ORDER BY total_ded DESC
             """, (prefix,)).fetchall()
         elif dtype == 'absent':
             rows = conn.execute("""
