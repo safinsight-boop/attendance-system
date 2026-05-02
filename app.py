@@ -26,16 +26,14 @@ logger = logging.getLogger(__name__)
 DB_PATH    = os.environ.get('DB_PATH', '/data/attendance.db')
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://nxraodhjulwsmldjtyyv.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
-TTBASE     = 'https://euapi.ttlock.com'
+TTBASE     = os.getenv('TTLOCK_BASE_URL', 'https://euapi.ttlock.com')
 CID        = os.getenv('TTLOCK_CLIENT_ID', '')
 CSECRET    = os.getenv('TTLOCK_CLIENT_SECRET', '')
 TTUSR      = os.getenv('TTLOCK_USERNAME', '')
 TTPASS     = os.getenv('TTLOCK_PASSWORD', '')
 
 def _tt_creds():
-    """Return (cid, csecret, usr, pwd) — env vars take priority, then DB settings."""
-    if CID and CSECRET and TTUSR and TTPASS:
-        return CID, CSECRET, TTUSR, TTPASS
+    """Return (cid, csecret, usr, pwd) — DB settings take priority, then env vars."""
     try:
         conn = get_db()
         rows = conn.execute(
@@ -44,10 +42,15 @@ def _tt_creds():
         ).fetchall()
         conn.close()
         s = {r['key']: r['value'] for r in rows}
-        return (s.get('tt_client_id',''), s.get('tt_client_secret',''),
-                s.get('tt_username',''),  s.get('tt_password',''))
+        db_cid  = s.get('tt_client_id','')
+        db_csec = s.get('tt_client_secret','')
+        db_usr  = s.get('tt_username','')
+        db_pwd  = s.get('tt_password','')
+        if db_cid and db_usr and db_pwd:
+            return db_cid, db_csec, db_usr, db_pwd
     except Exception:
-        return CID, CSECRET, TTUSR, TTPASS
+        pass
+    return CID, CSECRET, TTUSR, TTPASS
 EMAIL_FROM       = os.getenv('EMAIL_SENDER', '')
 EMAIL_PASS       = os.getenv('EMAIL_PASSWORD', '')
 SITE_URL         = os.getenv('SITE_URL', 'https://attendance-system-pd27.onrender.com')
