@@ -510,7 +510,7 @@ def tt_get_records(token, lock_id, start_ms, end_ms):
 
 def fetch_daily_records(target_date):
     """
-    Fetch TTLock records for a specific day.
+    Fetch TTLock records for a specific day (Riyadh timezone UTC+3).
     Returns: {name_en_lower: [datetime, ...]} sorted chronologically
     """
     token = tt_get_token()
@@ -518,18 +518,19 @@ def fetch_daily_records(target_date):
         logger.error("No TTLock token — cannot fetch records")
         return None
 
-    start_ms = int(datetime(
+    TZ_OFFSET = 3 * 3600  # Riyadh = UTC+3
+    day_start = int(datetime(
         target_date.year, target_date.month, target_date.day, 0, 0, 0
-    ).timestamp() * 1000)
-    end_ms = int(datetime(
+    ).timestamp() * 1000) - TZ_OFFSET * 1000
+    day_end = int(datetime(
         target_date.year, target_date.month, target_date.day, 23, 59, 59
-    ).timestamp() * 1000)
+    ).timestamp() * 1000) - TZ_OFFSET * 1000
 
     by_user = {}
     for lock in tt_get_locks(token):
         lid = lock.get('lockId')
         if not lid: continue
-        for rec in tt_get_records(token, lid, start_ms, end_ms):
+        for rec in tt_get_records(token, lid, day_start, day_end):
             uname = (rec.get('username') or '').strip().lower()
             ts_ms = rec.get('successDate', 0)
             if uname and ts_ms:
@@ -1705,8 +1706,9 @@ def api_ttlock_debug():
     if not token:
         return jsonify({'ok': False, 'msg': f'Auth failed: {err}'})
     target = date.today()
-    start_ms = int(datetime(target.year, target.month, target.day, 0, 0, 0).timestamp() * 1000)
-    end_ms   = int(datetime(target.year, target.month, target.day, 23, 59, 59).timestamp() * 1000)
+    TZ_OFFSET = 3 * 3600
+    start_ms = int(datetime(target.year, target.month, target.day, 0, 0, 0).timestamp() * 1000) - TZ_OFFSET * 1000
+    end_ms   = int(datetime(target.year, target.month, target.day, 23, 59, 59).timestamp() * 1000) - TZ_OFFSET * 1000
     by_user = {}
     for lock in tt_get_locks(token):
         lid = lock.get('lockId')
