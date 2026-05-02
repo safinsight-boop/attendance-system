@@ -551,9 +551,8 @@ def fetch_daily_records(target_date):
             uname = (rec.get('username') or '').strip().lower()
             ts_ms = rec.get('lockDate') or rec.get('serverDate', 0)
             if uname and ts_ms:
-                by_user.setdefault(uname, []).append(
-                    datetime.fromtimestamp(ts_ms / 1000)
-                )
+                riyadh_time = datetime.fromtimestamp(ts_ms / 1000) + timedelta(hours=3)
+                by_user.setdefault(uname, []).append(riyadh_time)
 
     for k in by_user:
         by_user[k].sort()
