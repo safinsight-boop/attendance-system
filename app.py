@@ -1742,17 +1742,38 @@ def api_ttlock_debug():
     TZ_OFFSET = 3 * 3600
     start_ms = int(datetime(target.year, target.month, target.day, 0, 0, 0).timestamp() * 1000) - TZ_OFFSET * 1000
     end_ms   = int(datetime(target.year, target.month, target.day, 23, 59, 59).timestamp() * 1000) - TZ_OFFSET * 1000
+    locks = tt_get_locks(token)
+    lock_ids = [l.get('lockId') for l in locks]
+    raw_responses = []
     by_user = {}
-    for lock in tt_get_locks(token):
-        lid = lock.get('lockId')
+    ts = int(datetime.now().timestamp() * 1000)
+    cid, _, _, _ = _tt_creds()
+    for lid in lock_ids:
         if not lid: continue
-        for rec in tt_get_records(token, lid, start_ms, end_ms):
-            uname = (rec.get('username') or '').strip()
-            ts_ms = rec.get('successDate', 0)
-            if uname and ts_ms:
-                by_user.setdefault(uname, []).append(
-                    datetime.fromtimestamp(ts_ms / 1000).strftime('%H:%M:%S'))
-    return jsonify({'date': str(target), 'users_found': list(by_user.keys()), 'records': by_user})
+        try:
+            r = requests.get(f"{TTBASE}/v3/lockRecord/list", params={
+                'clientId': cid, 'accessToken': token,
+                'lockId': lid, 'startDate': start_ms,
+                'endDate': end_ms, 'pageNo': 1,
+                'pageSize': 20, 'date': ts
+            }, timeout=15).json()
+            raw_responses.append({'lockId': lid, 'response': r})
+            for rec in r.get('list', []):
+                uname = (rec.get('username') or '').strip()
+                ts_ms = rec.get('successDate', 0)
+                if uname and ts_ms:
+                    by_user.setdefault(uname, []).append(
+                        datetime.fromtimestamp(ts_ms / 1000).strftime('%H:%M:%S'))
+        except Exception as e:
+            raw_responses.append({'lockId': lid, 'error': str(e)})
+    return jsonify({
+        'date': str(target),
+        'start_ms': start_ms, 'end_ms': end_ms,
+        'locks_found': lock_ids,
+        'users_found': list(by_user.keys()),
+        'records': by_user,
+        'raw_api_responses': raw_responses
+    })
 
 @app.route('/api/attendance/recent')
 def api_attendance_recent():
