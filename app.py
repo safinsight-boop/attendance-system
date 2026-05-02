@@ -547,8 +547,9 @@ def fetch_daily_records(target_date):
         lid = lock.get('lockId')
         if not lid: continue
         for rec in tt_get_records(token, lid, day_start, day_end):
+            if not rec.get('success'): continue
             uname = (rec.get('username') or '').strip().lower()
-            ts_ms = rec.get('successDate', 0)
+            ts_ms = rec.get('lockDate') or rec.get('serverDate', 0)
             if uname and ts_ms:
                 by_user.setdefault(uname, []).append(
                     datetime.fromtimestamp(ts_ms / 1000)
