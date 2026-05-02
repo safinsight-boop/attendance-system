@@ -751,22 +751,44 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
 
       <div class="card-wrap">
         <div class="table-responsive">
-          <table class="tbl">
+          <table class="tbl" style="font-size:13px;white-space:nowrap">
             <thead>
               <tr>
-                <th>#</th>
-                <th>الرقم الوظيفي</th>
-                <th>الاسم بالعربي</th>
-                <th>الاسم بالإنجليزي</th>
-                <th>نوع الدوام</th>
-                <th>الراتب</th>
-                <th>إجازة سنوية</th>
-                <th>الإيميل</th>
+                <th>م</th>
+                <th>رقم الموظف</th>
+                <th>الاسم الكامل</th>
+                <th>الجنسية</th>
+                <th>القسم</th>
+                <th>المسمى الوظيفي</th>
+                <th>الحالة</th>
+                <th>الراتب الأساسي</th>
+                <th>بدل السكن</th>
+                <th>بدل النقل</th>
+                <th>إجمالي الراتب</th>
+                <th>تاريخ التعيين</th>
+                <th>سنوات الخدمة</th>
+                <th>رقم الهوية</th>
+                <th>رقم الجوال</th>
+                <th>البريد الإلكتروني</th>
+                <th>رصيد الإجازة</th>
+                <th>المدير المباشر</th>
+                <th>ملاحظات</th>
+                <th>نوع العقد</th>
+                <th>بداية العقد</th>
+                <th>نهاية العقد</th>
+                <th>نهاية فترة التجربة</th>
+                <th>تاريخ انتهاء الإقامة</th>
+                <th>رقم GOSI</th>
+                <th>IBAN</th>
+                <th>التأمين الطبي</th>
+                <th>المستحقة EOSB</th>
+                <th>إجازة سنوية مستحقة</th>
+                <th>تنبيه</th>
                 <th>إجراءات</th>
               </tr>
             </thead>
             <tbody id="emp-tbody">
-              <tr><td colspan="8"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
+              <tr><td colspan="31"><div class="empty-state"><span class="css-spin">⏳</span><p>جاري التحميل...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -1416,7 +1438,7 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
           <div id="tt-test-result" style="margin-bottom:10px"></div>
           <div style="display:flex;gap:10px">
             <button class="btn-main" onclick="saveTTLock()">💾 Save Credentials</button>
-            <button class="btn-main" id="tt-test-btn" onclick="testTTLock()" style="background:var(--teal)">🔌 Test Connection</button>
+            <button class="btn-main" id="tt-test-btn" onclick="testTTLock()" style="background:#0d9488">🔌 Test Connection</button>
           </div>
         </div>
 
@@ -1468,28 +1490,141 @@ input, td, th, span, div, p, b, strong { font-feature-settings: "tnum" 0; }
       <div class="modal-body">
         <input type="hidden" id="emp-id">
 
+        <!-- ── البيانات الأساسية ── -->
+        <div class="section-title">👤 البيانات الأساسية</div>
         <div class="form2" style="margin-bottom:14px">
           <div>
-            <label class="fl">الاسم بالعربي *</label>
+            <label class="fl">الاسم الكامل (عربي) *</label>
             <input type="text" id="emp-namear" class="fc" placeholder="محمد أحمد">
           </div>
           <div>
-            <label class="fl">الاسم بالإنجليزي * <small style="color:#94a3b8">(كما في TTLock)</small></label>
+            <label class="fl">الاسم (إنجليزي) * <small style="color:#94a3b8">(كما في TTLock)</small></label>
             <input type="text" id="emp-nameen" class="fc" placeholder="Mohammed Ahmed">
           </div>
         </div>
-
-        <div class="form2" style="margin-bottom:14px">
-          <div>
-            <label class="fl">البريد الإلكتروني</label>
-            <input type="email" id="emp-email" class="fc" placeholder="email@company.com">
-          </div>
+        <div class="form3" style="margin-bottom:14px">
           <div>
             <label class="fl">الرقم الوظيفي <small style="color:#94a3b8">(مثل: EM26-001)</small></label>
             <input type="text" id="emp-code" class="fc" placeholder="EM26-001">
           </div>
+          <div>
+            <label class="fl">الجنسية</label>
+            <input type="text" id="emp-nationality" class="fc" placeholder="سعودي">
+          </div>
+          <div>
+            <label class="fl">الحالة</label>
+            <select id="emp-status" class="fc">
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </div>
         </div>
 
+        <!-- ── بيانات الوظيفة ── -->
+        <hr class="divider">
+        <div class="section-title">🏢 بيانات الوظيفة</div>
+        <div class="form3" style="margin-bottom:14px">
+          <div>
+            <label class="fl">القسم</label>
+            <input type="text" id="emp-department" class="fc" placeholder="تقنية المعلومات">
+          </div>
+          <div>
+            <label class="fl">المسمى الوظيفي</label>
+            <input type="text" id="emp-jobtitle" class="fc" placeholder="مهندس برمجيات">
+          </div>
+          <div>
+            <label class="fl">المدير المباشر</label>
+            <input type="text" id="emp-manager" class="fc" placeholder="اسم المدير">
+          </div>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">تاريخ التعيين</label>
+            <input type="date" id="emp-hiredate" class="fc">
+          </div>
+        </div>
+
+        <!-- ── بيانات الهوية والتواصل ── -->
+        <hr class="divider">
+        <div class="section-title">🪪 بيانات الهوية والتواصل</div>
+        <div class="form3" style="margin-bottom:14px">
+          <div>
+            <label class="fl">رقم الهوية / الإقامة</label>
+            <input type="text" id="emp-nationalid" class="fc" placeholder="1023456789">
+          </div>
+          <div>
+            <label class="fl">رقم الجوال</label>
+            <input type="text" id="emp-phone" class="fc" placeholder="0501112222">
+          </div>
+          <div>
+            <label class="fl">البريد الإلكتروني</label>
+            <input type="email" id="emp-email" class="fc" placeholder="email@company.com">
+          </div>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">تاريخ انتهاء الإقامة</label>
+            <input type="date" id="emp-iqamaexpiry" class="fc">
+          </div>
+        </div>
+
+        <!-- ── بيانات العقد ── -->
+        <hr class="divider">
+        <div class="section-title">📋 بيانات العقد</div>
+        <div class="form3" style="margin-bottom:14px">
+          <div>
+            <label class="fl">نوع العقد</label>
+            <select id="emp-contracttype" class="fc">
+              <option value="permanent">دائم</option>
+              <option value="temporary">مؤقت</option>
+            </select>
+          </div>
+          <div>
+            <label class="fl">بداية العقد</label>
+            <input type="date" id="emp-contractstart" class="fc">
+          </div>
+          <div>
+            <label class="fl">نهاية العقد</label>
+            <input type="date" id="emp-contractend" class="fc">
+          </div>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">نهاية فترة التجربة</label>
+            <input type="date" id="emp-probationend" class="fc">
+          </div>
+        </div>
+
+        <!-- ── بيانات مالية ── -->
+        <hr class="divider">
+        <div class="section-title">💳 البيانات المالية والتأمين</div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">رقم GOSI</label>
+            <input type="text" id="emp-gosinumber" class="fc" placeholder="رقم GOSI">
+          </div>
+          <div>
+            <label class="fl">IBAN</label>
+            <input type="text" id="emp-iban" class="fc" placeholder="SA...">
+          </div>
+        </div>
+        <div class="form2" style="margin-bottom:14px">
+          <div>
+            <label class="fl">التأمين الطبي</label>
+            <input type="text" id="emp-medicalins" class="fc" placeholder="بوبا VIP بلاتينيوم">
+          </div>
+        </div>
+
+        <!-- ── ملاحظات ── -->
+        <hr class="divider">
+        <div class="section-title">📝 ملاحظات</div>
+        <div style="margin-bottom:14px">
+          <textarea id="emp-notes" class="fc" rows="2" placeholder="أي ملاحظات إضافية..." style="resize:vertical"></textarea>
+        </div>
+
+        <!-- ── جدول الدوام ── -->
+        <hr class="divider">
+        <div class="section-title">⏱️ جدول الدوام</div>
         <div class="form2" style="margin-bottom:14px">
           <div>
             <label class="fl">نوع الدوام</label>
@@ -2751,48 +2886,68 @@ function renderEmps() {
   const tb = document.getElementById('emp-tbody');
 
   if (!allEmps.length) {
-    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state">
+    tb.innerHTML = `<tr><td colspan="31"><div class="empty-state">
       👥<p>لا يوجد موظفون — أضف موظفاً للبدء</p></div></td></tr>`;
     return;
   }
 
+  const dash = v => v || '—';
+  const fmtDate = s => s ? s.replace(/T.*/,'') : '—';
+  const contractLabel = t => t === 'temporary' ? 'مؤقت' : t === 'permanent' ? 'دائم' : (t || '—');
+
   tb.innerHTML = allEmps.map((e, i) => {
-    const bal = e.leave_balance || {};
-    const rem = bal.remaining ?? '—';
-    const ent = bal.entitlement ?? 21;
-    const pct = ent > 0 ? Math.round(((ent - (bal.used||0)) / ent) * 100) : 100;
-    const barColor = pct > 50 ? '#16a34a' : pct > 20 ? '#d97706' : '#dc2626';
-    const balHtml = `
-      <div style="min-width:90px">
-        <div style="font-weight:700;color:${barColor};font-size:14px">${rem} <span style="font-size:11px;color:#94a3b8">/ ${ent}</span></div>
-        <div style="background:#e2e8f0;border-radius:999px;height:5px;margin-top:3px">
-          <div style="width:${pct}%;height:100%;border-radius:999px;background:${barColor}"></div>
-        </div>
-      </div>`;
+    const bal  = e.leave_balance || {};
+    const rem  = bal.remaining ?? '—';
+    const ent  = bal.entitlement ?? (e.annual_leave_days ?? 21);
+    const pct  = ent > 0 ? Math.round(((ent - (bal.used||0)) / ent) * 100) : 100;
+    const bClr = pct > 50 ? '#16a34a' : pct > 20 ? '#d97706' : '#dc2626';
+    const balHtml = `<div style="min-width:80px;font-weight:700;color:${bClr}">${rem}<span style="font-size:10px;color:#94a3b8"> / ${ent}</span></div>`;
+
+    const statusBadge = e.status === 'inactive'
+      ? `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">غير نشط</span>`
+      : `<span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">نشط</span>`;
+
+    const alertCell = e.alert
+      ? `<span style="color:#dc2626;font-size:11px;font-weight:600">${e.alert}</span>`
+      : '';
+
+    const rowStyle = e.alert ? 'background:#fff5f5' : '';
+
     return `
-    <tr style="cursor:pointer" onclick="editEmp(${e.id})">
-      <td style="color:#94a3b8">${i+1}</td>
-      <td>
-        ${e.emp_code ? `<span style="background:rgba(26,60,64,0.08);color:var(--primary);font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;font-family:monospace">${e.emp_code}</span>` : '<span style="color:#94a3b8;font-size:12px">—</span>'}
-      </td>
-      <td><b>${e.name_ar}</b></td>
-      <td style="color:#64748b;font-size:13px">${e.name_en}</td>
-      <td><span class="badge-s ${e.work_type === 'fixed' ? 'b-fixed':'b-flex'}">
-        ${e.work_type === 'fixed' ? '⏰ ثابت':'🔄 مرن'}
-      </span></td>
-      <td>
-        <b>${fmtSAR(e.salary + e.housing + e.transport)}</b><br>
-        <span style="font-size:10px;color:#94a3b8">${fmt(e.salary)}+${fmt(e.housing)}+${fmt(e.transport)}</span>
-      </td>
+    <tr style="cursor:pointer;${rowStyle}" onclick="editEmp(${e.id})">
+      <td style="color:#94a3b8;text-align:center">${i+1}</td>
+      <td><span style="background:rgba(26,60,64,0.08);color:var(--primary);font-weight:700;font-size:11px;padding:2px 7px;border-radius:5px;font-family:monospace">${dash(e.emp_code)}</span></td>
+      <td><b>${dash(e.name_ar)}</b></td>
+      <td>${dash(e.nationality)}</td>
+      <td>${dash(e.department)}</td>
+      <td>${dash(e.job_title)}</td>
+      <td>${statusBadge}</td>
+      <td style="text-align:left">${fmtSAR(e.salary||0)}</td>
+      <td style="text-align:left">${fmtSAR(e.housing||0)}</td>
+      <td style="text-align:left">${fmtSAR(e.transport||0)}</td>
+      <td style="text-align:left;font-weight:700;color:var(--primary)">${fmtSAR(e.total_salary||0)}</td>
+      <td>${fmtDate(e.hire_date)}</td>
+      <td style="text-align:center">${e.years_of_service != null ? e.years_of_service + ' سنة' : '—'}</td>
+      <td>${dash(e.national_id)}</td>
+      <td>${dash(e.phone)}</td>
+      <td style="font-size:12px">${dash(e.email)}</td>
       <td>${balHtml}</td>
-      <td style="font-size:12.5px;color:#64748b">${e.email || '—'}</td>
+      <td>${dash(e.direct_manager)}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${e.notes||''}">${dash(e.notes)}</td>
+      <td>${contractLabel(e.contract_type)}</td>
+      <td>${fmtDate(e.contract_start)}</td>
+      <td>${fmtDate(e.contract_end)}</td>
+      <td>${fmtDate(e.probation_end)}</td>
+      <td>${fmtDate(e.iqama_expiry)}</td>
+      <td style="font-size:11px;font-family:monospace">${dash(e.gosi_number)}</td>
+      <td style="font-size:11px;font-family:monospace">${dash(e.iban)}</td>
+      <td>${dash(e.medical_insurance)}</td>
+      <td style="text-align:left;color:#7c3aed;font-weight:700">${e.eosb ? fmtSAR(e.eosb) : '—'}</td>
+      <td style="text-align:center">${ent} يوم</td>
+      <td>${alertCell}</td>
       <td onclick="event.stopPropagation()">
-        <button class="btn-sm btn-edit" onclick="editEmp(${e.id})" style="margin-left:6px">
-          ✏️ تعديل
-        </button>
-        <button class="btn-sm btn-del" onclick="deleteEmp(${e.id},'${e.name_ar}')">
-          🗑️
-        </button>
+        <button class="btn-sm btn-edit" onclick="editEmp(${e.id})" style="margin-left:4px">✏️</button>
+        <button class="btn-sm btn-del" onclick="deleteEmp(${e.id},'${e.name_ar}')">🗑️</button>
       </td>
     </tr>`;
   }).join('');
@@ -2806,23 +2961,40 @@ function openEmpModal(emp = null) {
       ? '<span style="color:var(--gold);margin-left:8px">✏️</span>تعديل بيانات الموظف'
       : '<span style="color:var(--gold);margin-left:8px">👤</span>إضافة موظف جديد';
 
-  document.getElementById('emp-namear').value    = emp?.name_ar     || '';
-  document.getElementById('emp-nameen').value    = emp?.name_en     || '';
-  document.getElementById('emp-email').value     = emp?.email       || '';
-  document.getElementById('emp-code').value      = emp?.emp_code    || '';
-  document.getElementById('emp-wtype').value     = emp?.work_type   || 'fixed';
-  document.getElementById('emp-wstart').value    = emp?.work_start  || '08:00';
-  document.getElementById('emp-wend').value      = emp?.work_end    || '17:00';
-  document.getElementById('emp-whours').value    = emp?.weekly_hours|| 40;
+  document.getElementById('emp-namear').value       = emp?.name_ar          || '';
+  document.getElementById('emp-nameen').value       = emp?.name_en          || '';
+  document.getElementById('emp-email').value        = emp?.email            || '';
+  document.getElementById('emp-code').value         = emp?.emp_code         || '';
+  document.getElementById('emp-nationality').value  = emp?.nationality      || '';
+  document.getElementById('emp-status').value       = emp?.status           || 'active';
+  document.getElementById('emp-department').value   = emp?.department       || '';
+  document.getElementById('emp-jobtitle').value     = emp?.job_title        || '';
+  document.getElementById('emp-manager').value      = emp?.direct_manager   || '';
+  document.getElementById('emp-hiredate').value     = emp?.hire_date        || '';
+  document.getElementById('emp-nationalid').value   = emp?.national_id      || '';
+  document.getElementById('emp-phone').value        = emp?.phone            || '';
+  document.getElementById('emp-iqamaexpiry').value  = emp?.iqama_expiry     || '';
+  document.getElementById('emp-contracttype').value = emp?.contract_type    || 'permanent';
+  document.getElementById('emp-contractstart').value= emp?.contract_start   || '';
+  document.getElementById('emp-contractend').value  = emp?.contract_end     || '';
+  document.getElementById('emp-probationend').value = emp?.probation_end    || '';
+  document.getElementById('emp-gosinumber').value   = emp?.gosi_number      || '';
+  document.getElementById('emp-iban').value         = emp?.iban             || '';
+  document.getElementById('emp-medicalins').value   = emp?.medical_insurance|| '';
+  document.getElementById('emp-notes').value        = emp?.notes            || '';
+  document.getElementById('emp-wtype').value        = emp?.work_type        || 'fixed';
+  document.getElementById('emp-wstart').value       = emp?.work_start       || '08:00';
+  document.getElementById('emp-wend').value         = emp?.work_end         || '17:00';
+  document.getElementById('emp-whours').value       = emp?.weekly_hours     || 40;
   document.getElementById('emp-schedule-date').value = '';
-  document.getElementById('emp-salary').value    = emp?.salary      || 0;
-  document.getElementById('emp-housing').value   = emp?.housing     || 0;
-  document.getElementById('emp-transport').value = emp?.transport   || 0;
-  const hasCommission = emp?.commission !== null && emp?.commission !== undefined;
+  document.getElementById('emp-salary').value       = emp?.salary           || 0;
+  document.getElementById('emp-housing').value      = emp?.housing          || 0;
+  document.getElementById('emp-transport').value    = emp?.transport        || 0;
+  const hasCommission = emp?.commission !== null && emp?.commission !== undefined && emp?.commission !== 0;
   document.getElementById('emp-has-commission').checked = hasCommission;
   document.getElementById('emp-commission-row').style.display = hasCommission ? '' : 'none';
-  document.getElementById('emp-commission').value = emp?.commission || 0;
-  document.getElementById('emp-otherded').value   = emp?.other_ded  || 0;
+  document.getElementById('emp-commission').value  = emp?.commission || 0;
+  document.getElementById('emp-otherded').value    = emp?.other_ded  || 0;
   document.getElementById('emp-annual-days').value = emp?.annual_leave_days ?? 21;
 
   const empWdays = (emp?.weekend_days || '5,6').split(',').map(Number);
@@ -2830,7 +3002,6 @@ function openEmpModal(emp = null) {
     document.getElementById(`emp-wd-${d}`).checked = empWdays.includes(d);
   });
 
-  // show leave balance if editing
   const balEl = document.getElementById('emp-annual-balance');
   if (emp?.leave_balance) {
     balEl.value = `${emp.leave_balance.remaining} يوم متبقي من ${emp.leave_balance.entitlement} (استُخدم ${emp.leave_balance.used})`;
@@ -2867,11 +3038,29 @@ async function saveEmployee() {
   const err = document.getElementById('emp-err');
   err.style.display = 'none';
 
+  const g = id => document.getElementById(id).value.trim();
   const data = {
-    name_ar:      document.getElementById('emp-namear').value.trim(),
-    name_en:      document.getElementById('emp-nameen').value.trim(),
-    email:        document.getElementById('emp-email').value.trim(),
-    emp_code:     document.getElementById('emp-code').value.trim() || null,
+    name_ar:      g('emp-namear'),
+    name_en:      g('emp-nameen'),
+    email:        g('emp-email') || null,
+    emp_code:     g('emp-code') || null,
+    nationality:  g('emp-nationality') || null,
+    status:       g('emp-status') || 'active',
+    department:   g('emp-department') || null,
+    job_title:    g('emp-jobtitle') || null,
+    direct_manager: g('emp-manager') || null,
+    hire_date:    g('emp-hiredate') || null,
+    national_id:  g('emp-nationalid') || null,
+    phone:        g('emp-phone') || null,
+    iqama_expiry: g('emp-iqamaexpiry') || null,
+    contract_type:  g('emp-contracttype') || 'permanent',
+    contract_start: g('emp-contractstart') || null,
+    contract_end:   g('emp-contractend') || null,
+    probation_end:  g('emp-probationend') || null,
+    gosi_number:  g('emp-gosinumber') || null,
+    iban:         g('emp-iban') || null,
+    medical_insurance: g('emp-medicalins') || null,
+    notes:        g('emp-notes') || null,
     work_type:    document.getElementById('emp-wtype').value,
     work_start:   document.getElementById('emp-wstart').value,
     work_end:     document.getElementById('emp-wend').value,
@@ -4578,10 +4767,13 @@ function filterEmps(q) {
   const tb = document.getElementById('emp-tbody');
   const filtered = q ? allEmps.filter(e =>
     (e.name_ar||'').includes(q) || (e.name_en||'').toLowerCase().includes(q) ||
-    (e.emp_code||'').toLowerCase().includes(q)) : allEmps;
+    (e.emp_code||'').toLowerCase().includes(q) ||
+    (e.department||'').includes(q) || (e.job_title||'').includes(q) ||
+    (e.national_id||'').includes(q) || (e.phone||'').includes(q) ||
+    (e.nationality||'').includes(q)) : allEmps;
   document.getElementById('emp-count-lbl').textContent = `${filtered.length} موظف`;
   if (!filtered.length) {
-    tb.innerHTML = `<tr><td colspan="9"><div class="empty-state">🔍<p>لا توجد نتائج</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="31"><div class="empty-state">🔍<p>لا توجد نتائج</p></div></td></tr>`;
     return;
   }
   const saved = allEmps;

@@ -290,6 +290,23 @@ def _migrate_db(conn):
         "ALTER TABLE overtime_requests ADD COLUMN source TEXT DEFAULT 'auto'",
         "ALTER TABLE employees ADD COLUMN weekend_days TEXT DEFAULT '5,6'",
         "ALTER TABLE overtime_requests ADD COLUMN manager_note TEXT",
+        "ALTER TABLE employees ADD COLUMN nationality TEXT",
+        "ALTER TABLE employees ADD COLUMN department TEXT",
+        "ALTER TABLE employees ADD COLUMN job_title TEXT",
+        "ALTER TABLE employees ADD COLUMN status TEXT DEFAULT 'active'",
+        "ALTER TABLE employees ADD COLUMN hire_date TEXT",
+        "ALTER TABLE employees ADD COLUMN national_id TEXT",
+        "ALTER TABLE employees ADD COLUMN phone TEXT",
+        "ALTER TABLE employees ADD COLUMN direct_manager TEXT",
+        "ALTER TABLE employees ADD COLUMN notes TEXT",
+        "ALTER TABLE employees ADD COLUMN contract_type TEXT DEFAULT 'permanent'",
+        "ALTER TABLE employees ADD COLUMN contract_start TEXT",
+        "ALTER TABLE employees ADD COLUMN contract_end TEXT",
+        "ALTER TABLE employees ADD COLUMN probation_end TEXT",
+        "ALTER TABLE employees ADD COLUMN iqama_expiry TEXT",
+        "ALTER TABLE employees ADD COLUMN gosi_number TEXT",
+        "ALTER TABLE employees ADD COLUMN iban TEXT",
+        "ALTER TABLE employees ADD COLUMN medical_insurance TEXT",
         """CREATE TABLE IF NOT EXISTS schedule_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id  INTEGER NOT NULL,
@@ -350,6 +367,36 @@ def _gosi(emp):
     if code.startswith('in'):
         return 0.0
     return round(((emp['salary'] or 0) + (emp['housing'] or 0) + (emp['transport'] or 0)) * 0.1075, 2)
+
+def _years_of_service(hire_date_str):
+    if not hire_date_str:
+        return None
+    try:
+        hire = date.fromisoformat(hire_date_str)
+        return round((date.today() - hire).days / 365.25, 1)
+    except Exception:
+        return None
+
+def _eosb(salary, years):
+    if not years or years < 2:
+        return 0.0
+    first5 = min(years, 5) * 0.5 * (salary or 0)
+    after5 = max(0.0, years - 5) * (salary or 0)
+    return round(first5 + after5, 2)
+
+def _iqama_alert(iqama_expiry_str):
+    if not iqama_expiry_str:
+        return None
+    try:
+        exp = date.fromisoformat(iqama_expiry_str)
+        days_left = (exp - date.today()).days
+        if days_left < 0:
+            return f"إقامة منتهية منذ {abs(days_left)} يوم"
+        if days_left <= 60:
+            return f"⚠ إقامة تنتهي خلال {days_left} يوم"
+        return None
+    except Exception:
+        return None
 
 def _leave_balance(conn, emp_id, year=None):
     """Annual leave balance: entitlement - used = remaining"""
@@ -1731,6 +1778,11 @@ def api_emps_get():
         for r in rows:
             d = dict(r)
             d['leave_balance'] = _leave_balance(conn, r['id'], year)
+            yrs = _years_of_service(d.get('hire_date'))
+            d['years_of_service'] = yrs
+            d['total_salary'] = (d.get('salary') or 0) + (d.get('housing') or 0) + (d.get('transport') or 0)
+            d['eosb'] = _eosb(d.get('salary'), yrs)
+            d['alert'] = _iqama_alert(d.get('iqama_expiry'))
             result.append(d)
     finally:
         conn.close()
@@ -1757,15 +1809,27 @@ def api_emps_post():
         conn.execute("""
             INSERT INTO employees
                 (name_ar,name_en,email,salary,housing,transport,commission,
-                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code,weekend_days)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 other_ded,work_type,work_start,work_end,weekly_hours,annual_leave_days,emp_code,weekend_days,
+                 nationality,department,job_title,status,hire_date,national_id,phone,
+                 direct_manager,notes,contract_type,contract_start,contract_end,
+                 probation_end,iqama_expiry,gosi_number,iban,medical_insurance)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (d['name_ar'], d['name_en'], d.get('email'),
              d.get('salary',0) or 0, d.get('housing',0) or 0, d.get('transport',0) or 0,
              d.get('commission') or 0, d.get('other_ded',0) or 0,
              d.get('work_type','fixed'), d.get('work_start','08:00'),
              d.get('work_end','17:00'), d.get('weekly_hours',40),
              d.get('annual_leave_days', 21), d.get('emp_code') or None,
-             d.get('weekend_days', '5,6')))
+             d.get('weekend_days', '5,6'),
+             d.get('nationality') or None, d.get('department') or None,
+             d.get('job_title') or None, d.get('status','active'),
+             d.get('hire_date') or None, d.get('national_id') or None,
+             d.get('phone') or None, d.get('direct_manager') or None,
+             d.get('notes') or None, d.get('contract_type','permanent'),
+             d.get('contract_start') or None, d.get('contract_end') or None,
+             d.get('probation_end') or None, d.get('iqama_expiry') or None,
+             d.get('gosi_number') or None, d.get('iban') or None,
+             d.get('medical_insurance') or None))
         conn.commit()
         audit_log('create_employee', 'employee', d['name_ar'])
         return jsonify({'ok': True, 'msg': 'Employee added successfully'})
@@ -1791,7 +1855,11 @@ def api_emp_put(eid):
     d = request.get_json(silent=True) or {}
     allowed = ['name_ar','name_en','email','salary','housing','transport',
                'commission','other_ded','work_type','work_start','work_end',
-               'weekly_hours','annual_leave_days','emp_code','weekend_days']
+               'weekly_hours','annual_leave_days','emp_code','weekend_days',
+               'nationality','department','job_title','status','hire_date',
+               'national_id','phone','direct_manager','notes','contract_type',
+               'contract_start','contract_end','probation_end','iqama_expiry',
+               'gosi_number','iban','medical_insurance']
     updates = {k: d[k] for k in allowed if k in d}
     if not updates:
         return jsonify({'error': 'No fields to update'}), 400
